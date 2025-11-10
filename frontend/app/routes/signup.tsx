@@ -46,7 +46,14 @@ export default function Signup() {
         formData.name,
         formData.role
       );
-      navigate(formData.role === "seller" ? "/sell" : "/");
+      // Navigate based on role
+      if (formData.role === "admin") {
+        navigate("/admin");
+      } else if (formData.role === "seller") {
+        navigate("/sell");
+      } else {
+        navigate("/products");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Signup failed");
     } finally {
@@ -113,28 +120,28 @@ export default function Signup() {
             {/* Role Selection */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-3">
-                I want to
+                Choose Your Role
               </label>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, role: "buyer" })}
-                  className={`p-4 border-2 rounded-xl transition-all ${
+                  className={`p-5 border-2 transition-all transform hover:scale-105 ${
                     formData.role === "buyer"
-                      ? "border-blue-600 bg-blue-50 shadow-md"
-                      : "border-gray-200 hover:border-gray-300"
+                      ? "border-sky-500 bg-gradient-to-br from-sky-100 via-blue-50 to-cyan-100 shadow-2xl rounded-3xl scale-105"
+                      : "border-gray-200 hover:border-sky-300 hover:shadow-lg rounded-2xl"
                   }`}
                 >
                   <div className="flex flex-col items-center">
                     <div
-                      className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${
+                      className={`w-14 h-14 flex items-center justify-center mb-3 transform ${
                         formData.role === "buyer"
-                          ? "bg-blue-100"
-                          : "bg-gray-100"
+                          ? "bg-gradient-to-br from-sky-400 via-blue-500 to-cyan-500 rounded-2xl shadow-lg"
+                          : "bg-gray-100 rounded-xl"
                       }`}
                     >
                       <svg
-                        className={`w-6 h-6 ${formData.role === "buyer" ? "text-blue-600" : "text-gray-600"}`}
+                        className={`w-8 h-8 ${formData.role === "buyer" ? "text-white" : "text-gray-600"}`}
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -148,12 +155,12 @@ export default function Signup() {
                       </svg>
                     </div>
                     <span
-                      className={`font-semibold ${formData.role === "buyer" ? "text-blue-600" : "text-gray-700"}`}
+                      className={`font-bold text-base ${formData.role === "buyer" ? "text-sky-700" : "text-gray-700"}`}
                     >
-                      Buy Parts
+                      Buyer
                     </span>
-                    <span className="text-xs text-gray-500 mt-1">
-                      Browse and purchase
+                    <span className="text-xs text-gray-500 mt-1 font-medium">
+                      Browse & Purchase
                     </span>
                   </div>
                 </button>
@@ -161,22 +168,22 @@ export default function Signup() {
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, role: "seller" })}
-                  className={`p-4 border-2 rounded-xl transition-all ${
+                  className={`p-5 border-2 transition-all transform hover:scale-105 ${
                     formData.role === "seller"
-                      ? "border-purple-600 bg-purple-50 shadow-md"
-                      : "border-gray-200 hover:border-gray-300"
+                      ? "border-violet-500 bg-gradient-to-br from-violet-100 via-purple-50 to-fuchsia-100 shadow-2xl rounded-3xl scale-105"
+                      : "border-gray-200 hover:border-violet-300 hover:shadow-lg rounded-2xl"
                   }`}
                 >
                   <div className="flex flex-col items-center">
                     <div
-                      className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${
+                      className={`w-14 h-14 flex items-center justify-center mb-3 ${
                         formData.role === "seller"
-                          ? "bg-purple-100"
-                          : "bg-gray-100"
+                          ? "bg-gradient-to-br from-violet-400 via-purple-500 to-fuchsia-500 rounded-2xl shadow-lg"
+                          : "bg-gray-100 rounded-xl"
                       }`}
                     >
                       <svg
-                        className={`w-6 h-6 ${formData.role === "seller" ? "text-purple-600" : "text-gray-600"}`}
+                        className={`w-8 h-8 ${formData.role === "seller" ? "text-white" : "text-gray-600"}`}
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -190,12 +197,54 @@ export default function Signup() {
                       </svg>
                     </div>
                     <span
-                      className={`font-semibold ${formData.role === "seller" ? "text-purple-600" : "text-gray-700"}`}
+                      className={`font-bold text-base ${formData.role === "seller" ? "text-violet-700" : "text-gray-700"}`}
                     >
-                      Sell Parts
+                      Seller
                     </span>
-                    <span className="text-xs text-gray-500 mt-1">
-                      List and manage
+                    <span className="text-xs text-gray-500 mt-1 font-medium">
+                      List & Manage
+                    </span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, role: "admin" })}
+                  className={`p-5 border-2 transition-all transform hover:scale-105 ${
+                    formData.role === "admin"
+                      ? "border-amber-500 bg-gradient-to-br from-amber-100 via-yellow-50 to-orange-100 shadow-2xl rounded-3xl scale-105"
+                      : "border-gray-200 hover:border-amber-300 hover:shadow-lg rounded-2xl"
+                  }`}
+                >
+                  <div className="flex flex-col items-center">
+                    <div
+                      className={`w-14 h-14 flex items-center justify-center mb-3 ${
+                        formData.role === "admin"
+                          ? "bg-gradient-to-br from-amber-400 via-yellow-500 to-orange-500 rounded-2xl shadow-lg"
+                          : "bg-gray-100 rounded-xl"
+                      }`}
+                    >
+                      <svg
+                        className={`w-8 h-8 ${formData.role === "admin" ? "text-white" : "text-gray-600"}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                        />
+                      </svg>
+                    </div>
+                    <span
+                      className={`font-bold text-base ${formData.role === "admin" ? "text-amber-700" : "text-gray-700"}`}
+                    >
+                      Admin
+                    </span>
+                    <span className="text-xs text-gray-500 mt-1 font-medium">
+                      Control Panel
                     </span>
                   </div>
                 </button>
@@ -310,15 +359,15 @@ export default function Signup() {
             </label>
 
             {/* Submit */}
-            <button
+                        <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              className="w-full py-4 px-6 bg-gradient-to-r from-pink-500 via-rose-500 to-red-500 hover:from-pink-600 hover:via-rose-600 hover:to-red-600 text-white font-bold rounded-full shadow-2xl hover:shadow-rose-500/50 transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
             >
               {loading ? (
-                <span className="flex items-center justify-center">
+                <>
                   <svg
-                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    className="animate-spin h-5 w-5 text-white"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -337,10 +386,15 @@ export default function Signup() {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Creating account...
-                </span>
+                  <span>Creating account...</span>
+                </>
               ) : (
-                "Create Account"
+                <>
+                  <span>Create Account</span>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </>
               )}
             </button>
           </form>

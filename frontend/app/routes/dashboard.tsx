@@ -177,12 +177,12 @@ export default function Dashboard({ loaderData }: { loaderData: LoaderData }) {
             >
               View Orders
             </Link>
-            <Link
-              to="/profile"
+            <button
+              onClick={() => alert("Profile editing feature coming soon!")}
               className="px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition-colors"
             >
               Edit Profile
-            </Link>
+            </button>
           </div>
         </div>
 

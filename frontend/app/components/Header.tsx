@@ -6,7 +6,6 @@ export function Header() {
   const { user, isAuthenticated, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [showUserMenu, setShowUserMenu] = useState(false);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,311 +20,163 @@ export function Header() {
   };
 
   return (
-    <header className="bg-white shadow-md sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Top bar */}
-        <div className="flex justify-between items-center py-4">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <svg
-              className="w-8 h-8 text-blue-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M13 10V3L4 14h7v7l9-11h-7z"
-              />
-            </svg>
-            <span className="text-2xl font-bold text-gray-900">Gearsey</span>
+    <header className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-xl sticky top-0 z-50 backdrop-blur-md">
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-between h-16">
+          <Link to="/" className="flex items-center space-x-2 group">
+            <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-cyan-400/50 group-hover:scale-105 transition-all duration-300">
+              <span className="text-xl font-black text-white">G</span>
+            </div>
+            <span className="text-xl font-bold tracking-tight group-hover:text-cyan-300 transition-colors">
+              Gearsey
+            </span>
           </Link>
 
-          {/* Search bar - Desktop */}
-          <form
-            onSubmit={handleSearch}
-            className="hidden md:flex flex-1 max-w-2xl mx-8"
-          >
-            <div className="flex w-full">
+          <div className="hidden md:flex flex-1 max-w-xl mx-6">
+            <div className="relative w-full">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search for spare parts..."
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Search for parts..."
+                className="w-full px-4 py-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400/50 transition-all text-sm"
               />
-              <button
-                type="submit"
-                className="px-6 py-2 bg-blue-600 text-white rounded-r-lg hover:bg-blue-700 transition-colors"
+              <button 
+                onClick={handleSearch}
+                className="absolute right-1 top-1/2 -translate-y-1/2 px-4 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold rounded-md shadow-md hover:shadow-lg transition-all text-sm"
               >
                 Search
               </button>
             </div>
-          </form>
+          </div>
 
-          {/* Navigation Links - Desktop */}
-          <nav className="hidden md:flex items-center space-x-6">
-            <Link
-              to="/auctions"
-              className="text-gray-700 hover:text-blue-600 font-medium"
-            >
+          <nav className="hidden lg:flex items-center space-x-1">
+            <Link to="/products" className="px-4 py-1.5 hover:bg-white/15 backdrop-blur-sm rounded-lg transition-all font-medium text-sm hover:text-cyan-300">
+              Products
+            </Link>
+            <Link to="/auctions" className="px-4 py-1.5 hover:bg-white/15 backdrop-blur-sm rounded-lg transition-all font-medium text-sm hover:text-cyan-300">
               Auctions
             </Link>
-            {isAuthenticated &&
-              (user?.role === "seller" || user?.role === "admin") && (
-                <Link
-                  to="/sell"
-                  className="text-gray-700 hover:text-blue-600 font-medium"
-                >
-                  Sell
-                </Link>
-              )}
-            <Link to="/cart" className="relative">
-              <svg
-                className="w-6 h-6 text-gray-700 hover:text-blue-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-                />
-              </svg>
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                0
-              </span>
-            </Link>
-
-            {isAuthenticated ? (
-              <div className="relative">
-                <button
-                  onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center space-x-2 text-gray-700 hover:text-blue-600"
-                >
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
-                    {user?.name?.charAt(0).toUpperCase()}
-                  </div>
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </button>
-
-                {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-50">
-                    <div className="px-4 py-2 border-b border-gray-100">
-                      <p className="text-sm font-semibold text-gray-900">
-                        {user?.name}
-                      </p>
-                      <p className="text-xs text-gray-500">{user?.email}</p>
-                    </div>
-                    <Link
-                      to="/dashboard"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                      onClick={() => setShowUserMenu(false)}
-                    >
-                      Dashboard
-                    </Link>
-                    <Link
-                      to="/orders"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                      onClick={() => setShowUserMenu(false)}
-                    >
-                      My Orders
-                    </Link>
-                    {user?.role === "admin" && (
-                      <Link
-                        to="/admin"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                        onClick={() => setShowUserMenu(false)}
-                      >
-                        Admin Panel
-                      </Link>
-                    )}
-                    <button
-                      onClick={handleLogout}
-                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                    >
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <Link
-                to="/login"
-                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all"
-              >
-                Login
+            {/* Only Seller can list products */}
+            {user?.role === "seller" && (
+              <Link to="/sell" className="px-4 py-1.5 hover:bg-white/15 backdrop-blur-sm rounded-lg transition-all font-medium text-sm hover:text-cyan-300">
+                Sell
+              </Link>
+            )}
+            {/* Admin can see statistics */}
+            {user?.role === "admin" && (
+              <Link to="/admin" className="px-4 py-1.5 hover:bg-white/15 backdrop-blur-sm rounded-lg transition-all font-medium text-sm hover:text-cyan-300">
+                Admin
               </Link>
             )}
           </nav>
 
-          {/* Mobile menu button */}
-          <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden text-gray-700"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              {isMenuOpen ? (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              ) : (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              )}
-            </svg>
-          </button>
-        </div>
+          <div className="flex items-center space-x-2">
+            {/* Buyer can see cart */}
+            {(!user || user?.role === "buyer") && (
+              <Link to="/cart" className="relative p-2 hover:bg-white/15 backdrop-blur-sm rounded-lg transition-all group">
+                <svg className="w-5 h-5 group-hover:scale-105 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-cyan-400 to-blue-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-md">0</span>
+              </Link>
+            )}
 
-        {/* Search bar - Mobile */}
-        <form onSubmit={handleSearch} className="md:hidden pb-4">
-          <div className="flex w-full">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search for spare parts..."
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-r-lg hover:bg-blue-700"
-            >
-              Search
+            {user ? (
+              <div className="hidden md:flex items-center space-x-2">
+                {/* Buyer Dashboard - View Orders & Reviews */}
+                {user.role === "buyer" && (
+                  <Link to="/dashboard" className="px-4 py-1.5 bg-white/10 backdrop-blur-sm hover:bg-white/20 rounded-lg transition-all font-medium text-sm">
+                    My Orders
+                  </Link>
+                )}
+                {/* Seller Dashboard - Manage Products */}
+                {user.role === "seller" && (
+                  <Link to="/dashboard" className="px-4 py-1.5 bg-white/10 backdrop-blur-sm hover:bg-white/20 rounded-lg transition-all font-medium text-sm">
+                    My Products
+                  </Link>
+                )}
+                {/* Admin Dashboard - Statistics & Management */}
+                {user.role === "admin" && (
+                  <Link to="/admin" className="px-4 py-1.5 bg-white/10 backdrop-blur-sm hover:bg-white/20 rounded-lg transition-all font-medium text-sm">
+                    Admin Panel
+                  </Link>
+                )}
+                <button onClick={handleLogout} className="px-4 py-1.5 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 rounded-lg transition-all font-medium text-sm shadow-md">
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <div className="hidden md:flex items-center space-x-2">
+                <Link to="/login" className="px-4 py-1.5 bg-white/10 backdrop-blur-sm hover:bg-white/20 rounded-lg transition-all font-medium text-sm">
+                  Login
+                </Link>
+                <Link to="/signup" className="px-4 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 rounded-lg transition-all font-semibold text-sm shadow-md">
+                  Sign Up
+                </Link>
+              </div>
+            )}
+
+            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="lg:hidden text-white p-2 hover:bg-white/15 rounded-lg transition-all">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {isMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
             </button>
           </div>
-        </form>
+        </div>
 
-        {/* Mobile menu */}
         {isMenuOpen && (
-          <div className="md:hidden pb-4 space-y-2">
-            <Link
-              to="/auctions"
-              className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Auctions
-            </Link>
-            {isAuthenticated &&
-              (user?.role === "seller" || user?.role === "admin") && (
-                <Link
-                  to="/sell"
-                  className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Sell
-                </Link>
-              )}
-            <Link
-              to="/cart"
-              className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Cart
-            </Link>
-            {isAuthenticated ? (
+          <div className="lg:hidden pb-3 space-y-1 border-t border-white/20 pt-3">
+            <Link to="/products" className="block px-4 py-2 hover:bg-white/15 rounded-lg transition-all text-sm" onClick={() => setIsMenuOpen(false)}>Products</Link>
+            <Link to="/auctions" className="block px-4 py-2 hover:bg-white/15 rounded-lg transition-all text-sm" onClick={() => setIsMenuOpen(false)}>Auctions</Link>
+            
+            {/* Only Seller can list products */}
+            {user?.role === "seller" && (
+              <Link to="/sell" className="block px-4 py-2 hover:bg-white/15 rounded-lg transition-all text-sm" onClick={() => setIsMenuOpen(false)}>Sell Products</Link>
+            )}
+            
+            {/* Admin can see statistics */}
+            {user?.role === "admin" && (
+              <Link to="/admin" className="block px-4 py-2 hover:bg-white/15 rounded-lg transition-all text-sm" onClick={() => setIsMenuOpen(false)}>Admin Panel</Link>
+            )}
+            
+            {user ? (
               <>
-                <Link
-                  to="/dashboard"
-                  className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Dashboard
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 rounded"
-                >
-                  Logout
-                </button>
+                {user.role === "buyer" && (
+                  <Link to="/dashboard" className="block px-4 py-2 hover:bg-white/15 rounded-lg transition-all text-sm" onClick={() => setIsMenuOpen(false)}>My Orders</Link>
+                )}
+                {user.role === "seller" && (
+                  <Link to="/dashboard" className="block px-4 py-2 hover:bg-white/15 rounded-lg transition-all text-sm" onClick={() => setIsMenuOpen(false)}>My Products</Link>
+                )}
+                {user.role === "admin" && (
+                  <Link to="/admin" className="block px-4 py-2 hover:bg-white/15 rounded-lg transition-all text-sm" onClick={() => setIsMenuOpen(false)}>Statistics</Link>
+                )}
+                <button onClick={handleLogout} className="block w-full text-left px-4 py-2 bg-rose-500/80 hover:bg-rose-600 rounded-lg text-sm">Sign Out</button>
               </>
             ) : (
-              <Link
-                to="/login"
-                className="block px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 rounded text-center"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Login
-              </Link>
+              <>
+                <Link to="/login" className="block px-4 py-2 hover:bg-white/15 rounded-lg transition-all text-sm" onClick={() => setIsMenuOpen(false)}>Login</Link>
+                <Link to="/signup" className="block px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg font-semibold text-sm" onClick={() => setIsMenuOpen(false)}>Sign Up</Link>
+              </>
             )}
           </div>
         )}
       </div>
 
-      {/* Categories bar */}
-      <div className="bg-gray-50 border-t border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center space-x-8 py-3 overflow-x-auto">
-            <Link
-              to="/products"
-              className="text-sm text-gray-700 hover:text-blue-600 whitespace-nowrap"
-            >
-              All Parts
-            </Link>
-            <Link
-              to="/products?category=Engine"
-              className="text-sm text-gray-700 hover:text-blue-600 whitespace-nowrap"
-            >
-              Engine Parts
-            </Link>
-            <Link
-              to="/products?category=Brakes"
-              className="text-sm text-gray-700 hover:text-blue-600 whitespace-nowrap"
-            >
-              Brake Systems
-            </Link>
-            <Link
-              to="/products?category=Suspension"
-              className="text-sm text-gray-700 hover:text-blue-600 whitespace-nowrap"
-            >
-              Suspension
-            </Link>
-            <Link
-              to="/products?category=Electrical"
-              className="text-sm text-gray-700 hover:text-blue-600 whitespace-nowrap"
-            >
-              Electrical
-            </Link>
-            <Link
-              to="/products?category=Transmission"
-              className="text-sm text-gray-700 hover:text-blue-600 whitespace-nowrap"
-            >
-              Transmission
-            </Link>
-            <Link
-              to="/products?category=Body"
-              className="text-sm text-gray-700 hover:text-blue-600 whitespace-nowrap"
-            >
-              Body Parts
-            </Link>
+      <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-700 border-t border-white/10">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center space-x-6 py-2 overflow-x-auto">
+            <Link to="/products" className="text-xs text-white/90 hover:text-cyan-300 whitespace-nowrap transition-colors font-semibold">All Parts</Link>
+            <Link to="/products?category=Engine" className="text-xs text-white/75 hover:text-cyan-300 whitespace-nowrap transition-colors">Engine</Link>
+            <Link to="/products?category=Brakes" className="text-xs text-white/75 hover:text-cyan-300 whitespace-nowrap transition-colors">Brakes</Link>
+            <Link to="/products?category=Suspension" className="text-xs text-white/75 hover:text-cyan-300 whitespace-nowrap transition-colors">Suspension</Link>
+            <Link to="/products?category=Electrical" className="text-xs text-white/75 hover:text-cyan-300 whitespace-nowrap transition-colors">Electrical</Link>
+            <Link to="/products?category=Transmission" className="text-xs text-white/75 hover:text-cyan-300 whitespace-nowrap transition-colors">Transmission</Link>
+            <Link to="/products?category=Body" className="text-xs text-white/75 hover:text-cyan-300 whitespace-nowrap transition-colors">Body Parts</Link>
           </div>
         </div>
       </div>

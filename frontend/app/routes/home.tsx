@@ -48,28 +48,36 @@ export default function Home({ loaderData }: Route.ComponentProps) {
   return (
     <div className="bg-gray-50">
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              Find the Perfect Spare Part
+      <section className="relative bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 text-white py-16 overflow-hidden">
+        <div className="absolute inset-0 bg-black/5"></div>
+        <div className="absolute inset-0">
+          <div className="absolute top-10 left-10 w-64 h-64 bg-cyan-400/15 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-10 right-10 w-80 h-80 bg-blue-400/15 rounded-full blur-3xl"></div>
+        </div>
+        
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="max-w-3xl mx-auto text-center">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
+              Find Premium Vehicle Parts
+              <span className="block bg-gradient-to-r from-cyan-300 via-blue-300 to-indigo-300 bg-clip-text text-transparent mt-2">
+                At Best Prices
+              </span>
             </h1>
-            <p className="text-xl md:text-2xl mb-8 text-blue-100">
-              Pakistan's trusted marketplace for new and used vehicle spare
-              parts
+            <p className="text-lg md:text-xl mb-8 text-blue-100">
+              Pakistan's most trusted marketplace for authentic spare parts
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link
                 to="/products"
-                className="px-8 py-4 bg-white text-blue-600 font-semibold rounded-lg hover:bg-gray-100 transition-colors text-lg"
+                className="px-8 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 text-center"
               >
-                Browse Parts
+                Shop Now
               </Link>
               <Link
-                to="/auctions"
-                className="px-8 py-4 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-400 transition-colors text-lg border-2 border-white"
+                to="/sell"
+                className="px-8 py-3 bg-white/15 backdrop-blur-md hover:bg-white/25 text-white font-semibold rounded-lg border border-white/30 shadow-lg transform hover:scale-105 transition-all duration-300 text-center"
               >
-                Live Auctions
+                Start Selling
               </Link>
             </div>
           </div>
@@ -77,13 +85,17 @@ export default function Home({ loaderData }: Route.ComponentProps) {
       </section>
 
       {/* Features */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center p-6">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+            {/* Features Section */}
+      <section className="py-20 bg-gradient-to-b from-slate-50 to-white">
+        <div className="container mx-auto px-4">
+          <h2 className="text-4xl font-black text-center mb-16 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+            Why Choose Gearsey?
+          </h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="group bg-white p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 border-2 border-transparent hover:border-indigo-200 transform hover:-translate-y-2">
+              <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-indigo-500/50">
                 <svg
-                  className="w-8 h-8 text-blue-600"
+                  className="w-8 h-8 text-white"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -92,21 +104,21 @@ export default function Home({ loaderData }: Route.ComponentProps) {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
-                Verified Sellers
-              </h3>
-              <p className="text-gray-600">
-                All sellers are verified for your peace of mind
+              <h3 className="text-2xl font-bold mb-3 text-gray-800">Verified Sellers</h3>
+              <p className="text-gray-600 leading-relaxed">
+                All sellers are verified to ensure authenticity and quality of
+                parts
               </p>
             </div>
-            <div className="text-center p-6">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+
+            <div className="group bg-white p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 border-2 border-transparent hover:border-emerald-200 transform hover:-translate-y-2">
+              <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-emerald-500/50">
                 <svg
-                  className="w-8 h-8 text-green-600"
+                  className="w-8 h-8 text-white"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -119,17 +131,16 @@ export default function Home({ loaderData }: Route.ComponentProps) {
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
-                Best Prices
-              </h3>
-              <p className="text-gray-600">
-                Competitive prices with auction options
+              <h3 className="text-2xl font-bold mb-3 text-gray-800">Best Prices</h3>
+              <p className="text-gray-600 leading-relaxed">
+                Competitive pricing with multiple sellers ensuring great deals
               </p>
             </div>
-            <div className="text-center p-6">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-100 rounded-full mb-4">
+
+            <div className="group bg-white p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 border-2 border-transparent hover:border-amber-200 transform hover:-translate-y-2">
+              <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-amber-500/50">
                 <svg
-                  className="w-8 h-8 text-purple-600"
+                  className="w-8 h-8 text-white"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -142,10 +153,10 @@ export default function Home({ loaderData }: Route.ComponentProps) {
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
-                Fast Delivery
-              </h3>
-              <p className="text-gray-600">Quick shipping across Pakistan</p>
+              <h3 className="text-2xl font-bold mb-3 text-gray-800">Fast Delivery</h3>
+              <p className="text-gray-600 leading-relaxed">
+                Quick delivery across Pakistan with real-time tracking
+              </p>
             </div>
           </div>
         </div>
@@ -174,7 +185,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           <div className="text-center mt-8">
             <Link
               to="/products"
-              className="inline-block px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+              className="inline-block px-6 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-semibold rounded-lg hover:from-cyan-700 hover:to-blue-700 transition-colors shadow-lg hover:shadow-xl"
             >
               View All Categories
             </Link>
@@ -189,7 +200,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
             <h2 className="text-3xl font-bold text-gray-900">Featured Parts</h2>
             <Link
               to="/products"
-              className="text-blue-600 hover:text-blue-700 font-semibold"
+              className="text-cyan-600 hover:text-cyan-700 font-semibold"
             >
               View All →
             </Link>
@@ -211,7 +222,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 
       {/* Live Auctions */}
       {auctions.length > 0 && (
-        <section className="py-16 bg-gradient-to-r from-red-50 to-orange-50">
+        <section className="py-16 bg-gradient-to-br from-rose-50 via-pink-50 to-orange-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-3xl font-bold text-gray-900">
@@ -219,7 +230,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
               </h2>
               <Link
                 to="/auctions"
-                className="text-red-600 hover:text-red-700 font-semibold"
+                className="text-rose-600 hover:text-rose-700 font-semibold"
               >
                 View All Auctions →
               </Link>
@@ -230,7 +241,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
                   key={auction._id}
                   className="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow"
                 >
-                  <span className="inline-block px-3 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full mb-3">
+                  <span className="inline-block px-3 py-1 bg-gradient-to-r from-rose-500 to-pink-500 text-white text-xs font-semibold rounded-full mb-3 shadow">
                     {auction.status}
                   </span>
                   <h3 className="font-semibold text-gray-900 mb-2">
@@ -249,7 +260,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
                   </div>
                   <Link
                     to={`/auctions/${auction._id}`}
-                    className="mt-4 block w-full text-center px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors"
+                    className="mt-4 block w-full text-center px-4 py-2 bg-gradient-to-r from-rose-500 to-pink-500 text-white font-medium rounded-lg hover:from-rose-600 hover:to-pink-600 transition-colors shadow-md hover:shadow-lg"
                   >
                     Place Bid
                   </Link>
@@ -261,20 +272,33 @@ export default function Home({ loaderData }: Route.ComponentProps) {
       )}
 
       {/* CTA Section */}
-      <section className="py-16 bg-blue-600 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Have Parts to Sell?
+      {/* CTA Section */}
+      <section className="py-20 bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-600 text-white relative overflow-hidden">
+        <div className="absolute inset-0">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500/30 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-pink-500/30 rounded-full blur-3xl"></div>
+        </div>
+        <div className="container mx-auto px-4 text-center relative z-10">
+          <h2 className="text-4xl md:text-5xl font-black mb-6">
+            Ready to Start Your Journey?
           </h2>
-          <p className="text-xl mb-8 text-blue-100">
-            Join thousands of sellers and reach buyers across Pakistan
+          <p className="text-xl mb-10 text-blue-100 max-w-2xl mx-auto">
+            Join thousands of satisfied customers buying and selling vehicle parts
           </p>
-          <Link
-            to="/sell"
-            className="inline-block px-8 py-4 bg-white text-blue-600 font-semibold rounded-lg hover:bg-gray-100 transition-colors text-lg"
-          >
-            Start Selling Today
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              to="/signup"
+              className="px-10 py-4 bg-white text-indigo-600 font-bold rounded-full shadow-2xl hover:shadow-white/50 transform hover:scale-105 transition-all duration-300 text-lg text-center"
+            >
+              Create Account
+            </Link>
+            <Link
+              to="/products"
+              className="px-10 py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold rounded-full shadow-2xl hover:shadow-pink-500/50 transform hover:scale-105 transition-all duration-300 text-lg border-2 border-white/50 text-center"
+            >
+              Browse Products
+            </Link>
+          </div>
         </div>
       </section>
     </div>

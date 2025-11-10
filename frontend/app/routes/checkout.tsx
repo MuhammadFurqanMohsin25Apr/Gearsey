@@ -207,13 +207,23 @@ export default function Checkout() {
                 </div>
               </div>
 
-              <button
-                type="submit"
-                disabled={orderTotal === 0}
-                className="w-full px-6 py-4 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed mb-4"
+              <Link
+                to={orderTotal > 0 ? "/orders" : "#"}
+                className={`block w-full px-6 py-4 text-white font-bold rounded-lg transition-colors text-center mb-4 ${
+                  orderTotal === 0
+                    ? "bg-gray-300 cursor-not-allowed"
+                    : "bg-green-600 hover:bg-green-700"
+                }`}
+                onClick={(e) => {
+                  if (orderTotal === 0) {
+                    e.preventDefault();
+                    return;
+                  }
+                  alert("Order placed successfully! Redirecting to orders...");
+                }}
               >
                 Complete Order
-              </button>
+              </Link>
 
               <p className="text-xs text-gray-600 text-center">
                 By completing this order, you agree to our{" "}

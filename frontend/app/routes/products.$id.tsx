@@ -8,6 +8,7 @@ import {
   getStatusBadgeColor,
 } from "~/lib/utils";
 import { useState } from "react";
+import { useAuth } from "~/lib/auth-context";
 
 export function meta() {
   return [
@@ -58,8 +59,18 @@ export default function ProductDetail({
   loaderData: LoaderData;
 }) {
   const { product, relatedProducts } = loaderData;
+  const { user } = useAuth();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  
+  // Review state
+  const [reviews, setReviews] = useState<any[]>([
+    // Mock reviews
+    { id: 1, userName: "Ahmed Khan", rating: 5, comment: "Excellent quality! Exactly as described. Highly recommended.", date: "2024-01-15", verified: true },
+    { id: 2, userName: "Fatima Ali", rating: 4, comment: "Good product, delivery was fast.", date: "2024-01-10", verified: true },
+  ]);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [newReview, setNewReview] = useState({ rating: 5, comment: "" });
 
   const images = product.imageIds.map((img) =>
     api.products.getImage(img.fileName)
@@ -68,6 +79,30 @@ export default function ProductDetail({
   const handleAddToCart = () => {
     // TODO: Implement cart functionality
     alert(`Added ${quantity} item(s) to cart!`);
+  };
+  
+  const handleSubmitReview = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!user || user.role !== "buyer") {
+      alert("Only buyers can submit reviews!");
+      return;
+    }
+    
+    // Add review
+    const review = {
+      id: reviews.length + 1,
+      userName: user.name || "Anonymous Buyer",
+      rating: newReview.rating,
+      comment: newReview.comment,
+      date: new Date().toISOString().split('T')[0],
+      verified: true,
+    };
+    
+    setReviews([review, ...reviews]);
+    setNewReview({ rating: 5, comment: "" });
+    setShowReviewForm(false);
+    alert("Review submitted successfully!");
   };
 
   return (
@@ -318,6 +353,119 @@ export default function ProductDetail({
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Reviews Section */}
+        <div className="mt-12 bg-white rounded-lg shadow-md p-8">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Customer Reviews</h2>
+              <p className="text-gray-600 mt-1">{reviews.length} review{reviews.length !== 1 ? 's' : ''}</p>
+            </div>
+            
+            {/* Only buyers can write reviews */}
+            {user?.role === "buyer" && (
+              <button
+                onClick={() => setShowReviewForm(!showReviewForm)}
+                className="px-6 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-cyan-700 transition-colors"
+              >
+                {showReviewForm ? "Cancel" : "Write a Review"}
+              </button>
+            )}
+          </div>
+
+          {/* Review Form (Buyers Only) */}
+          {showReviewForm && user?.role === "buyer" && (
+            <form onSubmit={handleSubmitReview} className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-6 mb-6 border-2 border-blue-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Share Your Experience</h3>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Rating</label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setNewReview({ ...newReview, rating: star })}
+                      className="text-3xl transition-transform hover:scale-110"
+                    >
+                      {star <= newReview.rating ? "⭐" : "☆"}
+                    </button>
+                  ))}
+                  <span className="ml-2 text-gray-600 font-medium">{newReview.rating}/5</span>
+                </div>
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Your Review</label>
+                <textarea
+                  value={newReview.comment}
+                  onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+                  required
+                  rows={4}
+                  placeholder="Tell us about your experience with this product..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              
+              <button
+                type="submit"
+                className="px-6 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold rounded-lg hover:from-emerald-600 hover:to-teal-700 transition-colors"
+              >
+                Submit Review
+              </button>
+            </form>
+          )}
+
+          {/* Message for non-buyers */}
+          {!user && (
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-4 mb-6 border-2 border-amber-200">
+              <p className="text-amber-800 font-medium">
+                <Link to="/login" className="underline hover:text-amber-900">Sign in as a buyer</Link> to write a review
+              </p>
+            </div>
+          )}
+          
+          {user && user.role !== "buyer" && (
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 mb-6 border-2 border-purple-200">
+              <p className="text-purple-800 font-medium">Only buyers can submit product reviews</p>
+            </div>
+          )}
+
+          {/* Reviews List */}
+          <div className="space-y-6">
+            {reviews.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                </svg>
+                <p className="text-lg font-medium">No reviews yet</p>
+                <p className="text-sm mt-1">Be the first to review this product!</p>
+              </div>
+            ) : (
+              reviews.map((review) => (
+                <div key={review.id} className="border-b border-gray-200 pb-6 last:border-0">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-gray-900">{review.userName}</p>
+                        {review.verified && (
+                          <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded">✓ Verified Purchase</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="text-yellow-400">
+                          {"⭐".repeat(review.rating)}{"☆".repeat(5 - review.rating)}
+                        </div>
+                        <span className="text-sm text-gray-600">{review.date}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-gray-700 leading-relaxed">{review.comment}</p>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
