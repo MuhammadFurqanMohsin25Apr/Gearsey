@@ -1,11 +1,10 @@
-import { useLoaderData, Link } from "react-router";
-import type { Route } from "./+types/auctions";
+import { Link } from "react-router";
 import { api } from "~/lib/api";
 import type { AuctionsResponse, ProductsResponse } from "~/types";
 import { formatPrice, formatDateTime, getTimeRemaining } from "~/lib/utils";
 import { useEffect, useState } from "react";
 
-export function meta({}: Route.MetaArgs) {
+export function meta() {
   return [
     { title: "Live Auctions - Gearsey" },
     {
@@ -74,7 +73,11 @@ function AuctionTimer({ endTime }: { endTime: string }) {
   );
 }
 
-export default function Auctions({ loaderData }: Route.ComponentProps) {
+type LoaderData = {
+  auctions: any[];
+};
+
+export default function Auctions({ loaderData }: { loaderData: LoaderData }) {
   const { auctions } = loaderData;
 
   const activeAuctions = auctions.filter((a: any) => a.status === "Active");

@@ -1,11 +1,10 @@
-import { useLoaderData, useSearchParams, Link } from "react-router";
-import type { Route } from "./+types/products";
+import { useSearchParams, Link } from "react-router";
 import { api } from "~/lib/api";
 import { ProductCard } from "~/components/ProductCard";
-import type { ProductsResponse, CategoriesResponse } from "~/types";
+import type { ProductsResponse, CategoriesResponse, Category } from "~/types";
 import { useState } from "react";
 
-export function meta({}: Route.MetaArgs) {
+export function meta() {
   return [
     { title: "Browse Spare Parts - Gearsey" },
     {
@@ -16,7 +15,7 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-export async function loader({ request }: Route.LoaderArgs) {
+export async function loader({ request }: { request: Request }) {
   const url = new URL(request.url);
   const category = url.searchParams.get("category") || undefined;
   const query = url.searchParams.get("query") || undefined;
@@ -49,7 +48,14 @@ export async function loader({ request }: Route.LoaderArgs) {
   }
 }
 
-export default function Products({ loaderData }: Route.ComponentProps) {
+type LoaderData = {
+  products: any[];
+  categories: any[];
+  currentCategory?: string;
+  searchQuery?: string;
+};
+
+export default function Products({ loaderData }: { loaderData: LoaderData }) {
   const { products, categories, currentCategory, searchQuery } = loaderData;
   const [searchParams] = useSearchParams();
   const [selectedCondition, setSelectedCondition] = useState<string>("all");
@@ -119,7 +125,7 @@ export default function Products({ loaderData }: Route.ComponentProps) {
                       All Categories
                     </Link>
                   </li>
-                  {categories.map((cat) => (
+                  {categories.map((cat: Category) => (
                     <li key={cat._id}>
                       <Link
                         to={`/products?category=${encodeURIComponent(cat.name)}`}

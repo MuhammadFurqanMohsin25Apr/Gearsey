@@ -1,15 +1,23 @@
 import { Link } from "react-router";
 import { useState } from "react";
+import { useAuth } from "~/lib/auth-context";
 
 export function Header() {
+  const { user, isAuthenticated, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       window.location.href = `/products?query=${encodeURIComponent(searchQuery)}`;
     }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    window.location.href = "/";
   };
 
   return (
@@ -65,12 +73,15 @@ export function Header() {
             >
               Auctions
             </Link>
-            <Link
-              to="/sell"
-              className="text-gray-700 hover:text-blue-600 font-medium"
-            >
-              Sell
-            </Link>
+            {isAuthenticated &&
+              (user?.role === "seller" || user?.role === "admin") && (
+                <Link
+                  to="/sell"
+                  className="text-gray-700 hover:text-blue-600 font-medium"
+                >
+                  Sell
+                </Link>
+              )}
             <Link to="/cart" className="relative">
               <svg
                 className="w-6 h-6 text-gray-700 hover:text-blue-600"
@@ -89,21 +100,79 @@ export function Header() {
                 0
               </span>
             </Link>
-            <Link to="/dashboard" className="text-gray-700 hover:text-blue-600">
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+
+            {isAuthenticated ? (
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center space-x-2 text-gray-700 hover:text-blue-600"
+                >
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
+                    {user?.name?.charAt(0).toUpperCase()}
+                  </div>
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
+
+                {showUserMenu && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-50">
+                    <div className="px-4 py-2 border-b border-gray-100">
+                      <p className="text-sm font-semibold text-gray-900">
+                        {user?.name}
+                      </p>
+                      <p className="text-xs text-gray-500">{user?.email}</p>
+                    </div>
+                    <Link
+                      to="/dashboard"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      Dashboard
+                    </Link>
+                    <Link
+                      to="/orders"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      My Orders
+                    </Link>
+                    {user?.role === "admin" && (
+                      <Link
+                        to="/admin"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        onClick={() => setShowUserMenu(false)}
+                      >
+                        Admin Panel
+                      </Link>
+                    )}
+                    <button
+                      onClick={handleLogout}
+                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                />
-              </svg>
-            </Link>
+                Login
+              </Link>
+            )}
           </nav>
 
           {/* Mobile menu button */}
@@ -165,13 +234,16 @@ export function Header() {
             >
               Auctions
             </Link>
-            <Link
-              to="/sell"
-              className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Sell
-            </Link>
+            {isAuthenticated &&
+              (user?.role === "seller" || user?.role === "admin") && (
+                <Link
+                  to="/sell"
+                  className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Sell
+                </Link>
+              )}
             <Link
               to="/cart"
               className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
@@ -179,13 +251,31 @@ export function Header() {
             >
               Cart
             </Link>
-            <Link
-              to="/dashboard"
-              className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Dashboard
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link
+                  to="/dashboard"
+                  className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Dashboard
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 rounded"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/login"
+                className="block px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 rounded text-center"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Login
+              </Link>
+            )}
           </div>
         )}
       </div>

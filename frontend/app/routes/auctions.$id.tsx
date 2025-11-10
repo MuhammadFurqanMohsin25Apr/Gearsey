@@ -1,18 +1,17 @@
-import { useLoaderData, Form, Link } from "react-router";
-import type { Route } from "./+types/auctions.$id";
+import { Form, Link } from "react-router";
 import { api } from "~/lib/api";
 import type { Auction } from "~/types";
 import { formatPrice, formatDateTime, getTimeRemaining } from "~/lib/utils";
 import { useState, useEffect } from "react";
 
-export function meta({ params }: Route.MetaArgs) {
+export function meta() {
   return [
     { title: `Auction Details - Gearsey` },
     { name: "description", content: "Place your bid on this auction" },
   ];
 }
 
-export async function loader({ params }: Route.LoaderArgs) {
+export async function loader({ params }: { params: { id: string } }) {
   try {
     const auctionsData = (await api.auctions.getAll({ limit: 100 })) as any;
     const auction = auctionsData.auctions.find(
@@ -82,8 +81,17 @@ function AuctionCountdown({ endTime }: { endTime: string }) {
   );
 }
 
-export default function AuctionDetail({ loaderData }: Route.ComponentProps) {
-  const { auction, product } = loaderData as { auction: Auction; product: any };
+type LoaderData = {
+  auction: Auction;
+  product: any;
+};
+
+export default function AuctionDetail({
+  loaderData,
+}: {
+  loaderData: LoaderData;
+}) {
+  const { auction, product } = loaderData;
   const [bidAmount, setBidAmount] = useState(auction.current_price + 100);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 

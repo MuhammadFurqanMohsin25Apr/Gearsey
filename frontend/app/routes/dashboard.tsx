@@ -1,10 +1,9 @@
-import { Link, useLoaderData } from "react-router";
-import type { Route } from "./+types/dashboard";
+import { Link } from "react-router";
 import { api } from "~/lib/api";
 import { formatPrice, formatDate, getStatusBadgeColor } from "~/lib/utils";
 import type { ProductsResponse } from "~/types";
 
-export function meta({}: Route.MetaArgs) {
+export function meta() {
   return [
     { title: "Dashboard - Gearsey" },
     { name: "description", content: "Manage your listings and orders" },
@@ -33,7 +32,12 @@ export async function loader() {
   }
 }
 
-export default function Dashboard({ loaderData }: Route.ComponentProps) {
+type LoaderData = {
+  myListings: any[];
+  sellerId: string;
+};
+
+export default function Dashboard({ loaderData }: { loaderData: LoaderData }) {
   const { myListings, sellerId } = loaderData;
 
   const activeListings = myListings.filter((l: any) => l.status === "Active");

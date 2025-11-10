@@ -1,9 +1,8 @@
 import { Form, Link, useNavigate } from "react-router";
-import type { Route } from "./+types/sell";
 import { useState } from "react";
 import { api } from "~/lib/api";
 
-export function meta({}: Route.MetaArgs) {
+export function meta() {
   return [
     { title: "Create Listing - Gearsey" },
     {

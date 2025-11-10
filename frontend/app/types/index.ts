@@ -1,5 +1,16 @@
 // Type definitions matching backend models
 
+export type UserRole = "buyer" | "seller" | "admin";
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  createdAt: string;
+  emailVerified: boolean;
+}
+
 export interface Category {
   _id: string;
   name: string;
@@ -77,15 +88,6 @@ export interface Review {
   comment: string;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: "buyer" | "seller" | "business";
-  createdAt: string;
-  emailVerified: boolean;
 }
 
 // API Response types

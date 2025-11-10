@@ -1,9 +1,8 @@
 import { Form, Link } from "react-router";
-import type { Route } from "./+types/checkout";
 import { formatPrice } from "~/lib/utils";
 import { useState } from "react";
 
-export function meta({}: Route.MetaArgs) {
+export function meta() {
   return [
     { title: "Checkout - Gearsey" },
     { name: "description", content: "Complete your order" },

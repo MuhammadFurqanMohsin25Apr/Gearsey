@@ -1,10 +1,9 @@
 import { Link } from "react-router";
-import type { Route } from "./+types/cart";
 import { formatPrice } from "~/lib/utils";
 import { api } from "~/lib/api";
 import { useState } from "react";
 
-export function meta({}: Route.MetaArgs) {
+export function meta() {
   return [
     { title: "Shopping Cart - Gearsey" },
     {
@@ -14,13 +13,21 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
+interface CartItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  image: string;
+}
+
 // Mock cart items - in real app, this would come from context/state management
-const mockCartItems = [
+const mockCartItems: CartItem[] = [
   // Empty cart for now
 ];
 
 export default function Cart() {
-  const [cartItems, setCartItems] = useState(mockCartItems);
+  const [cartItems, setCartItems] = useState<CartItem[]>(mockCartItems);
 
   const updateQuantity = (index: number, newQuantity: number) => {
     if (newQuantity < 1) return;

@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
+import type { ReactNode } from "react";
 
 export type UserRole = "buyer" | "seller" | "admin";
 
@@ -16,7 +17,12 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name: string, role: UserRole) => Promise<void>;
+  signup: (
+    email: string,
+    password: string,
+    name: string,
+    role: UserRole
+  ) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -37,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await fetch("http://localhost:3333/api/auth/session", {
         credentials: "include",
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);
@@ -70,7 +76,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signup = async (email: string, password: string, name: string, role: UserRole) => {
+  const signup = async (
+    email: string,
+    password: string,
+    name: string,
+    role: UserRole
+  ) => {
     try {
       const response = await fetch("http://localhost:3333/api/auth/sign-up", {
         method: "POST",
@@ -104,7 +115,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, signup, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated: !!user,
+        isLoading,
+        login,
+        signup,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

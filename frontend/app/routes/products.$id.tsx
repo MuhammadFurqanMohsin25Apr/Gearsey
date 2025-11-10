@@ -1,5 +1,4 @@
-import { useLoaderData, Link } from "react-router";
-import type { Route } from "./+types/products.$id";
+import { Link } from "react-router";
 import { api } from "~/lib/api";
 import type { Listing } from "~/types";
 import {
@@ -10,7 +9,7 @@ import {
 } from "~/lib/utils";
 import { useState } from "react";
 
-export function meta({ params }: Route.MetaArgs) {
+export function meta() {
   return [
     { title: `Product Details - Gearsey` },
     {
@@ -20,7 +19,7 @@ export function meta({ params }: Route.MetaArgs) {
   ];
 }
 
-export async function loader({ params }: Route.LoaderArgs) {
+export async function loader({ params }: { params: { id: string } }) {
   try {
     const response = (await api.products.getAll({ limit: 100 })) as any;
     const product = response.products.find((p: Listing) => p._id === params.id);
@@ -48,11 +47,17 @@ export async function loader({ params }: Route.LoaderArgs) {
   }
 }
 
-export default function ProductDetail({ loaderData }: Route.ComponentProps) {
-  const { product, relatedProducts } = loaderData as {
-    product: Listing;
-    relatedProducts: Listing[];
-  };
+type LoaderData = {
+  product: Listing;
+  relatedProducts: Listing[];
+};
+
+export default function ProductDetail({
+  loaderData,
+}: {
+  loaderData: LoaderData;
+}) {
+  const { product, relatedProducts } = loaderData;
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
 
