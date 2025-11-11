@@ -1,7 +1,6 @@
-import { Form, Link, useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { useState } from "react";
 import { useAuth } from "~/lib/auth-context";
-import type { UserRole } from "~/lib/auth-context";
 
 export function meta() {
   return [
@@ -14,11 +13,9 @@ export default function Signup() {
   const navigate = useNavigate();
   const { signup } = useAuth();
   const [formData, setFormData] = useState({
-    name: "",
     email: "",
     password: "",
     confirmPassword: "",
-    role: "buyer" as UserRole,
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -43,17 +40,11 @@ export default function Signup() {
       await signup(
         formData.email,
         formData.password,
-        formData.name,
-        formData.role
+        "",
+        "buyer"
       );
-      // Navigate based on role
-      if (formData.role === "admin") {
-        navigate("/admin");
-      } else if (formData.role === "seller") {
-        navigate("/sell");
-      } else {
-        navigate("/products");
-      }
+      // Navigate to products page after signup
+      navigate("/products");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Signup failed");
     } finally {
@@ -71,31 +62,8 @@ export default function Signup() {
       </div>
 
       <div className="max-w-md w-full space-y-8 relative z-10">
-        {/* Logo and Header */}
+        {/* Header */}
         <div className="text-center">
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center space-x-3 mb-6 group"
-          >
-            <div className="w-14 h-14 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
-              <svg
-                className="w-8 h-8 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2.5}
-                  d="M13 10V3L4 14h7v7l9-11h-7z"
-                />
-              </svg>
-            </div>
-            <span className="text-4xl font-black bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent group-hover:from-purple-600 group-hover:via-indigo-600 group-hover:to-blue-600 transition-all duration-500">
-              Gearsey
-            </span>
-          </Link>
           <h2 className="text-4xl font-extrabold text-gray-900 mb-3 tracking-tight">
             Create your account
           </h2>
@@ -124,161 +92,6 @@ export default function Signup() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Role Selection */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                Choose Your Role
-              </label>
-              <div className="grid grid-cols-3 gap-4">
-                <button
-                  type="button"
-                  onClick={() => setFormData({ ...formData, role: "buyer" })}
-                  className={`p-5 border-2 transition-all transform hover:scale-105 ${
-                    formData.role === "buyer"
-                      ? "border-sky-500 bg-gradient-to-br from-sky-100 via-blue-50 to-cyan-100 shadow-2xl rounded-3xl scale-105"
-                      : "border-gray-200 hover:border-sky-300 hover:shadow-lg rounded-2xl"
-                  }`}
-                >
-                  <div className="flex flex-col items-center">
-                    <div
-                      className={`w-14 h-14 flex items-center justify-center mb-3 transform ${
-                        formData.role === "buyer"
-                          ? "bg-gradient-to-br from-sky-400 via-blue-500 to-cyan-500 rounded-2xl shadow-lg"
-                          : "bg-gray-100 rounded-xl"
-                      }`}
-                    >
-                      <svg
-                        className={`w-8 h-8 ${formData.role === "buyer" ? "text-white" : "text-gray-600"}`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-                        />
-                      </svg>
-                    </div>
-                    <span
-                      className={`font-bold text-base ${formData.role === "buyer" ? "text-sky-700" : "text-gray-700"}`}
-                    >
-                      Buyer
-                    </span>
-                    <span className="text-xs text-gray-500 mt-1 font-medium">
-                      Browse & Purchase
-                    </span>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setFormData({ ...formData, role: "seller" })}
-                  className={`p-5 border-2 transition-all transform hover:scale-105 ${
-                    formData.role === "seller"
-                      ? "border-violet-500 bg-gradient-to-br from-violet-100 via-purple-50 to-fuchsia-100 shadow-2xl rounded-3xl scale-105"
-                      : "border-gray-200 hover:border-violet-300 hover:shadow-lg rounded-2xl"
-                  }`}
-                >
-                  <div className="flex flex-col items-center">
-                    <div
-                      className={`w-14 h-14 flex items-center justify-center mb-3 ${
-                        formData.role === "seller"
-                          ? "bg-gradient-to-br from-violet-400 via-purple-500 to-fuchsia-500 rounded-2xl shadow-lg"
-                          : "bg-gray-100 rounded-xl"
-                      }`}
-                    >
-                      <svg
-                        className={`w-8 h-8 ${formData.role === "seller" ? "text-white" : "text-gray-600"}`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                        />
-                      </svg>
-                    </div>
-                    <span
-                      className={`font-bold text-base ${formData.role === "seller" ? "text-violet-700" : "text-gray-700"}`}
-                    >
-                      Seller
-                    </span>
-                    <span className="text-xs text-gray-500 mt-1 font-medium">
-                      List & Manage
-                    </span>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setFormData({ ...formData, role: "admin" })}
-                  className={`p-5 border-2 transition-all transform hover:scale-105 ${
-                    formData.role === "admin"
-                      ? "border-amber-500 bg-gradient-to-br from-amber-100 via-yellow-50 to-orange-100 shadow-2xl rounded-3xl scale-105"
-                      : "border-gray-200 hover:border-amber-300 hover:shadow-lg rounded-2xl"
-                  }`}
-                >
-                  <div className="flex flex-col items-center">
-                    <div
-                      className={`w-14 h-14 flex items-center justify-center mb-3 ${
-                        formData.role === "admin"
-                          ? "bg-gradient-to-br from-amber-400 via-yellow-500 to-orange-500 rounded-2xl shadow-lg"
-                          : "bg-gray-100 rounded-xl"
-                      }`}
-                    >
-                      <svg
-                        className={`w-8 h-8 ${formData.role === "admin" ? "text-white" : "text-gray-600"}`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                        />
-                      </svg>
-                    </div>
-                    <span
-                      className={`font-bold text-base ${formData.role === "admin" ? "text-amber-700" : "text-gray-700"}`}
-                    >
-                      Admin
-                    </span>
-                    <span className="text-xs text-gray-500 mt-1 font-medium">
-                      Control Panel
-                    </span>
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            {/* Name */}
-            <div>
-              <label
-                htmlFor="name"
-                className="block text-sm font-semibold text-gray-700 mb-2"
-              >
-                Full Name
-              </label>
-              <input
-                id="name"
-                type="text"
-                required
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                placeholder="John Doe"
-              />
-            </div>
-
             {/* Email */}
             <div>
               <label

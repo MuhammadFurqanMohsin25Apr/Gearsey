@@ -1,6 +1,6 @@
 // API configuration and utilities
 
-const API_BASE_URL = "http://localhost:3333/api";
+const API_BASE_URL = "http://localhost:3000/api";
 
 interface RequestOptions extends RequestInit {
   params?: Record<string, string | number | boolean | undefined>;
