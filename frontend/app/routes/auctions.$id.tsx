@@ -285,7 +285,7 @@ export default function AuctionDetail({
                       onChange={(e) => setBidAmount(Number(e.target.value))}
                       min={minimumBid}
                       step="100"
-                      className="w-full pl-14 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-lg font-semibold"
+                      className="w-full pl-14 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-lg font-semibold text-gray-900"
                     />
                   </div>
                   <p className="text-xs text-gray-600 mb-4">

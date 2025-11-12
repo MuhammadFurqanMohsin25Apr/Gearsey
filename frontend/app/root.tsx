@@ -5,6 +5,7 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLocation,
 } from "react-router";
 
 import type { Route } from "./+types/root";
@@ -27,6 +28,9 @@ export const links: Route.LinksFunction = () => [
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
+
   return (
     <html lang="en">
       <head>
@@ -35,11 +39,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Meta />
         <Links />
       </head>
-      <body className="min-h-screen flex flex-col">
+      <body className={isAuthPage ? "h-screen flex flex-col overflow-hidden" : "min-h-screen flex flex-col"}>
         <AuthProvider>
           <Header />
-          <main className="flex-1">{children}</main>
-          <Footer />
+          <main className={isAuthPage ? "flex-1 overflow-y-auto" : "flex-1"}>{children}</main>
+          {!isAuthPage && <Footer />}
         </AuthProvider>
         <ScrollRestoration />
         <Scripts />

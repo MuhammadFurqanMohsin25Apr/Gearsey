@@ -388,7 +388,7 @@ export default function ProductDetail({
                       key={star}
                       type="button"
                       onClick={() => setNewReview({ ...newReview, rating: star })}
-                      className="text-3xl transition-transform hover:scale-110"
+                      className="text-3xl transition-transform "
                     >
                       {star <= newReview.rating ? "⭐" : "☆"}
                     </button>
@@ -405,7 +405,7 @@ export default function ProductDetail({
                   required
                   rows={4}
                   placeholder="Tell us about your experience with this product..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                 />
               </div>
               

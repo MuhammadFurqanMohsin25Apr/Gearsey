@@ -4,7 +4,7 @@ export interface IOrder extends Document {
   userId: string;
   total_amount: number;
   payment_status: "Pending" | "Paid" | "Failed" | "Refunded";
-  delivery_status: "Pending" | "Shipped" | "Delivered" | "Cancelled";
+  delivery_status: "Pending" | "Dispatched" | "Delivered" | "Cancelled";
 }
 
 const orderSchema = new Schema<IOrder>(

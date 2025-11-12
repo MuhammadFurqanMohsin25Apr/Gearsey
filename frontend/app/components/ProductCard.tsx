@@ -13,80 +13,127 @@ export function ProductCard({ product }: ProductCardProps) {
     ? api.products.getImage(firstImage.fileName)
     : "/placeholder.png";
 
+  // Generate random rating for demo (in production, use actual ratings)
+  const rating = 4.5;
+  const reviews = Math.floor(Math.random() * 50) + 10;
+  const discount = product.is_auction ? 0 : Math.floor(Math.random() * 30) + 10;
+
   return (
     <Link
       to={`/products/${product._id}`}
-      className="group bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden"
+      className="group bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-200 hover:border-red-300 transform hover:-translate-y-1"
     >
-      {/* Image */}
+      {/* Image Container */}
       <div className="relative aspect-square overflow-hidden bg-gray-100">
         <img
           src={imageUrl}
           alt={product.name}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+          className="w-full h-full object-cover group-hover:scale-100 transition-transform duration-500"
         />
 
-        {/* Badges */}
-        <div className="absolute top-2 left-2 flex flex-col gap-2">
+        {/* Sale/Discount Badge */}
+        {discount > 0 && !product.is_auction && (
+          <div className="absolute top-3 left-3">
+            <div className="bg-red-600 text-white px-3 py-1.5 rounded-lg font-black text-sm shadow-lg">
+              -{discount}%
+            </div>
+          </div>
+        )}
+
+        {/* Auction Badge */}
+        {product.is_auction && (
+          <div className="absolute top-3 left-3">
+            <div className="bg-gradient-to-r from-red-600 to-red-700 text-white px-3 py-1.5 rounded-lg font-bold text-sm shadow-lg flex items-center gap-1 animate-pulse">
+              🔥 AUCTION
+            </div>
+          </div>
+        )}
+
+        {/* Condition Badge */}
+        <div className="absolute top-3 right-3">
           <span
-            className={`px-2 py-1 rounded-full text-xs font-semibold ${getConditionBadgeColor(
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg ${getConditionBadgeColor(
               product.condition
             )}`}
           >
-            {product.condition}
+            {product.condition.toUpperCase()}
           </span>
-          {product.is_auction && (
-            <span className="px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
-              🔥 Auction
-            </span>
-          )}
         </div>
 
-        {/* Status badge */}
+        {/* Status Overlay */}
         {product.status !== "Active" && (
-          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <span className="px-4 py-2 bg-white rounded-lg text-lg font-bold text-gray-800">
+          <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center backdrop-blur-sm">
+            <span className="px-6 py-3 bg-white rounded-xl text-lg font-black text-gray-800 shadow-2xl">
               {product.status}
             </span>
           </div>
         )}
+
+        {/* Quick View Overlay */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+          <div className="px-6 py-2 bg-white rounded-lg font-bold text-gray-900 shadow-xl transform scale-100 transition-transform">
+            Quick View
+          </div>
+        </div>
       </div>
 
       {/* Content */}
-      <div className="p-4">
+      <div className="p-5">
         {/* Category */}
-        <p className="text-xs text-blue-600 font-medium mb-1">
+        <p className="text-xs text-red-600 font-bold mb-2 uppercase tracking-wide">
           {typeof product.categoryId === "object"
             ? product.categoryId.name
             : "Category"}
         </p>
 
         {/* Title */}
-        <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
+        <h3 className="text-base font-bold text-gray-900 mb-2 group-hover:text-red-600 transition-colors line-clamp-2 min-h-[3rem]">
           {product.name}
         </h3>
 
-        {/* Description */}
-        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-          {truncateText(product.description, 80)}
-        </p>
-
-        {/* Price */}
-        <div className="flex items-center justify-between">
-          <div>
-            <span className="text-2xl font-bold text-gray-900">
-              {formatPrice(product.price)}
-            </span>
-            {product.is_auction && (
-              <p className="text-xs text-gray-500 mt-1">Starting bid</p>
-            )}
+        {/* Rating */}
+        <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center">
+            {[...Array(5)].map((_, i) => (
+              <svg
+                key={i}
+                className={`w-4 h-4 ${
+                  i < Math.floor(rating)
+                    ? "text-yellow-400 fill-current"
+                    : "text-gray-300 fill-current"
+                }`}
+                viewBox="0 0 20 20"
+              >
+                <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+              </svg>
+            ))}
           </div>
-
-          {/* View button */}
-          <button className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
-            {product.is_auction ? "Bid Now" : "View Details"}
-          </button>
+          <span className="text-xs text-gray-600">({reviews})</span>
         </div>
+
+        {/* Price Section */}
+        <div className="flex items-end justify-between mb-4">
+          <div>
+            {discount > 0 && !product.is_auction && (
+              <div className="text-sm text-gray-400 line-through mb-1">
+                PKR {Math.floor(product.price * (1 + discount / 100)).toLocaleString()}
+              </div>
+            )}
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-black text-red-600">
+                {formatPrice(product.price)}
+              </span>
+              {product.is_auction && (
+                <span className="text-xs text-gray-500 font-medium">starting</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* CTA Button */}
+        <button className="w-full px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white text-sm font-bold rounded-lg transition-all shadow-md hover:shadow-xl transform group-hover:scale-100">
+          {product.is_auction ? "🔨 PLACE BID" : "VIEW DETAILS"}
+        </button>
       </div>
     </Link>
   );

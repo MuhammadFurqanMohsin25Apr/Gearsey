@@ -4,10 +4,7 @@ export interface IPayment extends Document {
   orderId: string;
   payment_method:
     | "Credit Card"
-    | "Debit Card"
-    | "Cash On Delivery"
-    | "EasyPaisa"
-    | "Bank Transfer";
+    | "Debit Card";
   amount: number;
   status: "Pending" | "Completed" | "Failed" | "Refunded";
 }
