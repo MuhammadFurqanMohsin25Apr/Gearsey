@@ -10,7 +10,6 @@ import path from "path";
 import { fileURLToPath } from "url";
 import Limiter from "@/lib/rate-limiter.js";
 import SpeedLimiter from "@/lib/speed-limiter.js";
-import { makeURL } from "./utils/URL.js";
 
 // Get __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -20,28 +19,33 @@ const __dirname = path.dirname(__filename);
 connectDB();
 
 const app: Express = express();
-const PORT = process.env.PORT;
+const PORT = process.env.PORT as string;
+
+
+// Middleware to handle CORS
+app.use(
+  cors({
+    origin: "http://localhost:5173", // Adjust this to your frontend's origin
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+    maxAge: 3600, // 1 hour
+    allowedHeaders: ["Content-Type", "Authorization", "Access-Control-Allow-Origin"],
+  })
+);
 
 app.all("/api/auth/*splat", toNodeHandler(auth)); // For Express v5
 
 // Middleware to parse JSON bodies
+app.use(express.json());
+
 app.use(
   "/static",
   SpeedLimiter,
   Limiter,
   express.static(path.join(__dirname, "../public"))
 );
-app.use(express.json());
 
-// Middleware to handle CORS
-app.use(
-  cors({
-    origin: "http://localhost:5713", // Adjust this to your frontend's origin
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true,
-    maxAge: 3600, // 1 hour
-  })
-);
+
 
 app.use("/api", apiRouter);
 
