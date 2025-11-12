@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { useAuth } from "~/lib/auth-context";
+import { useSession } from "~/lib/auth-client";
 import type { Route } from "./+types/orders";
 
 export function meta({}: Route.MetaArgs) {
@@ -59,7 +59,9 @@ const mockOrders = [
 ];
 
 export default function Orders() {
-  const { user, isAuthenticated } = useAuth();
+  const { data: session } = useSession();
+  const user = session?.user;
+  const isAuthenticated = !!user;
 
   if (!isAuthenticated) {
     return (

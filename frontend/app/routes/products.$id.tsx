@@ -8,7 +8,7 @@ import {
   getStatusBadgeColor,
 } from "~/lib/utils";
 import { useState } from "react";
-import { useAuth } from "~/lib/auth-context";
+import { useSession } from "~/lib/auth-client";
 
 export function meta() {
   return [
@@ -59,7 +59,8 @@ export default function ProductDetail({
   loaderData: LoaderData;
 }) {
   const { product, relatedProducts } = loaderData;
-  const { user } = useAuth();
+  const { data: session } = useSession();
+  const user = session?.user;
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   

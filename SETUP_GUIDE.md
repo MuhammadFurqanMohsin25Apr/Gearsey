@@ -32,14 +32,14 @@ npm install
 
 # Create .env file
 # Add your MongoDB connection string and other config
-PORT=3333
+PORT=3000
 MONGODB_URI=your_mongodb_connection_string
 
 # Start backend server
 npm run dev
 ```
 
-Backend will run on **http://localhost:3333**
+Backend will run on **http://localhost:3000**
 
 ### 3. Frontend Setup
 
@@ -165,7 +165,7 @@ The frontend uses a centralized API client (`app/lib/api.ts`) that handles all b
 
 ### Base URL
 ```typescript
-const API_BASE_URL = "http://localhost:3333/api";
+const API_BASE_URL = "http://localhost:3000/api";
 ```
 
 ### Available Endpoints
@@ -307,7 +307,7 @@ All components adapt to screen size with Tailwind responsive classes.
 
 3. **Open Browser**
    - Frontend: http://localhost:5713
-   - Backend API: http://localhost:3333/api
+   - Backend API: http://localhost:3000/api
 
 4. **Test Key Flows**
    - Browse products
@@ -417,7 +417,7 @@ User Interface ← React State ← API Response ← MongoDB
 **Expected**: Route type generation happens on first build/run
 
 ### Issue: API calls failing
-**Solution**: Verify backend is running on port 3333
+**Solution**: Verify backend is running on port 3000
 
 ---
 

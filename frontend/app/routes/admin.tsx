@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { useAuth } from "~/lib/auth-context";
+import { useSession } from "~/lib/auth-client";
 import type { Route } from "./+types/admin";
 
 export function meta({}: Route.MetaArgs) {
@@ -40,7 +40,9 @@ const mockReviews = [
 ];
 
 export default function Admin() {
-  const { user, isAuthenticated } = useAuth();
+  const { data: session } = useSession();
+  const user = session?.user;
+  const isAuthenticated = !!user;
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"overview" | "products" | "auctions" | "users" | "orders" | "reviews">("overview");
   const [products, setProducts] = useState(mockRecentProducts);

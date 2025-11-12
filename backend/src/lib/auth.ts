@@ -41,4 +41,5 @@ export const auth = betterAuth({
     autoSignIn: true,
     minPasswordLength: 6,
   },
+  trustedOrigins: ["http://localhost:5173"],
 });

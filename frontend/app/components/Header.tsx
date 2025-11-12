@@ -1,9 +1,11 @@
 import { Link } from "react-router";
 import { useState } from "react";
-import { useAuth } from "~/lib/auth-context";
+import { useSession, authClient } from "~/lib/auth-client";
 
 export function Header() {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { data: session } = useSession();
+  const user = session?.user;
+  const isAuthenticated = !!user;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -15,7 +17,7 @@ export function Header() {
   };
 
   const handleLogout = async () => {
-    await logout();
+    await authClient.signOut();
     window.location.href = "/";
   };
 
