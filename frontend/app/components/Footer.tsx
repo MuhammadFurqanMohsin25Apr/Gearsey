@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import { MapPin, Phone, Mail, Clock } from "lucide-react";
 
 export function Footer() {
   return (
@@ -21,16 +22,16 @@ export function Footer() {
               Pakistan's premier marketplace for authentic vehicle spare parts. Trusted by thousands of customers nationwide.
             </p>
             <div className="flex space-x-3">
-              <a href="#" className="w-10 h-10 bg-gray-800 hover:bg-red-600 rounded-lg flex items-center justify-center transition-all">
+              <a href="#" className="w-10 h-10 bg-gray-800 hover:bg-red-600 rounded-lg flex items-center justify-center transition-all duration-300">
                 <span className="text-sm font-bold">FB</span>
               </a>
-              <a href="#" className="w-10 h-10 bg-gray-800 hover:bg-red-600 rounded-lg flex items-center justify-center transition-all">
+              <a href="#" className="w-10 h-10 bg-gray-800 hover:bg-red-600 rounded-lg flex items-center justify-center transition-all duration-300">
                 <span className="text-sm font-bold">TW</span>
               </a>
-              <a href="#" className="w-10 h-10 bg-gray-800 hover:bg-red-600 rounded-lg flex items-center justify-center transition-all">
+              <a href="#" className="w-10 h-10 bg-gray-800 hover:bg-red-600 rounded-lg flex items-center justify-center transition-all duration-300">
                 <span className="text-sm font-bold">IG</span>
               </a>
-              <a href="#" className="w-10 h-10 bg-gray-800 hover:bg-red-600 rounded-lg flex items-center justify-center transition-all">
+              <a href="#" className="w-10 h-10 bg-gray-800 hover:bg-red-600 rounded-lg flex items-center justify-center transition-all duration-300">
                 <span className="text-sm font-bold">YT</span>
               </a>
             </div>
@@ -41,12 +42,12 @@ export function Footer() {
             <h4 className="text-base font-black mb-4 text-white">QUICK LINKS</h4>
             <ul className="space-y-2">
               <li>
-                <Link to="/products" className="text-gray-400 hover:text-red-500 transition-colors text-sm font-medium">
+                <Link to="/products" className="text-gray-400 hover:text-red-500 transition-colors duration-300 text-sm font-medium">
                   All Products
                 </Link>
               </li>
               <li>
-                <Link to="/auctions" className="text-gray-400 hover:text-red-500 transition-colors text-sm font-medium">
+                <Link to="/auctions" className="text-gray-400 hover:text-red-500 transition-colors duration-300 text-sm font-medium">
                   Live Auctions
                 </Link>
               </li>
@@ -105,28 +106,28 @@ export function Footer() {
             <h4 className="text-base font-black mb-4 text-white">CONTACT US</h4>
             <ul className="space-y-3">
               <li className="flex items-start gap-3">
-                <div className="text-red-500 mt-1">📍</div>
+                <MapPin className="w-5 h-5 text-red-500 mt-1" />
                 <div>
                   <p className="text-sm font-medium text-gray-400">Main Office</p>
                   <p className="text-sm text-gray-500">Karachi, Pakistan</p>
                 </div>
               </li>
               <li className="flex items-start gap-3">
-                <div className="text-red-500 mt-1">📞</div>
+                <Phone className="w-5 h-5 text-red-500 mt-1" />
                 <div>
                   <p className="text-sm font-medium text-gray-400">Phone</p>
                   <p className="text-sm text-gray-500">+92 300 1234567</p>
                 </div>
               </li>
               <li className="flex items-start gap-3">
-                <div className="text-red-500 mt-1">✉️</div>
+                <Mail className="w-5 h-5 text-red-500 mt-1" />
                 <div>
                   <p className="text-sm font-medium text-gray-400">Email</p>
                   <p className="text-sm text-gray-500">support@gearsey.pk</p>
                 </div>
               </li>
               <li className="flex items-start gap-3">
-                <div className="text-red-500 mt-1">🕐</div>
+                <Clock className="w-5 h-5 text-red-500 mt-1" />
                 <div>
                   <p className="text-sm font-medium text-gray-400">Working Hours</p>
                   <p className="text-sm text-gray-500">Mon-Sat: 9AM - 6PM</p>

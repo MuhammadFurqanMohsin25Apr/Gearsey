@@ -54,7 +54,7 @@ function AuctionCountdown({ endTime }: { endTime: string }) {
   }
 
   return (
-    <div className="bg-gradient-to-r from-red-500 to-orange-500 rounded-lg p-6 text-white">
+    <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-lg p-6 text-white">
       <h3 className="text-lg font-semibold mb-4 text-center">Time Remaining</h3>
       <div className="flex justify-center gap-4">
         <div className="text-center">

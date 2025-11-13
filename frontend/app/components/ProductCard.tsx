@@ -2,6 +2,7 @@ import { Link } from "react-router";
 import type { Listing } from "~/types";
 import { formatPrice, getConditionBadgeColor, truncateText } from "~/lib/utils";
 import { api } from "~/lib/api";
+import { Flame, Gavel } from "lucide-react";
 
 interface ProductCardProps {
   product: Listing;
@@ -21,14 +22,14 @@ export function ProductCard({ product }: ProductCardProps) {
   return (
     <Link
       to={`/products/${product._id}`}
-      className="group bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-200 hover:border-red-300 transform hover:-translate-y-1"
+      className="group bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-200 hover:border-red-300"
     >
       {/* Image Container */}
       <div className="relative aspect-square overflow-hidden bg-gray-100">
         <img
           src={imageUrl}
           alt={product.name}
-          className="w-full h-full object-cover group-hover:scale-100 transition-transform duration-500"
+          className="w-full h-full object-cover transition-transform duration-500"
         />
 
         {/* Sale/Discount Badge */}
@@ -44,7 +45,7 @@ export function ProductCard({ product }: ProductCardProps) {
         {product.is_auction && (
           <div className="absolute top-3 left-3">
             <div className="bg-gradient-to-r from-red-600 to-red-700 text-white px-3 py-1.5 rounded-lg font-bold text-sm shadow-lg flex items-center gap-1 animate-pulse">
-              🔥 AUCTION
+              <Flame className="w-4 h-4" /> AUCTION
             </div>
           </div>
         )}
@@ -71,7 +72,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
         {/* Quick View Overlay */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-          <div className="px-6 py-2 bg-white rounded-lg font-bold text-gray-900 shadow-xl transform scale-100 transition-transform">
+          <div className="px-6 py-2 bg-white rounded-lg font-bold text-gray-900 shadow-xl transition-all duration-300">
             Quick View
           </div>
         </div>
@@ -131,8 +132,8 @@ export function ProductCard({ product }: ProductCardProps) {
         </div>
 
         {/* CTA Button */}
-        <button className="w-full px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white text-sm font-bold rounded-lg transition-all shadow-md hover:shadow-xl transform group-hover:scale-100">
-          {product.is_auction ? "🔨 PLACE BID" : "VIEW DETAILS"}
+        <button className="w-full px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white text-sm font-bold rounded-lg transition-all duration-300 shadow-md hover:shadow-xl flex items-center justify-center gap-2">
+          {product.is_auction ? <><Gavel className="w-4 h-4" /> PLACE BID</> : "VIEW DETAILS"}
         </button>
       </div>
     </Link>

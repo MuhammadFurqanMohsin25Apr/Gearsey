@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router";
 import { useState } from "react";
-import { useAuth } from "~/lib/auth-context";
+import { authClient } from "~/lib/auth-client";
 
 export function meta() {
   return [
@@ -11,7 +11,6 @@ export function meta() {
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -23,8 +22,25 @@ export default function Login() {
     setLoading(true);
 
     try {
-      await login(email, password);
-      navigate("/dashboard");
+      const { data, error: signInError } = await authClient.signIn.email({
+        email,
+        password,
+      }, {
+        onRequest: () => {
+          // Show loading state
+        },
+        onSuccess: () => {
+          // Redirect to dashboard
+          navigate("/dashboard");
+        },
+        onError: (ctx) => {
+          setError(ctx.error.message || "Login failed");
+        },
+      });
+
+      if (signInError) {
+        setError(signInError.message || "Login failed");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
@@ -68,7 +84,7 @@ export default function Login() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-4 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-sm text-gray-900"
+                className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-sm text-gray-900"
                 placeholder="you@example.com"
               />
             </div>
@@ -83,7 +99,7 @@ export default function Login() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-4 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-sm text-gray-900"
+                className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-sm text-gray-900"
                 placeholder="••••••••"
               />
             </div>

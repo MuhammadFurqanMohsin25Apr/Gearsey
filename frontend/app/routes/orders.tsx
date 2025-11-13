@@ -74,7 +74,7 @@ export default function Orders() {
           <p className="text-gray-600 mb-6">Please login to view your orders</p>
           <Link
             to="/login"
-            className="inline-block px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700"
+            className="inline-block px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-lg hover:from-red-700 hover:to-red-800 transition-all duration-300"
           >
             Login
           </Link>
@@ -113,7 +113,7 @@ export default function Orders() {
             {mockOrders.map((order) => (
               <div key={order._id} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow">
                 {/* Order Header */}
-                <div className="bg-gradient-to-r from-blue-50 to-purple-50 px-6 py-4 border-b border-gray-200">
+                <div className="bg-gradient-to-r from-red-50 to-orange-50 px-6 py-4 border-b border-gray-200">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">
@@ -211,7 +211,7 @@ export default function Orders() {
             <p className="text-gray-600 mb-6">Start shopping to see your orders here</p>
             <Link
               to="/products"
-              className="inline-block px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 shadow-lg"
+              className="inline-block px-8 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-lg hover:from-red-700 hover:to-red-800 transition-all duration-300 shadow-lg"
             >
               Browse Products
             </Link>

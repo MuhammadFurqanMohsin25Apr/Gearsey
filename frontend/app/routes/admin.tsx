@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useSession } from "~/lib/auth-client";
 import type { Route } from "./+types/admin";
+import { CheckCircle, Star, Package } from "lucide-react";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -75,7 +76,7 @@ export default function Admin() {
           <p className="text-gray-600 mb-6">You need admin privileges to access this page</p>
           <button
             onClick={() => navigate("/")}
-            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700"
+            className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-lg hover:from-red-700 hover:to-red-800 transition-all duration-300"
           >
             Go Home
           </button>
@@ -87,7 +88,7 @@ export default function Admin() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+      <div className="bg-gradient-to-r from-red-600 to-red-700 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <h1 className="text-4xl font-bold mb-2">Admin Dashboard</h1>
           <p className="text-blue-100">Manage your Gearsey marketplace</p>
@@ -376,11 +377,13 @@ export default function Admin() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h4 className="font-semibold text-gray-900">{review.userName}</h4>
-                        <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded">✓ Verified</span>
+                        <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Verified</span>
                       </div>
                       <div className="flex items-center gap-3">
-                        <div className="text-yellow-400 text-lg">
-                          {"⭐".repeat(review.rating)}{"☆".repeat(5 - review.rating)}
+                        <div className="flex gap-0.5">
+                          {[...Array(5)].map((_, i) => (
+                            <Star key={i} className={`w-4 h-4 ${i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
+                          ))}
                         </div>
                         <span className="text-sm text-gray-600">{review.date}</span>
                       </div>
@@ -393,8 +396,8 @@ export default function Admin() {
                     </button>
                   </div>
                   
-                  <Link to={`/products/${review.productId}`} className="text-blue-600 hover:underline text-sm font-medium mb-2 block">
-                    📦 {review.productName}
+                  <Link to={`/products/${review.productId}`} className="text-blue-600 hover:underline text-sm font-medium mb-2 flex items-center gap-1">
+                    <Package className="w-4 h-4" /> {review.productName}
                   </Link>
                   
                   <p className="text-gray-700 leading-relaxed">{review.comment}</p>

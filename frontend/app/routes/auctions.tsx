@@ -3,6 +3,7 @@ import { api } from "~/lib/api";
 import type { AuctionsResponse, ProductsResponse } from "~/types";
 import { formatPrice, formatDateTime, getTimeRemaining } from "~/lib/utils";
 import { useEffect, useState } from "react";
+import { Flame } from "lucide-react";
 
 export function meta() {
   return [
@@ -88,8 +89,8 @@ export default function Auctions({ loaderData }: { loaderData: LoaderData }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            🔥 Live Auctions
+          <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center gap-3">
+            <Flame className="w-10 h-10 text-red-600" /> Live Auctions
           </h1>
           <p className="text-gray-600">
             Bid on rare and vintage vehicle spare parts

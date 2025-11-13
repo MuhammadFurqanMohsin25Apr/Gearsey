@@ -9,6 +9,7 @@ import {
 } from "~/lib/utils";
 import { useState } from "react";
 import { useSession } from "~/lib/auth-client";
+import { Flame, CheckCircle, Star, Package } from "lucide-react";
 
 export function meta() {
   return [
@@ -183,8 +184,8 @@ export default function ProductDetail({
                   {product.status}
                 </span>
                 {product.is_auction && (
-                  <span className="px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-800">
-                    🔥 Auction
+                  <span className="px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-800 flex items-center gap-1">
+                    <Flame className="w-4 h-4" /> Auction
                   </span>
                 )}
               </div>
@@ -349,7 +350,7 @@ export default function ProductDetail({
                     <p className="font-medium text-gray-900">
                       Seller ID: {product.sellerId}
                     </p>
-                    <p className="text-sm text-gray-600">Verified Seller ✓</p>
+                    <p className="text-sm text-gray-600 flex items-center gap-1">Verified Seller <CheckCircle className="w-4 h-4" /></p>
                   </div>
                 </div>
               </div>
@@ -369,7 +370,7 @@ export default function ProductDetail({
             {user?.role === "buyer" && (
               <button
                 onClick={() => setShowReviewForm(!showReviewForm)}
-                className="px-6 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-cyan-700 transition-colors"
+                className="px-6 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-lg hover:from-red-700 hover:to-red-800 transition-all duration-300"
               >
                 {showReviewForm ? "Cancel" : "Write a Review"}
               </button>
@@ -378,7 +379,7 @@ export default function ProductDetail({
 
           {/* Review Form (Buyers Only) */}
           {showReviewForm && user?.role === "buyer" && (
-            <form onSubmit={handleSubmitReview} className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-6 mb-6 border-2 border-blue-200">
+            <form onSubmit={handleSubmitReview} className="bg-gradient-to-br from-red-50 to-orange-50 rounded-lg p-6 mb-6 border-2 border-red-200">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Share Your Experience</h3>
               
               <div className="mb-4">
@@ -389,9 +390,9 @@ export default function ProductDetail({
                       key={star}
                       type="button"
                       onClick={() => setNewReview({ ...newReview, rating: star })}
-                      className="text-3xl transition-transform "
+                      className="transition-transform"
                     >
-                      {star <= newReview.rating ? "⭐" : "☆"}
+                      <Star className={`w-8 h-8 ${star <= newReview.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
                     </button>
                   ))}
                   <span className="ml-2 text-gray-600 font-medium">{newReview.rating}/5</span>
@@ -412,7 +413,7 @@ export default function ProductDetail({
               
               <button
                 type="submit"
-                className="px-6 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold rounded-lg hover:from-emerald-600 hover:to-teal-700 transition-colors"
+                className="px-6 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-lg hover:from-red-700 hover:to-red-800 transition-all duration-300"
               >
                 Submit Review
               </button>
@@ -421,16 +422,16 @@ export default function ProductDetail({
 
           {/* Message for non-buyers */}
           {!user && (
-            <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-4 mb-6 border-2 border-amber-200">
-              <p className="text-amber-800 font-medium">
+            <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-lg p-4 mb-6 border-2 border-red-200">
+              <p className="text-red-800 font-medium">
                 <Link to="/login" className="underline hover:text-amber-900">Sign in as a buyer</Link> to write a review
               </p>
             </div>
           )}
           
           {user && user.role !== "buyer" && (
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 mb-6 border-2 border-purple-200">
-              <p className="text-purple-800 font-medium">Only buyers can submit product reviews</p>
+            <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-lg p-4 mb-6 border-2 border-red-200">
+              <p className="text-red-800 font-medium">Only buyers can submit product reviews</p>
             </div>
           )}
 
@@ -452,12 +453,14 @@ export default function ProductDetail({
                       <div className="flex items-center gap-2">
                         <p className="font-semibold text-gray-900">{review.userName}</p>
                         {review.verified && (
-                          <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded">✓ Verified Purchase</span>
+                          <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Verified Purchase</span>
                         )}
                       </div>
                       <div className="flex items-center gap-2 mt-1">
-                        <div className="text-yellow-400">
-                          {"⭐".repeat(review.rating)}{"☆".repeat(5 - review.rating)}
+                        <div className="flex gap-0.5">
+                          {[...Array(5)].map((_, i) => (
+                            <Star key={i} className={`w-4 h-4 ${i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
+                          ))}
                         </div>
                         <span className="text-sm text-gray-600">{review.date}</span>
                       </div>

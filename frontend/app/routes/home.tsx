@@ -8,6 +8,7 @@ import type {
   ProductsResponse,
   AuctionsResponse,
 } from "~/types";
+import { Flame, Wrench, Package, Gavel } from "lucide-react";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -69,8 +70,8 @@ export default function Home({ loaderData }: Route.ComponentProps) {
         <div className="container mx-auto px-4 py-12 relative z-10">
           <div className="max-w-3xl mx-auto text-center">
             {/* Flash Sale Badge */}
-            <div className="inline-block px-4 py-2 bg-red-600 text-white text-sm font-bold rounded-full mb-4 animate-pulse">
-              🔥 MODERN AUTO WHEEL - UP TO 60% OFF!
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-bold rounded-full mb-4 animate-pulse">
+              <Flame className="w-4 h-4" /> MODERN AUTO WHEEL - UP TO 60% OFF!
             </div>
             
             {/* Main Heading - Slide in from top */}
@@ -101,7 +102,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
         <div className="container mx-auto px-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="text-3xl">🔥</div>
+              <Flame className="w-10 h-10" />
               <div>
                 <h3 className="text-2xl font-black">Attention! Flash Sales</h3>
                 <p className="text-red-100">Get the latest news & amazing offers</p>
@@ -182,7 +183,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
             </div>
 
             <div className={`group bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-red-200 ${hasAnimated ? 'animate-scale-in' : 'opacity-0'}`} style={{ animationDelay: '0.5s' }}>
-              <div className="w-20 h-20 bg-gradient-to-br from-gray-800 to-black rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-gray-500/30">
+              <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-red-500/30">
                 <svg
                   className="w-10 h-10 text-white"
                   fill="none"
@@ -253,8 +254,8 @@ export default function Home({ loaderData }: Route.ComponentProps) {
                 className={`group bg-gradient-to-br from-gray-50 to-white p-6 rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 text-center border border-gray-200 hover:border-red-300 ${hasAnimated ? 'animate-slide-up' : 'opacity-0'}`}
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
-                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center text-3xl shadow-lg">
-                  🔧
+                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <Wrench className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="font-bold text-gray-900 group-hover:text-red-600 transition-colors mb-1">
                   {category.name}
@@ -307,7 +308,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
             </div>
           ) : (
             <div className="text-center py-16 bg-white rounded-2xl shadow-lg">
-              <div className="text-6xl mb-4">📦</div>
+              <Package className="w-16 h-16 mx-auto mb-4 text-gray-300" />
               <p className="text-gray-500 text-lg">No products available at the moment.</p>
               <Link to="/sell" className="inline-block mt-4 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-all">
                 Be the first to sell
@@ -335,8 +336,8 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className={`flex justify-between items-center mb-12 ${hasAnimated ? 'animate-fade-in' : 'opacity-0'}`}>
               <div>
-                <h2 className="text-4xl font-black text-gray-900 mb-2">
-                  🔥 Live Auctions
+                <h2 className="text-4xl font-black text-gray-900 mb-2 flex items-center gap-3">
+                  <Flame className="w-10 h-10 text-red-600" /> Live Auctions
                 </h2>
                 <p className="text-gray-600">Bid on exclusive vintage and rare parts</p>
               </div>
@@ -362,7 +363,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
                       <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-sm text-white text-xs font-bold rounded-full">
                         {auction.status}
                       </span>
-                      <div className="text-2xl">🔨</div>
+                      <Gavel className="w-6 h-6" />
                     </div>
                     <h3 className="font-bold text-lg">
                       Auction #{auction._id.slice(-6)}
