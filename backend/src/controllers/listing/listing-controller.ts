@@ -53,8 +53,15 @@ export async function getProducts(req: Request, res: Response) {
 // Creates a new product and returns the created product
 export async function createProduct(req: Request, res: Response) {
   try {
-    const { title, description, price, category, sellerId, condition, is_auction } =
-      req.body;
+    const {
+      title,
+      description,
+      price,
+      category,
+      sellerId,
+      condition,
+      is_auction,
+    } = req.body;
     const images = req.files as Express.Multer.File[];
 
     if (
@@ -71,10 +78,10 @@ export async function createProduct(req: Request, res: Response) {
         "Missing required fields: title, description, price, category, sellerId, and at least one image"
       );
     }
-
-    // Fetch the ID of the category from the Categories collection
-    const categoryId = await Category.find({ name: category }).limit(1);
-    if (categoryId.length === 0) {
+    console.log("Category:", category);
+    // Validate that the category exists (category is now an ID)
+    const categoryDoc = await Category.findById(category);
+    if (!categoryDoc) {
       throw new Error("Invalid category");
     }
 
@@ -84,7 +91,7 @@ export async function createProduct(req: Request, res: Response) {
 
     // Store images in the public/products folder and save their entries in the database
     const imageIds: ObjectId[] = [];
-    
+
     for (const image of images) {
       // Validate image type
       if (!image.mimetype.startsWith("image/")) {
@@ -95,15 +102,22 @@ export async function createProduct(req: Request, res: Response) {
       let mime: "image/jpg" | "image/png";
       if (image.mimetype === "image/png") {
         mime = "image/png";
-      } else if (image.mimetype === "image/jpeg" || image.mimetype === "image/jpg") {
+      } else if (
+        image.mimetype === "image/jpeg" ||
+        image.mimetype === "image/jpg"
+      ) {
         mime = "image/jpg";
       } else {
-        throw new Error(`Unsupported image format: ${image.mimetype}. Only JPG and PNG are supported.`);
+        throw new Error(
+          `Unsupported image format: ${image.mimetype}. Only JPG and PNG are supported.`
+        );
       }
 
       // Generate a unique filename
       const fileExtension = mime === "image/png" ? "png" : "jpg";
-      const uniqueFileName = `${Date.now()}-${randomBytes(8).toString("hex")}.${fileExtension}`;
+      const uniqueFileName = `${Date.now()}-${randomBytes(8).toString(
+        "hex"
+      )}.${fileExtension}`;
       const filePath = path.join(productsDir, uniqueFileName);
 
       // Save the image file to disk
@@ -125,7 +139,7 @@ export async function createProduct(req: Request, res: Response) {
       name: title,
       description,
       price,
-      categoryId: categoryId[0]!._id,
+      categoryId: category,
       imageIds,
       sellerId,
       condition: condition || "Used",
@@ -144,9 +158,9 @@ export async function createProduct(req: Request, res: Response) {
       .populate("imageIds", ["fileName", "mime", "size"])
       .exec();
 
-    res.status(201).json({ 
-      message: "Product created successfully", 
-      product: populatedProduct 
+    res.status(201).json({
+      message: "Product created successfully",
+      product: populatedProduct,
     });
   } catch (error) {
     console.error("Error creating product:", error as Error);
@@ -160,8 +174,15 @@ export async function createProduct(req: Request, res: Response) {
 // Updates a product by its ID and returns the newly updated product. Only the fields provided in the request body will be updated.
 export async function updateProduct(req: Request, res: Response) {
   try {
-    const { productId, title, description, price, category, condition, is_auction } =
-      req.body;
+    const {
+      productId,
+      title,
+      description,
+      price,
+      category,
+      condition,
+      is_auction,
+    } = req.body;
     const images = req.files as Express.Multer.File[] | undefined;
 
     if (!productId) {
@@ -175,8 +196,9 @@ export async function updateProduct(req: Request, res: Response) {
     if (description) updateData.description = description;
     if (price) updateData.price = price;
     if (condition) updateData.condition = condition;
-    if (is_auction !== undefined) updateData.is_auction = is_auction === true || is_auction === "true";
-    
+    if (is_auction !== undefined)
+      updateData.is_auction = is_auction === true || is_auction === "true";
+
     // Handle new images if provided
     if (images && Array.isArray(images) && images.length > 0) {
       const productsDir = path.join(process.cwd(), "public", "products");
@@ -194,15 +216,22 @@ export async function updateProduct(req: Request, res: Response) {
         let mime: "image/jpg" | "image/png";
         if (image.mimetype === "image/png") {
           mime = "image/png";
-        } else if (image.mimetype === "image/jpeg" || image.mimetype === "image/jpg") {
+        } else if (
+          image.mimetype === "image/jpeg" ||
+          image.mimetype === "image/jpg"
+        ) {
           mime = "image/jpg";
         } else {
-          throw new Error(`Unsupported image format: ${image.mimetype}. Only JPG and PNG are supported.`);
+          throw new Error(
+            `Unsupported image format: ${image.mimetype}. Only JPG and PNG are supported.`
+          );
         }
 
         // Generate a unique filename
         const fileExtension = mime === "image/png" ? "png" : "jpg";
-        const uniqueFileName = `${Date.now()}-${randomBytes(8).toString("hex")}.${fileExtension}`;
+        const uniqueFileName = `${Date.now()}-${randomBytes(8).toString(
+          "hex"
+        )}.${fileExtension}`;
         const filePath = path.join(productsDir, uniqueFileName);
 
         // Save the image file to disk
@@ -222,7 +251,7 @@ export async function updateProduct(req: Request, res: Response) {
       // Add new images to existing ones
       updateData.$push = { imageIds: { $each: newImageIds } };
     }
-    
+
     if (category) {
       const categoryDoc = await Category.findOne({ name: category }).select(
         "_id"
@@ -300,7 +329,7 @@ export async function getImage(req: Request, res: Response) {
     }
 
     const imagePath = path.join(process.cwd(), "public", "products", filename);
-    
+
     // Send the file
     res.sendFile(imagePath, (err) => {
       if (err) {
