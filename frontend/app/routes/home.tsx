@@ -3,12 +3,24 @@ import { useEffect, useState } from "react";
 import type { Route } from "./+types/home";
 import { api } from "~/lib/api";
 import { ProductCard } from "~/components/ProductCard";
+import { useSession } from "~/lib/auth-client";
 import type {
   CategoriesResponse,
   ProductsResponse,
   AuctionsResponse,
 } from "~/types";
-import { Flame, Wrench, Package, Gavel } from "lucide-react";
+import {
+  Flame,
+  Wrench,
+  Package,
+  Gavel,
+  Star,
+  TrendingUp,
+  Users,
+  ShoppingBag,
+  Award,
+  BadgeCheck,
+} from "lucide-react";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -47,11 +59,79 @@ export async function loader() {
 export default function Home({ loaderData }: Route.ComponentProps) {
   const { featuredProducts, categories, auctions } = loaderData;
   const [hasAnimated, setHasAnimated] = useState(false);
+  const { data: session } = useSession();
+  const user = session?.user;
 
   useEffect(() => {
     // Set animation flag after component mounts
     setHasAnimated(true);
   }, []);
+
+  // Mock data for enhanced UI - Replace with actual API calls
+  const mockReviews = [
+    {
+      id: 1,
+      userName: "Ahmed Khan",
+      userImage: "AK",
+      rating: 5,
+      comment:
+        "Excellent quality brake pads! Installed them last week and the difference is amazing. Highly recommended!",
+      productName: "Honda Civic Brake Pads",
+      date: "2 days ago",
+      verified: true,
+    },
+    {
+      id: 2,
+      userName: "Sara Ali",
+      userImage: "SA",
+      rating: 4,
+      comment:
+        "Good product, fast delivery. The headlights are bright and fit perfectly.",
+      productName: "Toyota Corolla Headlights",
+      date: "5 days ago",
+      verified: true,
+    },
+    {
+      id: 3,
+      userName: "Ali Raza",
+      userImage: "AR",
+      rating: 5,
+      comment: "Perfect engine oil for my Suzuki. Price was great too!",
+      productName: "Suzuki Alto Engine Oil",
+      date: "1 week ago",
+      verified: true,
+    },
+  ];
+
+  const topSellers = [
+    {
+      id: 1,
+      name: "Auto Parts Pro",
+      rating: 4.8,
+      totalSales: 1250,
+      products: 156,
+      responseTime: "< 1 hour",
+      verified: true,
+    },
+    {
+      id: 2,
+      name: "Quality Parts Hub",
+      rating: 4.9,
+      totalSales: 980,
+      products: 98,
+      responseTime: "< 2 hours",
+      verified: true,
+    },
+    {
+      id: 3,
+      name: "Spare Parts Center",
+      rating: 4.7,
+      totalSales: 756,
+      products: 124,
+      responseTime: "< 3 hours",
+      verified: true,
+    },
+  ];
 
   return (
     <div className="bg-gray-50">
@@ -59,37 +139,43 @@ export default function Home({ loaderData }: Route.ComponentProps) {
       <section className="relative bg-gradient-to-r from-gray-900 via-black to-gray-900 text-white overflow-hidden min-h-[400px]">
         {/* Background Image with Overlay */}
         <div className="absolute inset-0">
-          <img 
-            src="/gears-bg.jpg" 
-            alt="Gears Background" 
+          <img
+            src="/gears-bg.jpg"
+            alt="Gears Background"
             className="w-full h-full object-cover opacity-60"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/50 to-black/60"></div>
         </div>
-        
+
         <div className="container mx-auto px-4 py-12 relative z-10">
           <div className="max-w-3xl mx-auto text-center">
             {/* Flash Sale Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-bold rounded-full mb-4 animate-pulse">
               <Flame className="w-4 h-4" /> MODERN AUTO WHEEL - UP TO 60% OFF!
             </div>
-            
+
             {/* Main Heading - Slide in from top */}
-            <h1 className={`text-4xl md:text-5xl font-black mb-4 leading-tight text-white ${hasAnimated ? 'animate-slide-down' : 'opacity-0'}`}>
+            <h1
+              className={`text-4xl md:text-5xl font-black mb-4 leading-tight text-white ${hasAnimated ? "animate-slide-down" : "opacity-0"}`}
+            >
               Original Equipment
               <span className="block text-red-600 mt-2">Manufacturer</span>
             </h1>
-            
+
             {/* Description - Fade in */}
-            <p className={`text-lg text-gray-200 mb-6 max-w-2xl mx-auto ${hasAnimated ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '0.3s' }}>
-              Premium quality auto parts for all vehicle models. Guaranteed authenticity and best prices in Pakistan.
+            <p
+              className={`text-lg text-gray-200 mb-6 max-w-2xl mx-auto ${hasAnimated ? "animate-fade-in" : "opacity-0"}`}
+              style={{ animationDelay: "0.3s" }}
+            >
+              Premium quality auto parts for all vehicle models. Guaranteed
+              authenticity and best prices in Pakistan.
             </p>
-            
+
             {/* CTA Button - Slide in from bottom */}
             <Link
               to="/products"
-              className={`inline-block px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-bold text-base rounded-lg shadow-2xl hover:shadow-red-600/50 transition-all duration-300 ${hasAnimated ? 'animate-slide-up' : 'opacity-0'}`}
-              style={{ animationDelay: '0.5s' }}
+              className={`inline-block px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-bold text-base rounded-lg shadow-2xl hover:shadow-red-600/50 transition-all duration-300 ${hasAnimated ? "animate-slide-up" : "opacity-0"}`}
+              style={{ animationDelay: "0.5s" }}
             >
               SHOP NOW →
             </Link>
@@ -105,19 +191,26 @@ export default function Home({ loaderData }: Route.ComponentProps) {
               <Flame className="w-10 h-10" />
               <div>
                 <h3 className="text-2xl font-black">Attention! Flash Sales</h3>
-                <p className="text-red-100">Get the latest news & amazing offers</p>
+                <p className="text-red-100">
+                  Get the latest news & amazing offers
+                </p>
               </div>
             </div>
             <div className="flex gap-2">
               {[
-                { label: 'DAYS', value: '02' },
-                { label: 'HOURS', value: '10' },
-                { label: 'MINS', value: '24' },
-                { label: 'SECS', value: '05' }
+                { label: "DAYS", value: "02" },
+                { label: "HOURS", value: "10" },
+                { label: "MINS", value: "24" },
+                { label: "SECS", value: "05" },
               ].map((item, i) => (
-                <div key={i} className="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-3 min-w-[70px] text-center border border-white/30">
+                <div
+                  key={i}
+                  className="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-3 min-w-[70px] text-center border border-white/30"
+                >
                   <div className="text-2xl font-black">{item.value}</div>
-                  <div className="text-xs font-semibold opacity-90">{item.label}</div>
+                  <div className="text-xs font-semibold opacity-90">
+                    {item.label}
+                  </div>
                 </div>
               ))}
             </div>
@@ -153,14 +246,23 @@ export default function Home({ loaderData }: Route.ComponentProps) {
       {/* Features Section */}
       <section className="py-20 bg-gradient-to-b from-gray-50 to-white">
         <div className="container mx-auto px-4">
-          <h2 className={`text-4xl font-black text-center mb-4 text-gray-900 ${hasAnimated ? 'animate-fade-in' : 'opacity-0'}`}>
+          <h2
+            className={`text-4xl font-black text-center mb-4 text-gray-900 ${hasAnimated ? "animate-fade-in" : "opacity-0"}`}
+          >
             Why Choose Gearsey?
           </h2>
-          <p className={`text-center text-gray-600 mb-16 max-w-2xl mx-auto ${hasAnimated ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '0.2s' }}>
-            Your trusted partner for authentic auto parts with unbeatable service
+          <p
+            className={`text-center text-gray-600 mb-16 max-w-2xl mx-auto ${hasAnimated ? "animate-fade-in" : "opacity-0"}`}
+            style={{ animationDelay: "0.2s" }}
+          >
+            Your trusted partner for authentic auto parts with unbeatable
+            service
           </p>
           <div className="grid md:grid-cols-3 gap-8">
-            <div className={`group bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-red-200 ${hasAnimated ? 'animate-slide-right' : 'opacity-0'}`} style={{ animationDelay: '0.3s' }}>
+            <div
+              className={`group bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-red-200 ${hasAnimated ? "animate-slide-right" : "opacity-0"}`}
+              style={{ animationDelay: "0.3s" }}
+            >
               <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-red-500/30">
                 <svg
                   className="w-10 h-10 text-white"
@@ -176,13 +278,19 @@ export default function Home({ loaderData }: Route.ComponentProps) {
                   />
                 </svg>
               </div>
-              <h3 className="text-2xl font-black mb-3 text-gray-900">100% Genuine</h3>
+              <h3 className="text-2xl font-black mb-3 text-gray-900">
+                100% Genuine
+              </h3>
               <p className="text-gray-600 leading-relaxed">
-                All products are authentic OEM and verified by our quality assurance team
+                All products are authentic OEM and verified by our quality
+                assurance team
               </p>
             </div>
 
-            <div className={`group bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-red-200 ${hasAnimated ? 'animate-scale-in' : 'opacity-0'}`} style={{ animationDelay: '0.5s' }}>
+            <div
+              className={`group bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-red-200 ${hasAnimated ? "animate-scale-in" : "opacity-0"}`}
+              style={{ animationDelay: "0.5s" }}
+            >
               <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-red-500/30">
                 <svg
                   className="w-10 h-10 text-white"
@@ -198,13 +306,19 @@ export default function Home({ loaderData }: Route.ComponentProps) {
                   />
                 </svg>
               </div>
-              <h3 className="text-2xl font-black mb-3 text-gray-900">Best Prices</h3>
+              <h3 className="text-2xl font-black mb-3 text-gray-900">
+                Best Prices
+              </h3>
               <p className="text-gray-600 leading-relaxed">
-                Competitive pricing with multiple sellers ensuring great deals every day
+                Competitive pricing with multiple sellers ensuring great deals
+                every day
               </p>
             </div>
 
-            <div className={`group bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-red-200 ${hasAnimated ? 'animate-slide-left' : 'opacity-0'}`} style={{ animationDelay: '0.7s' }}>
+            <div
+              className={`group bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-red-200 ${hasAnimated ? "animate-slide-left" : "opacity-0"}`}
+              style={{ animationDelay: "0.7s" }}
+            >
               <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-red-500/30">
                 <svg
                   className="w-10 h-10 text-white"
@@ -220,9 +334,12 @@ export default function Home({ loaderData }: Route.ComponentProps) {
                   />
                 </svg>
               </div>
-              <h3 className="text-2xl font-black mb-3 text-gray-900">Fast Delivery</h3>
+              <h3 className="text-2xl font-black mb-3 text-gray-900">
+                Fast Delivery
+              </h3>
               <p className="text-gray-600 leading-relaxed">
-                Quick delivery across Pakistan with real-time tracking and support
+                Quick delivery across Pakistan with real-time tracking and
+                support
               </p>
             </div>
           </div>
@@ -232,12 +349,16 @@ export default function Home({ loaderData }: Route.ComponentProps) {
       {/* Categories */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className={`flex justify-between items-center mb-12 ${hasAnimated ? 'animate-fade-in' : 'opacity-0'}`}>
+          <div
+            className={`flex justify-between items-center mb-12 ${hasAnimated ? "animate-fade-in" : "opacity-0"}`}
+          >
             <div>
               <h2 className="text-4xl font-black text-gray-900 mb-2">
                 Weekly Top Categories
               </h2>
-              <p className="text-gray-600">Explore our most popular product categories</p>
+              <p className="text-gray-600">
+                Explore our most popular product categories
+              </p>
             </div>
             <Link
               to="/products"
@@ -251,7 +372,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
               <Link
                 key={category._id}
                 to={`/products?category=${encodeURIComponent(category.name)}`}
-                className={`group bg-gradient-to-br from-gray-50 to-white p-6 rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 text-center border border-gray-200 hover:border-red-300 ${hasAnimated ? 'animate-slide-up' : 'opacity-0'}`}
+                className={`group bg-gradient-to-br from-gray-50 to-white p-6 rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 text-center border border-gray-200 hover:border-red-300 ${hasAnimated ? "animate-slide-up" : "opacity-0"}`}
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg">
@@ -278,18 +399,34 @@ export default function Home({ loaderData }: Route.ComponentProps) {
       {/* Featured Products */}
       <section className="py-16 bg-gradient-to-b from-gray-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className={`flex justify-between items-center mb-12 ${hasAnimated ? 'animate-fade-in' : 'opacity-0'}`}>
+          <div
+            className={`flex justify-between items-center mb-12 ${hasAnimated ? "animate-fade-in" : "opacity-0"}`}
+          >
             <div>
-              <h2 className="text-4xl font-black text-gray-900 mb-2">Best Selling Products</h2>
-              <p className="text-gray-600">Top-rated auto parts loved by our customers</p>
+              <h2 className="text-4xl font-black text-gray-900 mb-2">
+                Best Selling Products
+              </h2>
+              <p className="text-gray-600">
+                Top-rated auto parts loved by our customers
+              </p>
             </div>
             <Link
               to="/products"
               className="hidden md:flex items-center gap-2 px-6 py-3 bg-gray-900 hover:bg-black text-white font-bold rounded-lg transition-all shadow-lg hover:shadow-xl"
             >
               View All
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </Link>
           </div>
@@ -297,9 +434,9 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           {featuredProducts.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {featuredProducts.map((product, index) => (
-                <div 
+                <div
                   key={product._id}
-                  className={hasAnimated ? 'animate-scale-in' : 'opacity-0'}
+                  className={hasAnimated ? "animate-scale-in" : "opacity-0"}
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <ProductCard product={product} />
@@ -309,45 +446,238 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           ) : (
             <div className="text-center py-16 bg-white rounded-2xl shadow-lg">
               <Package className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-              <p className="text-gray-500 text-lg">No products available at the moment.</p>
-              <Link to="/sell" className="inline-block mt-4 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-all">
+              <p className="text-gray-500 text-lg">
+                No products available at the moment.
+              </p>
+              <Link
+                to="/manage-products"
+                className="inline-block mt-4 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-all"
+              >
                 Be the first to sell
               </Link>
             </div>
           )}
-          
+
           <div className="text-center mt-8 md:hidden">
             <Link
               to="/products"
               className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 hover:bg-black text-white font-bold rounded-lg transition-all shadow-lg hover:shadow-xl"
             >
               View All Products
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </Link>
           </div>
         </div>
       </section>
 
+      {/* Customer Reviews Section - For Buyers */}
+      {user?.role === "buyer" && (
+        <section className="py-16 bg-white border-t border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div
+              className={`mb-12 ${hasAnimated ? "animate-fade-in" : "opacity-0"}`}
+            >
+              <h2 className="text-4xl font-black text-gray-900 mb-2 flex items-center gap-3">
+                <Star className="w-10 h-10 text-yellow-500 fill-yellow-500" />
+                Customer Reviews
+              </h2>
+              <p className="text-gray-600">
+                See what our customers are saying about our products
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {mockReviews.map((review, index) => (
+                <div
+                  key={review.id}
+                  className={`bg-gradient-to-br from-gray-50 to-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200 ${hasAnimated ? "animate-slide-up" : "opacity-0"}`}
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white font-bold">
+                      {review.userImage}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-bold text-gray-900">
+                          {review.userName}
+                        </h4>
+                        {review.verified && (
+                          <BadgeCheck className="w-4 h-4 text-green-500" />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-4 h-4 ${
+                                i < review.rating
+                                  ? "text-yellow-400 fill-yellow-400"
+                                  : "text-gray-300"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {review.date}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-gray-700 mb-3 leading-relaxed">
+                    {review.comment}
+                  </p>
+                  <div className="pt-3 border-t border-gray-200">
+                    <p className="text-sm text-gray-600">
+                      <span className="font-semibold">Product:</span>{" "}
+                      {review.productName}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Top Sellers Section - For Buyers */}
+      {user?.role === "buyer" && (
+        <section className="py-16 bg-gradient-to-b from-gray-50 to-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div
+              className={`mb-12 ${hasAnimated ? "animate-fade-in" : "opacity-0"}`}
+            >
+              <h2 className="text-4xl font-black text-gray-900 mb-2 flex items-center gap-3">
+                <Award className="w-10 h-10 text-red-600" />
+                Top Rated Sellers
+              </h2>
+              <p className="text-gray-600">
+                Shop from verified sellers with excellent ratings
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {topSellers.map((seller, index) => (
+                <div
+                  key={seller.id}
+                  className={`bg-white p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border-2 border-gray-200 hover:border-red-300 ${hasAnimated ? "animate-scale-in" : "opacity-0"}`}
+                  style={{ animationDelay: `${index * 0.15}s` }}
+                >
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white font-bold text-xl">
+                        {seller.name[0]}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-bold text-lg text-gray-900">
+                            {seller.name}
+                          </h3>
+                          {seller.verified && (
+                            <BadgeCheck className="w-5 h-5 text-blue-500" />
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 mt-1">
+                          <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                          <span className="text-sm font-bold text-gray-900">
+                            {seller.rating}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            ({seller.totalSales} sales)
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 mb-6">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600 flex items-center gap-2">
+                        <Package className="w-4 h-4" />
+                        Products
+                      </span>
+                      <span className="font-bold text-gray-900">
+                        {seller.products}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600 flex items-center gap-2">
+                        <ShoppingBag className="w-4 h-4" />
+                        Total Sales
+                      </span>
+                      <span className="font-bold text-gray-900">
+                        {seller.totalSales}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600 flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4" />
+                        Response Time
+                      </span>
+                      <span className="font-bold text-green-600">
+                        {seller.responseTime}
+                      </span>
+                    </div>
+                  </div>
+
+                  <Link
+                    to={`/products?seller=${encodeURIComponent(seller.name)}`}
+                    className="block w-full text-center px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold rounded-lg transition-all shadow-md hover:shadow-lg"
+                  >
+                    View Products
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Live Auctions */}
       {auctions.length > 0 && (
         <section className="py-16 bg-white border-t border-gray-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className={`flex justify-between items-center mb-12 ${hasAnimated ? 'animate-fade-in' : 'opacity-0'}`}>
+            <div
+              className={`flex justify-between items-center mb-12 ${hasAnimated ? "animate-fade-in" : "opacity-0"}`}
+            >
               <div>
                 <h2 className="text-4xl font-black text-gray-900 mb-2 flex items-center gap-3">
                   <Flame className="w-10 h-10 text-red-600" /> Live Auctions
                 </h2>
-                <p className="text-gray-600">Bid on exclusive vintage and rare parts</p>
+                <p className="text-gray-600">
+                  Bid on exclusive vintage and rare parts
+                </p>
               </div>
               <Link
                 to="/auctions"
                 className="hidden md:flex items-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-all shadow-lg hover:shadow-xl"
               >
                 All Auctions
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
                 </svg>
               </Link>
             </div>
@@ -355,7 +685,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
               {auctions.slice(0, 4).map((auction, index) => (
                 <div
                   key={auction._id}
-                  className={`group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-200 hover:border-red-300 ${hasAnimated ? 'animate-slide-up' : 'opacity-0'}`}
+                  className={`group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-200 hover:border-red-300 ${hasAnimated ? "animate-slide-up" : "opacity-0"}`}
                   style={{ animationDelay: `${index * 0.15}s` }}
                 >
                   <div className="bg-gradient-to-br from-red-500 to-red-600 p-4 text-white">
@@ -372,7 +702,9 @@ export default function Home({ loaderData }: Route.ComponentProps) {
                   <div className="p-5">
                     <div className="space-y-3">
                       <div className="flex justify-between items-baseline">
-                        <span className="text-sm text-gray-600">Current Bid</span>
+                        <span className="text-sm text-gray-600">
+                          Current Bid
+                        </span>
                         <span className="text-2xl font-black text-red-600">
                           PKR {auction.current_price.toLocaleString()}
                         </span>
@@ -385,8 +717,18 @@ export default function Home({ loaderData }: Route.ComponentProps) {
                       </div>
                       <div className="pt-2 border-t border-gray-200">
                         <div className="flex items-center gap-1 text-xs text-gray-500 mb-3">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
                           </svg>
                           Ends in 2 days
                         </div>
@@ -418,7 +760,8 @@ export default function Home({ loaderData }: Route.ComponentProps) {
               <span className="block">Amazing Offers!</span>
             </h2>
             <p className="text-base mb-5 text-red-100">
-              Subscribe to our newsletter and never miss exclusive deals on premium auto parts
+              Subscribe to our newsletter and never miss exclusive deals on
+              premium auto parts
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-lg mx-auto mb-5">
               <input

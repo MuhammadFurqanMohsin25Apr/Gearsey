@@ -14,23 +14,24 @@ export function meta() {
 export async function loader({ params }: { params: { id: string } }) {
   try {
     const auctionsData = (await api.auctions.getAll({ limit: 100 })) as any;
-    const auction = auctionsData.auctions.find(
+    const auction = auctionsData.auctions?.find(
       (a: Auction) => a._id === params.id
     );
 
     if (!auction) {
-      throw new Response("Auction not found", { status: 404 });
+      return { auction: null, product: null };
     }
 
     // Get the product details
     const productsData = (await api.products.getAll({ limit: 100 })) as any;
-    const product = productsData.products.find(
+    const product = productsData.products?.find(
       (p: any) => p._id === auction.partId
     );
 
     return { auction, product };
   } catch (error) {
-    throw new Response("Failed to load auction", { status: 500 });
+    console.error("Failed to load auction:", error);
+    return { auction: null, product: null };
   }
 }
 
@@ -92,6 +93,27 @@ export default function AuctionDetail({
   loaderData: LoaderData;
 }) {
   const { auction, product } = loaderData;
+
+  if (!auction) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Auction Not Found
+          </h1>
+          <p className="text-gray-600 mb-6">
+            This auction could not be loaded. Please try again later.
+          </p>
+          <Link
+            href="/auctions"
+            className="text-red-600 hover:text-red-700 font-semibold"
+          >
+            Back to Auctions
+          </Link>
+        </div>
+      </div>
+    );
+  }
   const [bidAmount, setBidAmount] = useState(auction.current_price + 100);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 

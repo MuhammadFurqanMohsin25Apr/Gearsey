@@ -2,6 +2,7 @@ import { Link } from "react-router";
 import { formatPrice } from "~/lib/utils";
 import { api } from "~/lib/api";
 import { useState } from "react";
+import { useSession } from "~/lib/auth-client";
 
 export function meta() {
   return [
@@ -27,6 +28,7 @@ const mockCartItems: CartItem[] = [
 ];
 
 export default function Cart() {
+  const { data: session } = useSession();
   const [cartItems, setCartItems] = useState<CartItem[]>(mockCartItems);
 
   const updateQuantity = (index: number, newQuantity: number) => {

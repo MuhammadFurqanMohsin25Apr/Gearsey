@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router";
-import { useState } from "react";
-import { authClient } from "~/lib/auth-client";
+import { useState, useEffect } from "react";
+import { authClient, useSession } from "~/lib/auth-client";
 
 export function meta() {
   return [
@@ -11,6 +11,7 @@ export function meta() {
 
 export default function Signup() {
   const navigate = useNavigate();
+  const { data: session } = useSession();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     email: "",
@@ -23,6 +24,13 @@ export default function Signup() {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Redirect if already logged in (client-side check)
+  useEffect(() => {
+    if (session?.user) {
+      navigate("/dashboard");
+    }
+  }, [session, navigate]);
 
   const handleStep1Submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,36 +56,40 @@ export default function Signup() {
     setLoading(true);
 
     try {
-      const { data, error: signUpError } = await authClient.signUp.email({
-        email: formData.email,
-        password: formData.password,
-        name: formData.name,
-        phone: formData.phone,
-        address: formData.address,
-        role: formData.role,
-        rating: 0,
-        total_reviews: 0,
-      }, {
-        onRequest: () => {
-          // Show loading state
+      const { data, error: signUpError } = await authClient.signUp.email(
+        {
+          email: formData.email,
+          password: formData.password,
+          name: formData.name,
+          phone: formData.phone,
+          address: formData.address,
+          role: formData.role,
         },
-        onSuccess: () => {
-          // Redirect based on role
-          if (formData.role === "seller") {
-            navigate("/dashboard");
-          } else if (formData.role === "admin") {
-            navigate("/admin");
-          } else {
-            navigate("/products");
-          }
-        },
-        onError: (ctx) => {
-          setError(ctx.error.message || "Signup failed");
-        },
-      });
+        {
+          onRequest: () => {
+            // Show loading state
+          },
+          onSuccess: (ctx) => {
+            // Successfully signed up
+          },
+          onError: (ctx) => {
+            setError(ctx.error.message || "Signup failed");
+          },
+        }
+      );
 
       if (signUpError) {
         setError(signUpError.message || "Signup failed");
+      } else if (data?.user) {
+        // Redirect based on role after successful signup
+        const userRole = data.user.role;
+        if (userRole === "seller") {
+          navigate("/dashboard");
+        } else if (userRole === "admin") {
+          navigate("/admin");
+        } else {
+          navigate("/products");
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Signup failed");
@@ -100,7 +112,9 @@ export default function Signup() {
             {step === 1 ? "Create Account" : "Complete Your Profile"}
           </h2>
           <p className="text-gray-400 text-xs">
-            {step === 1 ? "Step 1 of 2: Account credentials" : "Step 2 of 2: Personal information"}
+            {step === 1
+              ? "Step 1 of 2: Account credentials"
+              : "Step 2 of 2: Personal information"}
           </p>
         </div>
 
@@ -108,8 +122,16 @@ export default function Signup() {
         <div className="bg-white rounded-2xl shadow-2xl p-8">
           {error && (
             <div className="bg-red-50 border-l-4 border-red-600 text-red-700 px-3 py-2 rounded mb-4 flex items-center text-sm">
-              <svg className="w-4 h-4 mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              <svg
+                className="w-4 h-4 mr-2 shrink-0"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                  clipRule="evenodd"
+                />
               </svg>
               <span className="font-medium">{error}</span>
             </div>
@@ -120,7 +142,10 @@ export default function Signup() {
             <form onSubmit={handleStep1Submit} className="space-y-4">
               {/* Email */}
               <div>
-                <label htmlFor="email" className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">
+                <label
+                  htmlFor="email"
+                  className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide"
+                >
                   Email Address
                 </label>
                 <input
@@ -128,7 +153,9 @@ export default function Signup() {
                   type="email"
                   required
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
                   className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-sm text-gray-900"
                   placeholder="you@example.com"
                 />
@@ -136,7 +163,10 @@ export default function Signup() {
 
               {/* Password */}
               <div>
-                <label htmlFor="password" className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">
+                <label
+                  htmlFor="password"
+                  className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide"
+                >
                   Password
                 </label>
                 <input
@@ -144,7 +174,9 @@ export default function Signup() {
                   type="password"
                   required
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
                   className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-sm text-gray-900"
                   placeholder="••••••••"
                 />
@@ -152,7 +184,10 @@ export default function Signup() {
 
               {/* Confirm Password */}
               <div>
-                <label htmlFor="confirmPassword" className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide"
+                >
                   Confirm Password
                 </label>
                 <input
@@ -160,7 +195,12 @@ export default function Signup() {
                   type="password"
                   required
                   value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      confirmPassword: e.target.value,
+                    })
+                  }
                   className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-sm text-gray-900"
                   placeholder="••••••••"
                 />
@@ -175,11 +215,17 @@ export default function Signup() {
                 />
                 <span className="ml-2 text-xs text-gray-600">
                   I agree to the{" "}
-                  <Link to="/terms" className="text-red-600 hover:underline font-semibold">
+                  <Link
+                    to="/terms"
+                    className="text-red-600 hover:underline font-semibold"
+                  >
                     Terms
                   </Link>{" "}
                   and{" "}
-                  <Link to="/privacy" className="text-red-600 hover:underline font-semibold">
+                  <Link
+                    to="/privacy"
+                    className="text-red-600 hover:underline font-semibold"
+                  >
                     Privacy Policy
                   </Link>
                 </span>
@@ -191,8 +237,18 @@ export default function Signup() {
                 className="w-full py-3 px-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold rounded-lg shadow-lg hover:shadow-xl transform transition-all duration-300 flex items-center justify-center gap-2 text-sm uppercase tracking-wide"
               >
                 <span>Next Step</span>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
                 </svg>
               </button>
             </form>
@@ -203,7 +259,10 @@ export default function Signup() {
             <form onSubmit={handleStep2Submit} className="space-y-4">
               {/* Full Name */}
               <div>
-                <label htmlFor="name" className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">
+                <label
+                  htmlFor="name"
+                  className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide"
+                >
                   Full Name
                 </label>
                 <input
@@ -211,7 +270,9 @@ export default function Signup() {
                   type="text"
                   required
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-sm text-gray-900"
                   placeholder="John Doe"
                 />
@@ -219,7 +280,10 @@ export default function Signup() {
 
               {/* Phone Number */}
               <div>
-                <label htmlFor="phone" className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">
+                <label
+                  htmlFor="phone"
+                  className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide"
+                >
                   Phone Number
                 </label>
                 <input
@@ -227,7 +291,9 @@ export default function Signup() {
                   type="tel"
                   required
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, phone: e.target.value })
+                  }
                   className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-sm text-gray-900"
                   placeholder="+92 300 1234567"
                 />
@@ -235,7 +301,10 @@ export default function Signup() {
 
               {/* Address */}
               <div>
-                <label htmlFor="address" className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">
+                <label
+                  htmlFor="address"
+                  className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide"
+                >
                   Address
                 </label>
                 <input
@@ -243,7 +312,9 @@ export default function Signup() {
                   type="text"
                   required
                   value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, address: e.target.value })
+                  }
                   className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-sm text-gray-900"
                   placeholder="City, State"
                 />
@@ -251,13 +322,18 @@ export default function Signup() {
 
               {/* Role Selection */}
               <div>
-                <label htmlFor="role" className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">
+                <label
+                  htmlFor="role"
+                  className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide"
+                >
                   I want to
                 </label>
                 <select
                   id="role"
                   value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, role: e.target.value })
+                  }
                   className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-sm text-gray-900 bg-white"
                 >
                   <option value="buyer">Buy auto parts</option>
@@ -282,9 +358,25 @@ export default function Signup() {
                 >
                   {loading ? (
                     <>
-                      <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      <svg
+                        className="animate-spin h-4 w-4 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
                       </svg>
                       <span>Creating...</span>
                     </>

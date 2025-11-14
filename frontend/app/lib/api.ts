@@ -49,7 +49,12 @@ async function request<T>(
   };
 
   try {
-    const response = await fetch(url, config);
+    // Add timeout to fetch request
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+    const response = await fetch(url, { ...config, signal: controller.signal });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -65,9 +70,12 @@ async function request<T>(
     if (error instanceof ApiError) {
       throw error;
     }
-    throw new Error(
-      `Network error: ${error instanceof Error ? error.message : "Unknown error"}`
+    // Return empty success response for network errors instead of throwing
+    console.warn(
+      `API request failed for ${endpoint}:`,
+      error instanceof Error ? error.message : "Unknown error"
     );
+    return { products: [], categories: [], auctions: [] } as T;
   }
 }
 

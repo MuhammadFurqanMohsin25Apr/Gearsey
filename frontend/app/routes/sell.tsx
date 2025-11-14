@@ -1,8 +1,16 @@
-import { Form, Link, useNavigate, redirect } from "react-router";
-import { useState } from "react";
+import { Form, Link, useNavigate } from "react-router";
+import { useState, useEffect } from "react";
 import { api } from "~/lib/api";
 import { useSession } from "~/lib/auth-client";
 import type { Route } from "./+types/sell";
+import {
+  Package,
+  FileText,
+  DollarSign,
+  ImagePlus,
+  ChevronRight,
+  X,
+} from "lucide-react";
 
 export function meta() {
   return [
@@ -14,44 +22,66 @@ export function meta() {
   ];
 }
 
-// export const loader = async ({
-//   request,
-//   params,
-//   context,
-// }: Route.LoaderArgs) => {
-//   // In a real app, you might fetch user data here to verify role
-// };
-
 export default function Sell() {
   const { data: session } = useSession();
   const user = session?.user;
   const navigate = useNavigate();
-  // Redirect if not a seller
-  if (!user || user.role !== "seller") {
-    navigate("/login");
-  }
+
+  const [currentStep, setCurrentStep] = useState(1);
   const [isAuction, setIsAuction] = useState(false);
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    category: "",
+    condition: "New",
+    price: "",
+  });
+
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+    const files = Array.from(e.target.files || []).slice(0, 4);
     setImages(files);
-
-    // Generate previews
     const newPreviews = files.map((file) => URL.createObjectURL(file));
     setPreviews(newPreviews);
+  };
+
+  const removeImage = (index: number) => {
+    setImages(images.filter((_, i) => i !== index));
+    setPreviews(previews.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
 
-    const formData = new FormData(e.currentTarget);
+    const formDataToSend = new FormData();
+    formDataToSend.append("title", formData.title);
+    formDataToSend.append("description", formData.description);
+    formDataToSend.append("category", formData.category);
+    formDataToSend.append("condition", formData.condition);
+    formDataToSend.append("price", formData.price);
+    formDataToSend.append("is_auction", isAuction.toString());
+    formDataToSend.append("sellerId", "mock-seller-id");
+
+    images.forEach((image) => {
+      formDataToSend.append("images", image);
+    });
 
     try {
-      const response = await api.products.create(formData);
+      const response = await api.products.create(formDataToSend);
       alert("Product listed successfully!");
       navigate("/dashboard");
     } catch (error) {
@@ -62,199 +92,250 @@ export default function Sell() {
     }
   };
 
+  const isStep1Complete =
+    formData.title && formData.description && formData.category;
+  const isStep2Complete = formData.price;
+  const isStep3Complete = previews.length > 0;
+
   return (
-    <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Create New Listing
-          </h1>
-          <p className="text-gray-600">
-            List your spare parts for sale or create an auction
-          </p>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 z-50">
+      <div
+        className="bg-white rounded-xl shadow-2xl w-full max-w-7xl flex flex-col"
+        style={{ maxHeight: "calc(100vh - 32px)" }}
+      >
+        {/* Header - Fixed */}
+        <div className="bg-red-600 px-6 py-3 flex items-center justify-between rounded-t-xl flex-shrink-0">
+          <div>
+            <h1 className="text-xl font-black text-white">Add New Product</h1>
+            <p className="text-red-100 text-xs">
+              Fill in the details to list your product
+            </p>
+          </div>
+          <Link
+            to="/dashboard"
+            className="p-2 hover:bg-red-500 rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5 text-white" />
+          </Link>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Basic Information */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">
-              Basic Information
-            </h2>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Product Title *
-                </label>
-                <input
-                  type="text"
-                  name="title"
-                  required
-                  placeholder="e.g., Honda Civic 2015 Brake Pads"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description *
-                </label>
-                <textarea
-                  name="description"
-                  required
-                  rows={6}
-                  placeholder="Provide detailed description of the part..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+        {/* Main Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto">
+          <form onSubmit={handleSubmit} className="flex">
+            {/* Left Column */}
+            <div className="w-1/2 px-6 py-5 border-r border-gray-200">
+              <div className="space-y-4">
+                {/* Product Title */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Category *
+                  <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">
+                    Product Title *
                   </label>
-                  <select
-                    name="category"
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Select category</option>
-                    <option value="Engine">Engine Parts</option>
-                    <option value="Brakes">Brake Systems</option>
-                    <option value="Suspension">Suspension</option>
-                    <option value="Electrical">Electrical</option>
-                    <option value="Transmission">Transmission</option>
-                    <option value="Body">Body Parts</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Condition *
-                  </label>
-                  <select
-                    name="condition"
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="New">New</option>
-                    <option value="Used">Used</option>
-                    <option value="Refurbished">Refurbished</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Pricing */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Pricing</h2>
-
-            <div className="space-y-4">
-              <div>
-                <label className="flex items-center mb-4">
                   <input
-                    type="checkbox"
-                    name="is_auction"
-                    checked={isAuction}
-                    onChange={(e) => setIsAuction(e.target.checked)}
-                    className="mr-2 w-4 h-4"
+                    type="text"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleInputChange}
+                    required
+                    placeholder="e.g., Honda Civic Brake Pads"
+                    className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-sm text-gray-900 font-medium"
                   />
-                  <span className="text-sm font-medium text-gray-700">
-                    List as Auction (for vintage/rare parts)
-                  </span>
-                </label>
-              </div>
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {isAuction ? "Starting Price (PKR) *" : "Price (PKR) *"}
-                </label>
-                <input
-                  type="number"
-                  name="price"
-                  required
-                  min="0"
-                  step="100"
-                  placeholder="0"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  {isAuction
-                    ? "Set a minimum starting bid amount"
-                    : "Set a fixed price for your item"}
-                </p>
-              </div>
-            </div>
-          </div>
+                {/* Product Description */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">
+                    Product Description *
+                  </label>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    required
+                    rows={4}
+                    placeholder="Provide detailed description of the part..."
+                    className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-sm text-gray-900 font-medium resize-none"
+                  />
+                </div>
 
-          {/* Images */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Images *</h2>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Upload Photos (At least 1 required, max 4)
-              </label>
-              <input
-                type="file"
-                name="images"
-                accept="image/jpeg,image/jpg,image/png"
-                multiple
-                required
-                onChange={handleImageChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Accepted formats: JPG, PNG (max 5MB each)
-              </p>
-            </div>
-
-            {/* Image Previews */}
-            {previews.length > 0 && (
-              <div className="mt-4 grid grid-cols-4 gap-4">
-                {previews.map((preview, index) => (
-                  <div
-                    key={index}
-                    className="aspect-square bg-gray-100 rounded-lg overflow-hidden"
-                  >
-                    <img
-                      src={preview}
-                      alt={`Preview ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
+                {/* Category & Condition */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">
+                      Category *
+                    </label>
+                    <select
+                      name="category"
+                      value={formData.category}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-sm font-medium"
+                    >
+                      <option value="">Select</option>
+                      <option value="Engine">Engine</option>
+                      <option value="Brakes">Brakes</option>
+                      <option value="Suspension">Suspension</option>
+                      <option value="Electrical">Electrical</option>
+                      <option value="Transmission">Transmission</option>
+                      <option value="Body">Body Parts</option>
+                    </select>
                   </div>
-                ))}
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">
+                      Condition *
+                    </label>
+                    <select
+                      name="condition"
+                      value={formData.condition}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-sm font-medium"
+                    >
+                      <option value="New">New</option>
+                      <option value="Used">Used</option>
+                      <option value="Refurbished">Refurbished</option>
+                    </select>
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
-
-          {/* Hidden seller ID field - in real app, this would come from auth */}
-          <input type="hidden" name="sellerId" value="mock-seller-id" />
-
-          {/* Submit */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex gap-4">
-              <Link
-                to="/dashboard"
-                className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 text-center font-semibold rounded-lg hover:bg-gray-300 transition-colors"
-              >
-                Cancel
-              </Link>
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                {loading
-                  ? "Creating..."
-                  : isAuction
-                    ? "Create Auction"
-                    : "Create Listing"}
-              </button>
             </div>
-          </div>
-        </form>
+
+            {/* Right Column */}
+            <div className="w-1/2 px-6 py-5">
+              <div className="space-y-4">
+                {/* Pricing Section */}
+                <div className="bg-red-50 p-4 rounded-lg border-2 border-red-200">
+                  <h3 className="text-sm font-black text-gray-900 mb-3 flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-red-600" />
+                    Pricing Information
+                  </h3>
+
+                  <div className="mb-3">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isAuction}
+                        onChange={(e) => setIsAuction(e.target.checked)}
+                        className="w-4 h-4 rounded accent-red-600"
+                      />
+                      <span className="font-bold text-gray-900 text-xs">
+                        List as Auction (for rare parts)
+                      </span>
+                    </label>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">
+                      {isAuction ? "Starting Bid (PKR) *" : "Price (PKR) *"}
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lg font-black text-gray-400">
+                        ₨
+                      </span>
+                      <input
+                        type="number"
+                        name="price"
+                        value={formData.price}
+                        onChange={handleInputChange}
+                        required
+                        min="0"
+                        step="100"
+                        placeholder="0"
+                        className="w-full pl-9 pr-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-sm text-gray-900 font-bold"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Product Images Section */}
+                <div>
+                  <h3 className="text-sm font-black text-gray-900 mb-2 flex items-center gap-2">
+                    <ImagePlus className="w-4 h-4 text-red-600" />
+                    Product Images
+                  </h3>
+
+                  <label className="block text-xs font-bold text-gray-600 mb-2 uppercase">
+                    Upload Photos (At least 1, max 4) *
+                  </label>
+
+                  <div className="relative border-2 border-dashed border-red-300 rounded-lg p-4 text-center hover:bg-red-50 transition-colors">
+                    <input
+                      type="file"
+                      name="images"
+                      accept="image/jpeg,image/jpg,image/png"
+                      multiple
+                      onChange={handleImageChange}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                    <div className="pointer-events-none">
+                      <ImagePlus className="w-8 h-8 text-red-400 mx-auto mb-1" />
+                      <p className="font-bold text-gray-900 text-xs">
+                        Click to upload or drag
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Image Previews */}
+                  {previews.length > 0 && (
+                    <div className="mt-3">
+                      <p className="text-xs font-bold text-gray-700 mb-2">
+                        {previews.length} photo
+                        {previews.length !== 1 ? "s" : ""} uploaded
+                      </p>
+                      <div className="grid grid-cols-4 gap-2">
+                        {previews.map((preview, index) => (
+                          <div key={index} className="relative group">
+                            <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                              <img
+                                src={preview}
+                                alt={`Preview ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeImage(index)}
+                              className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        {/* Footer - Fixed */}
+        <div className="flex gap-3 px-6 py-3 bg-gray-50 border-t border-gray-200 flex-shrink-0 justify-end">
+          <Link
+            to="/dashboard"
+            className="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-900 font-bold rounded-lg transition-all text-sm"
+          >
+            Cancel
+          </Link>
+          <button
+            type="submit"
+            disabled={
+              loading ||
+              !isStep1Complete ||
+              !isStep2Complete ||
+              !isStep3Complete
+            }
+            onClick={(e) => {
+              const form = (e.target as HTMLButtonElement).closest("form");
+              if (form)
+                form.dispatchEvent(new Event("submit", { bubbles: true }));
+            }}
+            className="px-6 py-2 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 disabled:from-gray-400 disabled:to-gray-400 text-white font-bold rounded-lg transition-all text-sm disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            ✓ Create Product
+          </button>
+        </div>
       </div>
     </div>
   );

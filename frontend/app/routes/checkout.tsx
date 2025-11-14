@@ -1,6 +1,8 @@
 import { Form, Link } from "react-router";
 import { formatPrice } from "~/lib/utils";
 import { useState } from "react";
+import { useSession } from "~/lib/auth-client";
+import type { Route } from "./+types/checkout";
 
 export function meta() {
   return [

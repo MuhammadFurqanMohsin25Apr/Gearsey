@@ -5,7 +5,10 @@ import type { Route } from "./+types/orders";
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "My Orders - Gearsey" },
-    { name: "description", content: "View your order history and track deliveries" },
+    {
+      name: "description",
+      content: "View your order history and track deliveries",
+    },
   ];
 }
 
@@ -67,10 +70,22 @@ export default function Orders() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="bg-white rounded-2xl shadow-xl p-12 text-center max-w-md">
-          <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+          <svg
+            className="w-16 h-16 text-gray-400 mx-auto mb-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+            />
           </svg>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Login Required</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            Login Required
+          </h2>
           <p className="text-gray-600 mb-6">Please login to view your orders</p>
           <Link
             to="/login"
@@ -111,7 +126,10 @@ export default function Orders() {
         {mockOrders.length > 0 ? (
           <div className="space-y-6">
             {mockOrders.map((order) => (
-              <div key={order._id} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+              <div
+                key={order._id}
+                className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+              >
                 {/* Order Header */}
                 <div className="bg-gradient-to-r from-red-50 to-orange-50 px-6 py-4 border-b border-gray-200">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -120,7 +138,8 @@ export default function Orders() {
                         Order #{order.orderNumber}
                       </h3>
                       <p className="text-sm text-gray-600">
-                        Placed on {new Date(order.date).toLocaleDateString("en-US", {
+                        Placed on{" "}
+                        {new Date(order.date).toLocaleDateString("en-US", {
                           year: "numeric",
                           month: "long",
                           day: "numeric",
@@ -128,7 +147,9 @@ export default function Orders() {
                       </p>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className={`px-4 py-2 rounded-full text-sm font-semibold capitalize ${getStatusColor(order.status)}`}>
+                      <span
+                        className={`px-4 py-2 rounded-full text-sm font-semibold capitalize ${getStatusColor(order.status)}`}
+                      >
                         {order.deliveryStatus.replace("-", " ")}
                       </span>
                       <p className="text-lg font-bold text-gray-900">
@@ -142,15 +163,32 @@ export default function Orders() {
                 <div className="p-6">
                   <div className="space-y-4">
                     {order.items.map((item, index) => (
-                      <div key={index} className="flex items-center gap-4 pb-4 border-b border-gray-100 last:border-0">
+                      <div
+                        key={index}
+                        className="flex items-center gap-4 pb-4 border-b border-gray-100 last:border-0"
+                      >
                         <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          <svg
+                            className="w-10 h-10 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                            />
                           </svg>
                         </div>
                         <div className="flex-1">
-                          <h4 className="font-semibold text-gray-900">{item.name}</h4>
-                          <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
+                          <h4 className="font-semibold text-gray-900">
+                            {item.name}
+                          </h4>
+                          <p className="text-sm text-gray-600">
+                            Quantity: {item.quantity}
+                          </p>
                         </div>
                         <div className="text-right">
                           <p className="font-semibold text-gray-900">
@@ -170,7 +208,9 @@ export default function Orders() {
                   {/* Order Actions */}
                   <div className="mt-6 flex flex-wrap gap-3">
                     <button
-                      onClick={() => alert("Order details feature coming soon!")}
+                      onClick={() =>
+                        alert("Order details feature coming soon!")
+                      }
                       className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
                     >
                       View Details
@@ -192,7 +232,9 @@ export default function Orders() {
                       </button>
                     )}
                     <button
-                      onClick={() => alert("Invoice download feature coming soon!")}
+                      onClick={() =>
+                        alert("Invoice download feature coming soon!")
+                      }
                       className="px-6 py-2 border-2 border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
                     >
                       Download Invoice
@@ -204,11 +246,25 @@ export default function Orders() {
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow-md p-12 text-center">
-            <svg className="w-20 h-20 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            <svg
+              className="w-20 h-20 text-gray-400 mx-auto mb-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+              />
             </svg>
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">No Orders Yet</h3>
-            <p className="text-gray-600 mb-6">Start shopping to see your orders here</p>
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">
+              No Orders Yet
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Start shopping to see your orders here
+            </p>
             <Link
               to="/products"
               className="inline-block px-8 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-lg hover:from-red-700 hover:to-red-800 transition-all duration-300 shadow-lg"

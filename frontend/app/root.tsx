@@ -28,7 +28,9 @@ export const links: Route.LinksFunction = () => [
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
-  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
+  const isAuthPage =
+    location.pathname === "/login" || location.pathname === "/signup";
+  const isAdminPage = location.pathname.startsWith("/admin");
 
   return (
     <html lang="en">
@@ -38,10 +40,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Meta />
         <Links />
       </head>
-      <body className={isAuthPage ? "h-screen flex flex-col overflow-hidden" : "min-h-screen flex flex-col"}>
-        <Header />
-        <main className={isAuthPage ? "flex-1 overflow-y-auto" : "flex-1"}>{children}</main>
-        {!isAuthPage && <Footer />}
+      <body
+        className={
+          isAuthPage
+            ? "h-screen flex flex-col overflow-hidden"
+            : "min-h-screen flex flex-col"
+        }
+      >
+        {!isAdminPage && <Header />}
+        <main className={isAuthPage ? "flex-1 overflow-y-auto" : "flex-1"}>
+          {children}
+        </main>
+        {!isAuthPage && !isAdminPage && <Footer />}
         <ScrollRestoration />
         <Scripts />
       </body>

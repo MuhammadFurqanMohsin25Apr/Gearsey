@@ -1,5 +1,16 @@
 // Utility functions for formatting and helpers
 
+// Merge class names - similar to clsx/classnames
+export function cn(
+  ...classes: (string | undefined | null | boolean)[]
+): string {
+  return classes
+    .filter((c) => typeof c === "string")
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function formatPrice(price: number): string {
   return new Intl.NumberFormat("en-PK", {
     style: "currency",

@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router";
-import { useState } from "react";
-import { authClient } from "~/lib/auth-client";
+import { useState, useEffect } from "react";
+import { authClient, useSession } from "~/lib/auth-client";
 
 export function meta() {
   return [
@@ -11,10 +11,18 @@ export function meta() {
 
 export default function Login() {
   const navigate = useNavigate();
+  const { data: session } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Redirect if already logged in (client-side check)
+  useEffect(() => {
+    if (session?.user) {
+      navigate("/dashboard");
+    }
+  }, [session, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,24 +30,34 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const { data, error: signInError } = await authClient.signIn.email({
-        email,
-        password,
-      }, {
-        onRequest: () => {
-          // Show loading state
+      const { data, error: signInError } = await authClient.signIn.email(
+        {
+          email,
+          password,
         },
-        onSuccess: () => {
-          // Redirect to dashboard
-          navigate("/dashboard");
-        },
-        onError: (ctx) => {
-          setError(ctx.error.message || "Login failed");
-        },
-      });
+        {
+          onRequest: () => {
+            // Show loading state
+          },
+          onSuccess: (ctx) => {
+            // Successfully signed in
+          },
+          onError: (ctx) => {
+            setError(ctx.error.message || "Login failed");
+          },
+        }
+      );
 
       if (signInError) {
         setError(signInError.message || "Login failed");
+      } else if (data?.user) {
+        // Redirect based on user role after successful login
+        const userRole = data.user.role;
+        if (userRole === "admin") {
+          navigate("/admin");
+        } else {
+          navigate("/dashboard");
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
@@ -66,8 +84,16 @@ export default function Login() {
         <div className="bg-white rounded-2xl shadow-2xl p-8">
           {error && (
             <div className="bg-red-50 border-l-4 border-red-600 text-red-700 px-3 py-2 rounded mb-4 flex items-center text-sm">
-              <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              <svg
+                className="w-4 h-4 mr-2 flex-shrink-0"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                  clipRule="evenodd"
+                />
               </svg>
               <span className="font-medium">{error}</span>
             </div>
@@ -75,7 +101,10 @@ export default function Login() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="email" className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">
+              <label
+                htmlFor="email"
+                className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide"
+              >
                 Email Address
               </label>
               <input
@@ -90,7 +119,10 @@ export default function Login() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">
+              <label
+                htmlFor="password"
+                className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide"
+              >
                 Password
               </label>
               <input
@@ -106,10 +138,16 @@ export default function Login() {
 
             <div className="flex items-center justify-between text-sm">
               <label className="flex items-center cursor-pointer">
-                <input type="checkbox" className="w-3.5 h-3.5 text-red-600 border-gray-300 rounded focus:ring-red-500 cursor-pointer" />
+                <input
+                  type="checkbox"
+                  className="w-3.5 h-3.5 text-red-600 border-gray-300 rounded focus:ring-red-500 cursor-pointer"
+                />
                 <span className="ml-2 text-gray-600 text-xs">Remember me</span>
               </label>
-              <Link to="/forgot-password" className="text-xs font-semibold text-red-600 hover:text-red-700">
+              <Link
+                to="/forgot-password"
+                className="text-xs font-semibold text-red-600 hover:text-red-700"
+              >
                 Forgot password?
               </Link>
             </div>
@@ -121,9 +159,25 @@ export default function Login() {
             >
               {loading ? (
                 <>
-                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   <span>Signing in...</span>
                 </>

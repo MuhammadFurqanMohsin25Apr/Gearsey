@@ -2,7 +2,7 @@ import { Link } from "react-router";
 import type { Listing } from "~/types";
 import { formatPrice, getConditionBadgeColor, truncateText } from "~/lib/utils";
 import { api } from "~/lib/api";
-import { Flame, Gavel } from "lucide-react";
+import { Flame, Gavel, Store, BadgeCheck } from "lucide-react";
 
 interface ProductCardProps {
   product: Listing;
@@ -18,6 +18,13 @@ export function ProductCard({ product }: ProductCardProps) {
   const rating = 4.5;
   const reviews = Math.floor(Math.random() * 50) + 10;
   const discount = product.is_auction ? 0 : Math.floor(Math.random() * 30) + 10;
+
+  // Mock seller data (in production, fetch from API)
+  const sellerRating = (4.5 + Math.random() * 0.5).toFixed(1);
+  const sellerName =
+    typeof product.sellerId === "object" && product.sellerId?.name
+      ? product.sellerId.name
+      : "Quality Parts";
 
   return (
     <Link
@@ -112,12 +119,33 @@ export function ProductCard({ product }: ProductCardProps) {
           <span className="text-xs text-gray-600">({reviews})</span>
         </div>
 
+        {/* Seller Info */}
+        <div className="flex items-center gap-2 mb-3 pb-3 border-b border-gray-200">
+          <Store className="w-4 h-4 text-gray-400" />
+          <span className="text-xs text-gray-600 flex items-center gap-1">
+            {sellerName}
+            <BadgeCheck className="w-3 h-3 text-blue-500" />
+          </span>
+          <span className="ml-auto flex items-center gap-1 text-xs font-semibold text-gray-700">
+            <svg
+              className="w-3 h-3 text-yellow-400 fill-current"
+              viewBox="0 0 20 20"
+            >
+              <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+            </svg>
+            {sellerRating}
+          </span>
+        </div>
+
         {/* Price Section */}
         <div className="flex items-end justify-between mb-4">
           <div>
             {discount > 0 && !product.is_auction && (
               <div className="text-sm text-gray-400 line-through mb-1">
-                PKR {Math.floor(product.price * (1 + discount / 100)).toLocaleString()}
+                PKR{" "}
+                {Math.floor(
+                  product.price * (1 + discount / 100)
+                ).toLocaleString()}
               </div>
             )}
             <div className="flex items-baseline gap-2">
@@ -125,7 +153,9 @@ export function ProductCard({ product }: ProductCardProps) {
                 {formatPrice(product.price)}
               </span>
               {product.is_auction && (
-                <span className="text-xs text-gray-500 font-medium">starting</span>
+                <span className="text-xs text-gray-500 font-medium">
+                  starting
+                </span>
               )}
             </div>
           </div>
@@ -133,7 +163,13 @@ export function ProductCard({ product }: ProductCardProps) {
 
         {/* CTA Button */}
         <button className="w-full px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white text-sm font-bold rounded-lg transition-all duration-300 shadow-md hover:shadow-xl flex items-center justify-center gap-2">
-          {product.is_auction ? <><Gavel className="w-4 h-4" /> PLACE BID</> : "VIEW DETAILS"}
+          {product.is_auction ? (
+            <>
+              <Gavel className="w-4 h-4" /> PLACE BID
+            </>
+          ) : (
+            "VIEW DETAILS"
+          )}
         </button>
       </div>
     </Link>
