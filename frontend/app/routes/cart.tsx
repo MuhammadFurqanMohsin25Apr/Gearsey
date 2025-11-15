@@ -1,7 +1,7 @@
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { formatPrice } from "~/lib/utils";
 import { api } from "~/lib/api";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "~/lib/auth-client";
 
 export function meta() {
@@ -29,7 +29,22 @@ const mockCartItems: CartItem[] = [
 
 export default function Cart() {
   const { data: session } = useSession();
+  const navigate = useNavigate();
   const [cartItems, setCartItems] = useState<CartItem[]>(mockCartItems);
+
+  // Protect cart - only logged in users can access
+  useEffect(() => {
+    if (!session) {
+      // Not authenticated - redirect to login
+      navigate("/login");
+      return;
+    }
+  }, [session, navigate]);
+
+  // If not authenticated, don't render the page
+  if (!session) {
+    return null;
+  }
 
   const updateQuantity = (index: number, newQuantity: number) => {
     if (newQuantity < 1) return;

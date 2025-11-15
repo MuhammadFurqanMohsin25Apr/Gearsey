@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { api } from "~/lib/api";
 import type { Listing } from "~/types";
 import {
@@ -87,6 +87,7 @@ export default function ProductDetail({
 
   const { data: session } = useSession();
   const user = session?.user;
+  const navigate = useNavigate();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
 
@@ -118,6 +119,13 @@ export default function ProductDetail({
   );
 
   const handleAddToCart = () => {
+    // Check if user is logged in
+    if (!session) {
+      // Not authenticated - redirect to login
+      navigate("/login");
+      return;
+    }
+    
     // TODO: Implement cart functionality
     alert(`Added ${quantity} item(s) to cart!`);
   };

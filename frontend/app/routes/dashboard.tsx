@@ -40,6 +40,26 @@ export default function Dashboard() {
   const isBuyer = user?.role === "buyer";
   const isSeller = user?.role === "seller";
 
+  // Protect dashboard - only sellers can access
+  useEffect(() => {
+    if (!session) {
+      // Not authenticated - redirect to login
+      navigate("/login");
+      return;
+    }
+
+    if (!isSeller) {
+      // Not a seller - redirect to login
+      navigate("/login");
+      return;
+    }
+  }, [session, isSeller, navigate]);
+
+  // If not authenticated or not a seller, don't render the page
+  if (!session || !isSeller) {
+    return null;
+  }
+
   // Fetch seller's products
   useEffect(() => {
     async function fetchSellerProducts() {
@@ -58,13 +78,6 @@ export default function Dashboard() {
 
     fetchSellerProducts();
   }, [isSeller, user?.id, revalidator.state]);
-
-  // Redirect admin users to admin dashboard
-  useEffect(() => {
-    if (user?.role === "admin") {
-      navigate("/admin");
-    }
-  }, [user?.role, navigate]);
 
   const activeListings = myListings.filter((l: Listing) => l.status === "Active");
   const soldListings = myListings.filter((l: Listing) => l.status === "Sold");
