@@ -148,18 +148,12 @@ export function AddProductDialog({
   const isStep2Complete = formData.price;
   const isStep3Complete = previews.length > 0;
 
-  const steps = [
-    { label: "Details", complete: Boolean(isStep1Complete) },
-    { label: "Pricing", complete: Boolean(isStep2Complete) },
-    { label: "Media", complete: Boolean(isStep3Complete) },
-  ];
-
   const cardBaseClasses =
     "bg-white rounded-2xl border border-gray-200/70 shadow-sm hover:shadow-lg transition-shadow";
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-7xl w-[92vw] p-0 border-0 overflow-y-auto max-h-[95vh] flex flex-col bg-white shadow-2xl">
+      <DialogContent className="max-w-none w-[100vw] p-0 border-0 overflow-y-auto max-h-[95vh] flex flex-col bg-white shadow-2xl">
         <DialogHeader className="px-8 py-6 border-b border-gray-100 bg-white/80 backdrop-blur">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-600 to-orange-500 text-white flex items-center justify-center shadow-md">
@@ -175,29 +169,6 @@ export function AddProductDialog({
             </div>
           </div>
         </DialogHeader>
-
-        {/* Progress Indicator */}
-        <div className="bg-gray-50 border-b border-gray-100 px-8 py-4">
-          <ol className="grid grid-cols-3 gap-4">
-            {steps.map((step, index) => (
-              <li
-                key={step.label}
-                className={`rounded-2xl px-4 py-3 flex items-center gap-3 text-sm font-semibold ${step.complete ? "bg-white text-green-700 border border-green-200 shadow-sm" : "bg-white/60 text-gray-500 border border-gray-100"}`}
-              >
-                <span
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${step.complete ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}
-                >
-                  {step.complete ? (
-                    <CheckCircle2 className="w-4 h-4" />
-                  ) : (
-                    index + 1
-                  )}
-                </span>
-                {step.label}
-              </li>
-            ))}
-          </ol>
-        </div>
 
         {/* Main Content */}
         <div className="flex-1 overflow-y-auto bg-gray-50/80">
