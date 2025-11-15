@@ -9,6 +9,7 @@ import {
 } from "~/lib/utils";
 import { useState } from "react";
 import { useSession } from "~/lib/auth-client";
+import { cartManager } from "~/lib/cart";
 import { Flame, CheckCircle, Star, Package } from "lucide-react";
 
 export function meta() {
@@ -125,9 +126,13 @@ export default function ProductDetail({
       navigate("/login");
       return;
     }
-    
-    // TODO: Implement cart functionality
+
+    // Add to cart
+    cartManager.addItem(product, quantity);
     alert(`Added ${quantity} item(s) to cart!`);
+    
+    // Reset quantity
+    setQuantity(1);
   };
 
   const handleSubmitReview = (e: React.FormEvent) => {

@@ -12,6 +12,9 @@ import type { Route } from "./+types/root";
 import "./app.css";
 import { Header } from "./components/Header";
 import { Footer } from "./components/Footer";
+import { useSession } from "./lib/auth-client";
+import { useEffect, useRef } from "react";
+import { cartManager } from "./lib/cart";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -28,6 +31,18 @@ export const links: Route.LinksFunction = () => [
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
+  const { data: session } = useSession();
+  const previousSessionRef = useRef(session);
+
+  // Monitor session changes and clear cart on logout
+  useEffect(() => {
+    // If session was truthy and now is falsy, user logged out
+    if (previousSessionRef.current && !session) {
+      cartManager.clearCart();
+    }
+    previousSessionRef.current = session;
+  }, [session]);
+
   const isAuthPage =
     location.pathname === "/login" || location.pathname === "/signup";
   const isAdminPage = location.pathname.startsWith("/admin");

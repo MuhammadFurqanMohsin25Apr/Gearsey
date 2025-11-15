@@ -1,7 +1,9 @@
 import { Form, Link } from "react-router";
 import { formatPrice } from "~/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "~/lib/auth-client";
+import { cartManager } from "~/lib/cart";
+import type { CartItem } from "~/lib/cart";
 import type { Route } from "./+types/checkout";
 
 export function meta() {
@@ -13,9 +15,17 @@ export function meta() {
 
 export default function Checkout() {
   const [paymentMethod, setPaymentMethod] = useState("jazzcash");
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
-  // Mock order total
-  const orderTotal = 0;
+  useEffect(() => {
+    const cart = cartManager.getCart();
+    setCartItems(cart);
+  }, []);
+
+  // Calculate order total
+  const subtotal = cartManager.getTotal(cartItems);
+  const shipping = cartItems.length > 0 ? 200 : 0;
+  const orderTotal = subtotal + shipping;
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -189,19 +199,37 @@ export default function Checkout() {
                 Order Summary
               </h2>
 
-              {/* Items would be listed here */}
-              <div className="mb-6 text-center text-gray-500 py-8">
-                <p>No items in cart</p>
-              </div>
+              {/* Items */}
+              {cartItems.length === 0 ? (
+                <div className="mb-6 text-center text-gray-500 py-8">
+                  <p>No items in cart</p>
+                </div>
+              ) : (
+                <div className="mb-6 space-y-3 pb-6 border-b border-gray-200">
+                  {cartItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex justify-between text-sm text-gray-700"
+                    >
+                      <span>
+                        {item.product.name} x {item.quantity}
+                      </span>
+                      <span className="font-medium">
+                        {formatPrice(item.product.price * item.quantity)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <div className="space-y-3 mb-6 border-t border-gray-200 pt-6">
                 <div className="flex justify-between text-gray-700">
                   <span>Subtotal</span>
-                  <span className="font-medium">{formatPrice(0)}</span>
+                  <span className="font-medium">{formatPrice(subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-gray-700">
                   <span>Shipping</span>
-                  <span className="font-medium">{formatPrice(0)}</span>
+                  <span className="font-medium">{formatPrice(shipping)}</span>
                 </div>
                 <div className="border-t border-gray-200 pt-3 flex justify-between text-lg font-bold text-gray-900">
                   <span>Total</span>

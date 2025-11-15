@@ -3,6 +3,8 @@ import { formatPrice } from "~/lib/utils";
 import { api } from "~/lib/api";
 import { useState, useEffect } from "react";
 import { useSession } from "~/lib/auth-client";
+import { cartManager } from "~/lib/cart";
+import type { CartItem } from "~/lib/cart";
 
 export function meta() {
   return [
@@ -14,53 +16,53 @@ export function meta() {
   ];
 }
 
-interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  image: string;
-}
-
-// Mock cart items - in real app, this would come from context/state management
-const mockCartItems: CartItem[] = [
-  // Empty cart for now
-];
-
 export default function Cart() {
   const { data: session } = useSession();
   const navigate = useNavigate();
-  const [cartItems, setCartItems] = useState<CartItem[]>(mockCartItems);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Protect cart - only logged in users can access
+  // Load cart from storage on mount and subscribe to storage changes
   useEffect(() => {
+    // Protect cart - only logged in users can access
     if (!session) {
       // Not authenticated - redirect to login
       navigate("/login");
       return;
     }
+
+    // Load cart from storage
+    const cart = cartManager.getCart();
+    setCartItems(cart);
+    setIsLoading(false);
+
+    // Listen for storage changes from other tabs
+    const handleStorageChange = () => {
+      const updatedCart = cartManager.getCart();
+      setCartItems(updatedCart);
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, [session, navigate]);
 
-  // If not authenticated, don't render the page
-  if (!session) {
+  // If not authenticated or still loading, don't render the page
+  if (!session || isLoading) {
     return null;
   }
 
-  const updateQuantity = (index: number, newQuantity: number) => {
+  const updateQuantity = (productId: string, newQuantity: number) => {
     if (newQuantity < 1) return;
-    const updated = [...cartItems];
-    updated[index] = { ...updated[index], quantity: newQuantity };
+    const updated = cartManager.updateQuantity(productId, newQuantity);
     setCartItems(updated);
   };
 
-  const removeItem = (index: number) => {
-    setCartItems(cartItems.filter((_, i) => i !== index));
+  const removeItem = (productId: string) => {
+    const updated = cartManager.removeItem(productId);
+    setCartItems(updated);
   };
 
-  const subtotal = cartItems.reduce(
-    (sum, item: any) => sum + item.product.price * item.quantity,
-    0
-  );
+  const subtotal = cartManager.getTotal(cartItems);
   const shipping = cartItems.length > 0 ? 200 : 0;
   const total = subtotal + shipping;
 
@@ -102,15 +104,15 @@ export default function Cart() {
             {/* Cart Items */}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-lg shadow-md">
-                {cartItems.map((item: any, index: number) => (
+                {cartItems.map((item: CartItem) => (
                   <div
-                    key={index}
+                    key={item.id}
                     className="flex gap-6 p-6 border-b border-gray-200 last:border-b-0"
                   >
                     {/* Product Image */}
                     <Link
                       to={`/products/${item.product._id}`}
-                      className="flex-shrink-0 w-24 h-24 bg-gray-100 rounded-lg overflow-hidden"
+                      className="shrink-0 w-24 h-24 bg-gray-100 rounded-lg overflow-hidden"
                     >
                       <img
                         src={
@@ -144,7 +146,7 @@ export default function Cart() {
                     {/* Quantity Controls */}
                     <div className="flex flex-col items-end justify-between">
                       <button
-                        onClick={() => removeItem(index)}
+                        onClick={() => removeItem(item.id)}
                         className="text-red-600 hover:text-red-700 text-sm font-medium"
                       >
                         Remove
@@ -152,7 +154,7 @@ export default function Cart() {
                       <div className="flex items-center border border-gray-300 rounded-lg">
                         <button
                           onClick={() =>
-                            updateQuantity(index, item.quantity - 1)
+                            updateQuantity(item.id, item.quantity - 1)
                           }
                           className="px-3 py-1 hover:bg-gray-100"
                         >
@@ -163,7 +165,7 @@ export default function Cart() {
                         </span>
                         <button
                           onClick={() =>
-                            updateQuantity(index, item.quantity + 1)
+                            updateQuantity(item.id, item.quantity + 1)
                           }
                           className="px-3 py-1 hover:bg-gray-100"
                         >

@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import { useState, useEffect, useRef } from "react";
 import { useSession, signOut } from "~/lib/auth-client";
+import { cartManager } from "~/lib/cart";
 import {
   Search,
   Package,
@@ -19,6 +20,7 @@ export function Header() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [cartItemCount, setCartItemCount] = useState(0);
   const settingsRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -34,6 +36,28 @@ export function Header() {
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Update cart item count
+  useEffect(() => {
+    const updateCartCount = () => {
+      const count = cartManager.getUniqueItemCount();
+      setCartItemCount(count);
+    };
+
+    // Initial load
+    updateCartCount();
+
+    // Listen for storage changes from other tabs
+    window.addEventListener("storage", updateCartCount);
+    
+    // Also listen for a custom event we'll dispatch when cart changes
+    window.addEventListener("cartUpdated", updateCartCount);
+
+    return () => {
+      window.removeEventListener("storage", updateCartCount);
+      window.removeEventListener("cartUpdated", updateCartCount);
+    };
   }, []);
 
   // Apply blur effect to body when modal is open
@@ -60,6 +84,7 @@ export function Header() {
   };
 
   const handleLogout = async () => {
+    cartManager.clearCart();
     await signOut();
     window.location.href = "/";
   };
@@ -140,7 +165,7 @@ export function Header() {
                   />
                 </svg>
                 <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white text-xs font-black rounded-full flex items-center justify-center">
-                  0
+                  {cartItemCount}
                 </span>
               </Link>
             )}

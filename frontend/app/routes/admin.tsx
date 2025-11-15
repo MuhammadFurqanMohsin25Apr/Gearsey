@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { useSession, signOut } from "~/lib/auth-client";
+import { cartManager } from "~/lib/cart";
 import type { Route } from "./+types/admin";
 import {
   CheckCircle,
@@ -203,6 +204,7 @@ export default function Admin() {
   }, []);
 
   const handleLogout = async () => {
+    cartManager.clearCart();
     await signOut();
     navigate("/");
   };
