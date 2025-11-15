@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { useSession, signOut } from "~/lib/auth-client";
 import { cartManager } from "~/lib/cart";
+import { api } from "~/lib/api";
 import type { Route } from "./+types/admin";
 import {
   CheckCircle,
@@ -172,21 +173,179 @@ const topProducts = [
   { name: "Spark Plugs", sales: 128, revenue: 256000 },
 ];
 
+type TabType = "overview" | "products" | "auctions" | "users" | "orders" | "reviews";
+
+// Force recompile - fixing JSX structure
 export default function Admin() {
   const { data: session } = useSession();
   const user = session?.user;
   const isAuthenticated = !!user;
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<
-    "overview" | "products" | "auctions" | "users" | "orders" | "reviews"
-  >("overview");
+  const [activeTab, setActiveTab] = useState<TabType>("overview");
+  
+  const isOverview: boolean = activeTab === "overview";
+  const isProducts: boolean = activeTab === "products";
+  const isReviews: boolean = activeTab === "reviews";
+  const isAuctions: boolean = activeTab === "auctions";
+  const isUsers: boolean = activeTab === "users";
+  const isOrders: boolean = activeTab === "orders";
   const [products, setProducts] = useState(mockRecentProducts);
   const [reviews, setReviews] = useState(mockReviews);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [stats, setStats] = useState(mockStats);
+  const [revenueChartData, setRevenueData] = useState(revenueData);
+  const [userChartData, setUserGrowthData] = useState(userGrowthData);
+  const [categoryChartData, setCategoryData] = useState(categoryData);
+  const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
+
+  // Fetch real data from API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+
+        // Fetch orders and products in parallel
+        const [ordersData, productsData, reviewsData] = await Promise.all([
+          api.orders.getAll().catch(() => ({ orders: [] })),
+          api.products.getAll({ limit: 50 }).catch(() => ({ products: [] })),
+          api.reviews.getAll().catch(() => ({ reviews: [] })),
+        ]) as [any, any, any];
+
+        // Update products
+        if (productsData.products && Array.isArray(productsData.products)) {
+          const formattedProducts = productsData.products
+            .slice(0, 10)
+            .map((p: any) => ({
+              id: p._id,
+              name: p.title,
+              seller: p.sellerId,
+              price: p.price,
+              status: "approved",
+              date: new Date(p.createdAt).toISOString().split("T")[0],
+              reviews: 0,
+            }));
+          setProducts(formattedProducts);
+        }
+
+        // Update orders
+        if (ordersData.orders && Array.isArray(ordersData.orders)) {
+          const formattedOrders = ordersData.orders
+            .slice(0, 10)
+            .map((o: any) => ({
+              id: o._id,
+              customer: o.userId,
+              amount: o.total_amount,
+              status: o.payment_status?.toLowerCase() || "pending",
+              date: new Date(o.createdAt).toISOString().split("T")[0],
+            }));
+          setOrders(formattedOrders);
+
+          // Calculate monthly revenue and order counts
+          const monthlyStats: { [key: string]: { revenue: number; orders: number } } = {};
+          ordersData.orders.forEach((order: any) => {
+            const date = new Date(order.createdAt);
+            const monthKey = date.toLocaleDateString('en-US', { month: 'short' });
+            
+            if (!monthlyStats[monthKey]) {
+              monthlyStats[monthKey] = { revenue: 0, orders: 0 };
+            }
+            monthlyStats[monthKey].revenue += order.total_amount || 0;
+            monthlyStats[monthKey].orders += 1;
+          });
+
+          // Create revenue chart data
+          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+          const newRevenueData = months.map(month => ({
+            month,
+            revenue: monthlyStats[month]?.revenue || 0,
+            orders: monthlyStats[month]?.orders || 0,
+          }));
+          setRevenueData(newRevenueData);
+
+          // Calculate user growth (based on unique customers per month)
+          const userGrowthByMonth: { [key: string]: Set<string> } = {};
+          ordersData.orders.forEach((order: any) => {
+            const date = new Date(order.createdAt);
+            const monthKey = date.toLocaleDateString('en-US', { month: 'short' });
+            
+            if (!userGrowthByMonth[monthKey]) {
+              userGrowthByMonth[monthKey] = new Set();
+            }
+            userGrowthByMonth[monthKey].add(order.userId);
+          });
+
+          let cumulativeUsers = 0;
+          const newUserGrowthData = months.map(month => {
+            cumulativeUsers += userGrowthByMonth[month]?.size || 0;
+            return { month, users: cumulativeUsers };
+          });
+          setUserGrowthData(newUserGrowthData);
+        }
+
+        // Update reviews
+        if (reviewsData.reviews && Array.isArray(reviewsData.reviews)) {
+          const formattedReviews = reviewsData.reviews
+            .slice(0, 10)
+            .map((r: any) => ({
+              id: r._id,
+              productId: r.partId,
+              productName: r.productName || "Product",
+              userName: r.userId,
+              rating: r.rating,
+              comment: r.comment,
+              date: new Date(r.createdAt).toISOString().split("T")[0],
+            }));
+          setReviews(formattedReviews);
+        }
+
+        // Calculate category distribution from products
+        if (productsData.products && Array.isArray(productsData.products)) {
+          const categoryStats: { [key: string]: number } = {};
+          productsData.products.forEach((p: any) => {
+            const category = p.categoryId?.name || 'Other';
+            categoryStats[category] = (categoryStats[category] || 0) + 1;
+          });
+
+          // Format category data
+          const colors = ["#ef4444", "#f59e0b", "#3b82f6", "#8b5cf6", "#6b7280"];
+          const newCategoryData = Object.entries(categoryStats)
+            .map(([name, value], i) => ({
+              name,
+              value: value as number,
+              color: colors[i % colors.length],
+            }))
+            .slice(0, 5);
+          
+          setCategoryData(newCategoryData);
+        }
+
+        // Calculate stats from real data
+        setStats((prev) => ({
+          ...prev,
+          totalProducts: productsData.products?.length || 0,
+          totalOrders: ordersData.orders?.length || 0,
+          totalRevenue:
+            ordersData.orders?.reduce(
+              (sum: number, o: any) => sum + (o.total_amount || 0),
+              0
+            ) || 0,
+        }));
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (isAuthenticated) {
+      fetchData();
+    }
+  }, [isAuthenticated]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -394,8 +553,7 @@ export default function Admin() {
         <aside
           className={`${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } lg:translate-x-0 fixed lg:sticky top-16 left-0 z-40 w-64 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 transition-transform duration-300 ease-in-out overflow-y-auto`}
-        >
+          } lg:translate-x-0 fixed lg:sticky top-16 left-0 z-40 w-64 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 transition-transform duration-300 ease-in-out overflow-y-auto`}>
           <nav className="p-4 space-y-2">
             {[
               { id: "overview", label: "Dashboard", icon: TrendingUp },
@@ -435,13 +593,13 @@ export default function Admin() {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Pending</span>
                 <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-bold rounded">
-                  {mockStats.pendingApprovals}
+                  {stats.pendingApprovals}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Active</span>
                 <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-bold rounded">
-                  {mockStats.activeAuctions}
+                  {stats.activeAuctions}
                 </span>
               </div>
             </div>
@@ -463,19 +621,19 @@ export default function Admin() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <h2 className="text-3xl font-bold text-gray-900 mb-1">
-                  {activeTab === "overview"
+                  {isOverview
                     ? "Dashboard Overview"
                     : activeTab.charAt(0).toUpperCase() +
                       activeTab.slice(1) +
                       " Management"}
                 </h2>
                 <p className="text-gray-600">
-                  {activeTab === "overview"
+                  {isOverview
                     ? "Welcome back! Here's what's happening today."
                     : `Manage and monitor all ${activeTab} in your marketplace`}
                 </p>
               </div>
-              {activeTab !== "overview" && (
+              {!isOverview && (
                 <div className="flex gap-3">
                   <button className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2">
                     <Download className="w-4 h-4" />
@@ -489,7 +647,7 @@ export default function Admin() {
             </div>
           </div>
 
-          {activeTab === "overview" && (
+          {isOverview && (
             <div>
               {/* Stats Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -506,7 +664,7 @@ export default function Admin() {
                     Total Products
                   </h3>
                   <p className="text-3xl font-bold text-gray-900">
-                    {mockStats.totalProducts.toLocaleString()}
+                    {stats.totalProducts.toLocaleString()}
                   </p>
                 </div>
 
@@ -523,7 +681,7 @@ export default function Admin() {
                     Total Users
                   </h3>
                   <p className="text-3xl font-bold text-gray-900">
-                    {mockStats.totalUsers.toLocaleString()}
+                    {stats.totalUsers.toLocaleString()}
                   </p>
                 </div>
 
@@ -540,7 +698,7 @@ export default function Admin() {
                     Total Orders
                   </h3>
                   <p className="text-3xl font-bold text-gray-900">
-                    {mockStats.totalOrders.toLocaleString()}
+                    {stats.totalOrders.toLocaleString()}
                   </p>
                 </div>
 
@@ -557,7 +715,7 @@ export default function Admin() {
                     Total Revenue
                   </h3>
                   <p className="text-3xl font-bold text-gray-900">
-                    PKR {(mockStats.totalRevenue / 1000).toFixed(0)}K
+                    PKR {(stats.totalRevenue / 1000).toFixed(0)}K
                   </p>
                 </div>
               </div>
@@ -568,7 +726,7 @@ export default function Admin() {
                   <div className="flex items-center justify-between mb-4">
                     <Clock className="w-10 h-10 opacity-80" />
                     <span className="text-3xl font-bold">
-                      {mockStats.activeAuctions}
+                      {stats.activeAuctions}
                     </span>
                   </div>
                   <h3 className="text-red-100 text-sm font-medium mb-1">
@@ -583,7 +741,7 @@ export default function Admin() {
                   <div className="flex items-center justify-between mb-4">
                     <AlertCircle className="w-10 h-10 opacity-80" />
                     <span className="text-3xl font-bold">
-                      {mockStats.pendingApprovals}
+                      {stats.pendingApprovals}
                     </span>
                   </div>
                   <h3 className="text-orange-100 text-sm font-medium mb-1">
@@ -642,11 +800,11 @@ export default function Admin() {
 
                         {/* Revenue line */}
                         <polyline
-                          points={revenueData
+                          points={revenueChartData
                             .map((data, i) => {
-                              const x = (i / (revenueData.length - 1)) * 600;
+                              const x = (i / (revenueChartData.length - 1)) * 600;
                               const maxRevenue = Math.max(
-                                ...revenueData.map((d) => d.revenue)
+                                ...revenueChartData.map((d) => d.revenue)
                               );
                               const y = 220 - (data.revenue / maxRevenue) * 200;
                               return `${x},${y}`;
@@ -661,11 +819,11 @@ export default function Admin() {
 
                         {/* Orders line */}
                         <polyline
-                          points={revenueData
+                          points={revenueChartData
                             .map((data, i) => {
-                              const x = (i / (revenueData.length - 1)) * 600;
+                              const x = (i / (revenueChartData.length - 1)) * 600;
                               const maxOrders = Math.max(
-                                ...revenueData.map((d) => d.orders)
+                                ...revenueChartData.map((d) => d.orders)
                               );
                               const y = 220 - (data.orders / maxOrders) * 200;
                               return `${x},${y}`;
@@ -680,10 +838,10 @@ export default function Admin() {
                         />
 
                         {/* Data points for Revenue */}
-                        {revenueData.map((data, i) => {
-                          const x = (i / (revenueData.length - 1)) * 600;
+                        {revenueChartData.map((data, i) => {
+                          const x = (i / (revenueChartData.length - 1)) * 600;
                           const maxRevenue = Math.max(
-                            ...revenueData.map((d) => d.revenue)
+                            ...revenueChartData.map((d) => d.revenue)
                           );
                           const y = 220 - (data.revenue / maxRevenue) * 200;
                           return (
@@ -700,10 +858,10 @@ export default function Admin() {
                         })}
 
                         {/* Data points for Orders */}
-                        {revenueData.map((data, i) => {
-                          const x = (i / (revenueData.length - 1)) * 600;
+                        {revenueChartData.map((data, i) => {
+                          const x = (i / (revenueChartData.length - 1)) * 600;
                           const maxOrders = Math.max(
-                            ...revenueData.map((d) => d.orders)
+                            ...revenueChartData.map((d) => d.orders)
                           );
                           const y = 220 - (data.orders / maxOrders) * 200;
                           return (
@@ -735,7 +893,7 @@ export default function Admin() {
                       </svg>
                     </div>
                     <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
-                      {revenueData.map((data, index) => (
+                      {revenueChartData.map((data, index) => (
                         <div key={index} className="text-center">
                           <p className="text-xs font-medium text-gray-500">
                             {data.month}
@@ -803,11 +961,11 @@ export default function Admin() {
 
                         {/* Area fill */}
                         <polygon
-                          points={`0,220 ${userGrowthData
+                          points={`0,220 ${userChartData
                             .map((data, i) => {
-                              const x = (i / (userGrowthData.length - 1)) * 600;
+                              const x = (i / (userChartData.length - 1)) * 600;
                               const maxUsers = Math.max(
-                                ...userGrowthData.map((d) => d.users)
+                                ...userChartData.map((d) => d.users)
                               );
                               const y = 220 - (data.users / maxUsers) * 200;
                               return `${x},${y}`;
@@ -819,11 +977,11 @@ export default function Admin() {
 
                         {/* Line */}
                         <polyline
-                          points={userGrowthData
+                          points={userChartData
                             .map((data, i) => {
-                              const x = (i / (userGrowthData.length - 1)) * 600;
+                              const x = (i / (userChartData.length - 1)) * 600;
                               const maxUsers = Math.max(
-                                ...userGrowthData.map((d) => d.users)
+                                ...userChartData.map((d) => d.users)
                               );
                               const y = 220 - (data.users / maxUsers) * 200;
                               return `${x},${y}`;
@@ -837,10 +995,10 @@ export default function Admin() {
                         />
 
                         {/* Data points */}
-                        {userGrowthData.map((data, i) => {
-                          const x = (i / (userGrowthData.length - 1)) * 600;
+                        {userChartData.map((data, i) => {
+                          const x = (i / (userChartData.length - 1)) * 600;
                           const maxUsers = Math.max(
-                            ...userGrowthData.map((d) => d.users)
+                            ...userChartData.map((d) => d.users)
                           );
                           const y = 220 - (data.users / maxUsers) * 200;
                           return (
@@ -882,7 +1040,7 @@ export default function Admin() {
                       </svg>
                     </div>
                     <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
-                      {userGrowthData.map((data, index) => (
+                      {userChartData.map((data, index) => (
                         <div key={index} className="text-center">
                           <p className="text-xs font-medium text-gray-500">
                             {data.month}
@@ -895,10 +1053,10 @@ export default function Admin() {
                               +
                               {(
                                 ((data.users -
-                                  userGrowthData[index - 1].users) /
-                                  userGrowthData[index - 1].users) *
+                                  userChartData[index - 1].users) /
+                                  userChartData[index - 1].users) *
                                 100
-                              ).toFixed(1)}
+                              ).toFixed(0)}
                               %
                             </p>
                           )}
@@ -915,7 +1073,7 @@ export default function Admin() {
                       Sales by Category
                     </h4>
                     <div className="space-y-4">
-                      {categoryData.map((category, index) => (
+                      {categoryChartData.map((category, index) => (
                         <div key={index} className="space-y-2">
                           <div className="flex items-center justify-between text-sm">
                             <span className="font-medium text-gray-700">
@@ -943,7 +1101,7 @@ export default function Admin() {
                           Total Categories
                         </span>
                         <span className="text-lg font-bold text-gray-900">
-                          {categoryData.length}
+                          {categoryChartData.length}
                         </span>
                       </div>
                     </div>
@@ -1007,37 +1165,43 @@ export default function Admin() {
                     </Link>
                   </div>
                   <div className="space-y-3">
-                    {mockRecentOrders.map((order) => (
-                      <div
-                        key={order.id}
-                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                      >
-                        <div>
-                          <p className="font-semibold text-gray-900">
-                            {order.customer}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {order.id} • {order.date}
-                          </p>
+                    {orders.length > 0 ? (
+                      orders.map((order) => (
+                        <div
+                          key={order.id}
+                          className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                        >
+                          <div>
+                            <p className="font-semibold text-gray-900">
+                              {order.customer}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {order.id} • {order.date}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-gray-900">
+                              PKR {order.amount.toLocaleString()}
+                            </p>
+                            <span
+                              className={`text-xs px-2 py-1 rounded-full font-semibold ${
+                                order.status === "completed"
+                                  ? "bg-green-100 text-green-800"
+                                  : order.status === "processing"
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : "bg-blue-100 text-blue-800"
+                              }`}
+                            >
+                              {order.status}
+                            </span>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-bold text-gray-900">
-                            PKR {order.amount.toLocaleString()}
-                          </p>
-                          <span
-                            className={`text-xs px-2 py-1 rounded-full font-semibold ${
-                              order.status === "completed"
-                                ? "bg-green-100 text-green-800"
-                                : order.status === "processing"
-                                  ? "bg-yellow-100 text-yellow-800"
-                                  : "bg-blue-100 text-blue-800"
-                            }`}
-                          >
-                            {order.status}
-                          </span>
-                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        No orders found
                       </div>
-                    ))}
+                    )}
                   </div>
                 </div>
 
@@ -1056,42 +1220,26 @@ export default function Admin() {
                     </Link>
                   </div>
                   <div className="space-y-3">
-                    {mockRecentProducts.map((product) => (
-                      <div
-                        key={product.id}
-                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                      >
+                    {products.length > 0 && products.map((product) => (
+                      <div key={product.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                         <div className="flex-1">
-                          <p className="font-semibold text-gray-900">
-                            {product.name}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            by {product.seller}
-                          </p>
+                          <p className="font-semibold text-gray-900">{product.name}</p>
+                          <p className="text-sm text-gray-500">by {product.seller}</p>
                         </div>
                         <div className="text-right ml-4">
-                          <p className="font-bold text-gray-900">
-                            PKR {product.price.toLocaleString()}
-                          </p>
-                          <span
-                            className={`text-xs px-2 py-1 rounded-full font-semibold ${
-                              product.status === "approved"
-                                ? "bg-green-100 text-green-800"
-                                : "bg-yellow-100 text-yellow-800"
-                            }`}
-                          >
-                            {product.status}
-                          </span>
+                          <p className="font-bold text-gray-900">PKR {product.price.toLocaleString()}</p>
+                          <span className={`text-xs px-2 py-1 rounded-full font-semibold ${product.status === "approved" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}>{product.status}</span>
                         </div>
                       </div>
                     ))}
+                    {products.length === 0 && <div className="text-center py-8 text-gray-500">No products found</div>}
                   </div>
                 </div>
               </div>
             </div>
           )}
-
-          {activeTab === "products" && (
+          
+          {isProducts && (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                 <div>
@@ -1241,7 +1389,7 @@ export default function Admin() {
             </div>
           )}
 
-          {activeTab === "reviews" && (
+          {isReviews && (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                 <div>
@@ -1335,7 +1483,7 @@ export default function Admin() {
             </div>
           )}
 
-          {activeTab === "auctions" && (
+          {isAuctions && (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
               <div className="text-center py-12">
                 <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -1355,7 +1503,7 @@ export default function Admin() {
             </div>
           )}
 
-          {activeTab === "users" && (
+          {isUsers && (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
               <div className="text-center py-12">
                 <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -1375,22 +1523,103 @@ export default function Admin() {
             </div>
           )}
 
-          {activeTab === "orders" && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
-              <div className="text-center py-12">
-                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <ShoppingBag className="w-10 h-10 text-green-600" />
+          {isOrders && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    Order Management
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Track orders, manage fulfillment, and handle customer
+                    transactions efficiently
+                  </p>
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                  Order Management
-                </h3>
-                <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                  Track orders, manage fulfillment, and handle customer
-                  transactions efficiently
-                </p>
-                <button className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition-all shadow-md font-semibold">
-                  Coming Soon
-                </button>
+                <div className="flex gap-3">
+                  <button className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    <Filter className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Order ID
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Customer
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Amount
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {orders.length > 0 ? (
+                      orders.map((order) => (
+                        <tr
+                          key={order.id}
+                          className="hover:bg-gray-50 transition-colors"
+                        >
+                          <td className="px-6 py-4">
+                            <div className="text-sm font-semibold text-gray-900">
+                              {order.id}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600">
+                            {order.customer}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900 font-bold">
+                            PKR {order.amount.toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span
+                              className={`px-3 py-1 text-xs rounded-full font-semibold ${
+                                order.status === "completed"
+                                  ? "bg-green-100 text-green-800"
+                                  : order.status === "processing"
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : "bg-blue-100 text-blue-800"
+                              }`}
+                            >
+                              {order.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600">
+                            {order.date}
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium space-x-3">
+                            <button className="text-blue-600 hover:text-blue-800">
+                              View Details
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={6}
+                          className="px-6 py-12 text-center text-gray-500"
+                        >
+                          <ShoppingBag className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                          <p className="text-lg font-medium">No orders found</p>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}

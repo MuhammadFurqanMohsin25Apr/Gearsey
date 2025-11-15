@@ -5,6 +5,7 @@ export interface IOrder extends Document {
   total_amount: number;
   payment_status: "Pending" | "Paid" | "Failed" | "Refunded";
   delivery_status: "Pending" | "Dispatched" | "Delivered" | "Cancelled";
+  platform_fee: number;
 }
 
 const orderSchema = new Schema<IOrder>(
@@ -21,6 +22,7 @@ const orderSchema = new Schema<IOrder>(
       enum: ["Pending", "Shipped", "Delivered", "Cancelled"],
       default: "Pending",
     },
+    platform_fee: { type: Number, required: true, default: 7},
   },
   { timestamps: true }
 );

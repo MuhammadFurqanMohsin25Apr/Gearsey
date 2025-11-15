@@ -20,7 +20,12 @@ export default function Login() {
   // Redirect if already logged in (client-side check)
   useEffect(() => {
     if (session?.user) {
-      navigate("/dashboard");
+      // Redirect based on user role
+      if (session.user.role === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/dashboard");
+      }
     }
   }, [session, navigate]);
 
