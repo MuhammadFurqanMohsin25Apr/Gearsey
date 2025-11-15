@@ -22,15 +22,14 @@ export default function Login() {
     // Only check after session has loaded
     if (!isPending && session?.user) {
       // Redirect based on user role
-      if (session.user.role === "admin") {
-        navigate("/admin");
-      } else if (
-        session.user.role === "seller" ||
-        session.user.role === "buyer"
-      ) {
-        navigate("/dashboard");
+      const role = session.user.role || "buyer";
+      if (role === "admin") {
+        navigate("/admin", { replace: true });
+      } else if (role === "seller") {
+        navigate("/dashboard", { replace: true });
       } else {
-        navigate("/products");
+        // buyer, customer, or any other role
+        navigate("/products", { replace: true });
       }
     }
   }, [session?.user?.id, session?.user?.role, isPending, navigate]);
@@ -63,13 +62,14 @@ export default function Login() {
         setError(signInError.message || "Login failed");
       } else if (data?.user) {
         // Redirect based on user role after successful login
-        const userRole = data.user.role;
+        const userRole = data.user.role || "buyer";
         if (userRole === "admin") {
-          navigate("/admin");
-        } else if (userRole === "seller" || userRole === "buyer") {
-          navigate("/dashboard");
+          navigate("/admin", { replace: true });
+        } else if (userRole === "seller") {
+          navigate("/dashboard", { replace: true });
         } else {
-          navigate("/products");
+          // buyer, customer, or any other role
+          navigate("/products", { replace: true });
         }
       }
     } catch (err) {

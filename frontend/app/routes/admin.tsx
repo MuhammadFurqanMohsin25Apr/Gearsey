@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
-import { useSession, signOut } from "~/lib/auth-client";
+import { useSession, signOut, authClient } from "~/lib/auth-client";
 import { cartManager } from "~/lib/cart";
-import { api, fetchUserCountsByRole } from "~/lib/api";
+import { api } from "~/lib/api";
 import type { Route } from "./+types/admin";
 import {
   CheckCircle,
@@ -201,6 +201,7 @@ export default function Admin() {
   const [reviews, setReviews] = useState(mockReviews);
   const [orders, setOrders] = useState<any[]>([]);
   const [buyers, setBuyers] = useState<any[]>([]);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
   const [stats, setStats] = useState(mockStats);
   const [revenueChartData, setRevenueData] = useState(revenueData);
   const [userChartData, setUserGrowthData] = useState(userGrowthData);
@@ -210,6 +211,10 @@ export default function Admin() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<any>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [orderPaymentStatus, setOrderPaymentStatus] = useState("");
+  const [orderDeliveryStatus, setOrderDeliveryStatus] = useState("");
   const settingsRef = useRef<HTMLDivElement>(null);
 
   // Fetch real data from API
@@ -223,22 +228,34 @@ export default function Admin() {
           ordersData,
           productsData,
           reviewsData,
-          usersData,
           auctionsData,
           buyersData,
-          userCounts,
+          sellersData,
+          allUsersData,
         ] = (await Promise.all([
           api.orders.getAll().catch(() => ({ orders: [] })),
           api.products.getAll({ limit: 5000 }).catch(() => ({ products: [] })),
           api.reviews.getAll().catch(() => ({ reviews: [] })),
-          api.users.getTotalCount().catch(() => ({ totalUsers: 100 })),
           api.auctions.getAll({ limit: 1000 }).catch(() => ({ auctions: [] })),
-          api.users.getAll().catch(() => ({ buyers: [] })),
-          fetchUserCountsByRole().catch(() => ({ buyers: 0, sellers: 0 })),
+          authClient.admin.listUsers({
+            query: {
+              filterField: "role",
+              filterValue: "buyer",
+              filterOperator: "eq",
+            },
+          }),
+          authClient.admin.listUsers({
+            query: {
+              filterField: "role",
+              filterValue: "seller",
+              filterOperator: "eq",
+            },
+          }),
+          authClient.admin.listUsers({
+            query: {},
+          }),
         ])) as [any, any, any, any, any, any, any];
 
-        console.log("Users Data:", usersData);
-        // Update products
         if (productsData.products && Array.isArray(productsData.products)) {
           const formattedProducts = productsData.products
             .slice(0, 10)
@@ -263,6 +280,7 @@ export default function Admin() {
               customer: o.userId,
               amount: o.total_amount,
               status: o.payment_status?.toLowerCase() || "pending",
+              deliveryStatus: o.delivery_status?.toLowerCase() || "pending",
               date: new Date(o.createdAt).toISOString().split("T")[0],
             }));
           setOrders(formattedOrders);
@@ -345,6 +363,37 @@ export default function Admin() {
           setBuyers(formattedBuyers);
         }
 
+        // Update all users from Better Auth
+        if (allUsersData) {
+          const formattedUsers = allUsersData.data.users.map((u: any) => ({
+            id: u.id,
+            name: u.name || "Unknown",
+            email: u.email,
+            role: u.role || "user",
+            joinDate: u.createdAt
+              ? new Date(u.createdAt).toISOString().split("T")[0]
+              : "N/A",
+            verified: u.emailVerified ? "Verified" : "Pending",
+          }));
+          console.log("Formatted Users:", formattedUsers);
+          setAllUsers(formattedUsers);
+        } else if (allUsersData && Array.isArray(allUsersData)) {
+          // Fallback if data is directly an array
+          const formattedUsers = allUsersData.map((u: any) => ({
+            id: u.id,
+            name: u.name || "Unknown",
+            email: u.email,
+            role: u.role || "user",
+            joinDate: u.createdAt
+              ? new Date(u.createdAt).toISOString().split("T")[0]
+              : "N/A",
+            verified: u.emailVerified ? "Verified" : "Pending",
+          }));
+
+          console.log("Formatted Users Fallback:", formattedUsers);
+          setAllUsers(formattedUsers);
+        }
+
         // Calculate category distribution from products
         if (productsData.products && Array.isArray(productsData.products)) {
           const categoryStats: { [key: string]: number } = {};
@@ -383,9 +432,9 @@ export default function Admin() {
           ...prev,
           totalProducts: productsData.products?.length || 0,
           totalOrders: ordersData.orders?.length || 0,
-          totalUsers: usersData?.totalUsers || 0,
-          totalBuyers: userCounts?.buyers || 0,
-          totalSellers: userCounts?.sellers || 0,
+          totalUsers: 0,
+          totalBuyers: buyersData?.data?.users.length || 0,
+          totalSellers: sellersData?.data?.users.length|| 0,
           activeAuctions: activeAuctionsCount,
           totalRevenue:
             ordersData.orders?.reduce(
@@ -444,11 +493,76 @@ export default function Admin() {
     }
   };
 
+  const handleEditOrder = (order: any) => {
+    setEditingOrder(order);
+    setOrderPaymentStatus(order.status || "pending");
+    setOrderDeliveryStatus(order.deliveryStatus || "pending");
+    setEditModalOpen(true);
+  };
+
+  const handleSaveOrder = async () => {
+    if (!editingOrder) return;
+
+    try {
+      await api.orders.update({
+        orderId: editingOrder.id,
+        payment_status: orderPaymentStatus,
+        delivery_status: orderDeliveryStatus,
+      });
+
+      // Update local state
+      setOrders(
+        orders.map((o) =>
+          o.id === editingOrder.id
+            ? {
+                ...o,
+                status: orderPaymentStatus,
+                deliveryStatus: orderDeliveryStatus,
+              }
+            : o
+        )
+      );
+
+      setEditModalOpen(false);
+      setEditingOrder(null);
+      alert("Order updated successfully!");
+    } catch (error) {
+      console.error("Failed to update order:", error);
+      alert("Failed to update order");
+    }
+  };
+
+  const handleDeleteOrder = async (orderId: string) => {
+    if (confirm("Are you sure you want to delete this order?")) {
+      try {
+        await api.orders.delete({ userId: "", orderId });
+        setOrders(orders.filter((o) => o.id !== orderId));
+        alert("Order deleted successfully!");
+      } catch (error) {
+        console.error("Failed to delete order:", error);
+        alert("Failed to delete order");
+      }
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
+      try {
+        await authClient.admin.removeUser({ userId });
+        setAllUsers(allUsers.filter((u) => u.id !== userId));
+        alert("User deleted successfully!");
+      } catch (error) {
+        console.error("Failed to delete user:", error);
+        alert("Failed to delete user");
+      }
+    }
+  };
+
   if (!isAuthenticated || user?.role !== "admin") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="bg-white rounded-2xl shadow-xl p-12 text-center max-w-md">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
             <svg
               className="w-8 h-8 text-red-600"
               fill="none"
@@ -471,7 +585,7 @@ export default function Admin() {
           </p>
           <button
             onClick={() => navigate("/")}
-            className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-lg hover:from-red-700 hover:to-red-800 transition-all duration-300"
+            className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-lg hover:from-red-700 hover:to-red-800 transition-all duration-300"
           >
             Go Home
           </button>
@@ -484,7 +598,7 @@ export default function Admin() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Top Header with Gearsey branding */}
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-full mx-auto px-4 sm:px-4 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo and Mobile Menu */}
             <div className="flex items-center gap-4">
@@ -521,7 +635,7 @@ export default function Admin() {
 
                 {settingsOpen && (
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                    <div className="px-4 py-3 border-b border-gray-100">
+                    <div className="px-4 py-2 border-b border-gray-100">
                       <p className="text-sm font-semibold text-gray-900">
                         {user?.name || "Admin"}
                       </p>
@@ -630,7 +744,7 @@ export default function Admin() {
                     setActiveTab(item.id as any);
                     setSidebarOpen(false);
                   }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all ${
+                  className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg font-medium transition-all ${
                     activeTab === item.id
                       ? "bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md"
                       : "text-gray-700 hover:bg-gray-100"
@@ -674,9 +788,9 @@ export default function Admin() {
         )}
 
         {/* Main Content */}
-        <main className="flex-1 p-6 lg:p-8">
+        <main className="flex-1 p-4 lg:p-4">
           {/* Page Header with Actions */}
-          <div className="mb-8">
+          <div className="mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <h2 className="text-3xl font-bold text-gray-900 mb-1">
@@ -692,137 +806,113 @@ export default function Admin() {
                     : `Manage and monitor all ${activeTab} in your marketplace`}
                 </p>
               </div>
-              {!isOverview && (
-                <div className="flex gap-3">
-                  <button className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2">
-                    <Download className="w-4 h-4" />
-                    Export
-                  </button>
-                  <button className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition-all shadow-md">
-                    + Add New
-                  </button>
-                </div>
-              )}
+              
             </div>
           </div>
 
           {isOverview && (
             <div>
-              {/* Stats Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6 mb-8">
-                <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-lg transition-shadow">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
-                      <Package className="w-6 h-6 text-blue-600" />
+              {/* Stats Grid - Row 1 */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
+                <div className="bg-white rounded-lg shadow-sm p-2.5 border border-gray-100 hover:shadow-lg transition-shadow">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="w-7 h-7 bg-blue-50 rounded flex items-center justify-center">
+                      <Package className="w-3.5 h-3.5 text-blue-600" />
                     </div>
-                    <span className="px-2 py-1 bg-green-50 text-green-700 text-xs font-semibold rounded-full flex items-center gap-1">
-                      <TrendingUp className="w-3 h-3" /> 12%
+                    <span className="px-1.5 py-0.5 bg-green-50 text-green-700 text-xs font-semibold rounded-full flex items-center gap-0.5">
+                      <TrendingUp className="w-2 h-2" /> 12%
                     </span>
                   </div>
-                  <h3 className="text-gray-600 text-sm font-medium mb-1">
+                  <h3 className="text-gray-600 text-xs font-medium mb-0.5">
                     Total Products
                   </h3>
-                  <p className="text-3xl font-bold text-gray-900">
+                  <p className="text-base font-bold text-gray-900">
                     {stats.totalProducts.toLocaleString()}
                   </p>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-lg transition-shadow">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center">
-                      <Users className="w-6 h-6 text-purple-600" />
+                <div className="bg-white rounded-lg shadow-sm p-3 border border-gray-100 hover:shadow-lg transition-shadow">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="w-8 h-8 bg-cyan-50 rounded flex items-center justify-center">
+                      <Users className="w-4 h-4 text-cyan-600" />
                     </div>
                     <span className="px-2 py-1 bg-green-50 text-green-700 text-xs font-semibold rounded-full flex items-center gap-1">
-                      <TrendingUp className="w-3 h-3" /> 8%
+                      <TrendingUp className="w-2 h-2" /> 5%
                     </span>
                   </div>
-                  <h3 className="text-gray-600 text-sm font-medium mb-1">
-                    Total Users
-                  </h3>
-                  <p className="text-3xl font-bold text-gray-900">
-                    {stats.totalUsers.toLocaleString()}
-                  </p>
-                </div>
-
-                <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-lg transition-shadow">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-12 h-12 bg-cyan-50 rounded-lg flex items-center justify-center">
-                      <Users className="w-6 h-6 text-cyan-600" />
-                    </div>
-                    <span className="px-2 py-1 bg-green-50 text-green-700 text-xs font-semibold rounded-full flex items-center gap-1">
-                      <TrendingUp className="w-3 h-3" /> 5%
-                    </span>
-                  </div>
-                  <h3 className="text-gray-600 text-sm font-medium mb-1">
+                  <h3 className="text-gray-600 text-xs font-medium mb-1">
                     Total Buyers
                   </h3>
-                  <p className="text-3xl font-bold text-gray-900">
+                  <p className="text-base font-bold text-gray-900">
                     {stats.totalBuyers.toLocaleString()}
                   </p>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-lg transition-shadow">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-12 h-12 bg-indigo-50 rounded-lg flex items-center justify-center">
-                      <Users className="w-6 h-6 text-indigo-600" />
+                <div className="bg-white rounded-lg shadow-sm p-3 border border-gray-100 hover:shadow-lg transition-shadow">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="w-8 h-8 bg-indigo-50 rounded flex items-center justify-center">
+                      <Users className="w-4 h-4 text-indigo-600" />
                     </div>
                     <span className="px-2 py-1 bg-green-50 text-green-700 text-xs font-semibold rounded-full flex items-center gap-1">
-                      <TrendingUp className="w-3 h-3" /> 7%
+                      <TrendingUp className="w-2 h-2" /> 7%
                     </span>
                   </div>
-                  <h3 className="text-gray-600 text-sm font-medium mb-1">
+                  <h3 className="text-gray-600 text-xs font-medium mb-1">
                     Total Sellers
                   </h3>
-                  <p className="text-3xl font-bold text-gray-900">
+                  <p className="text-base font-bold text-gray-900">
                     {stats.totalSellers.toLocaleString()}
                   </p>
                 </div>
+              </div>
 
-                <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-lg transition-shadow">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
-                      <ShoppingBag className="w-6 h-6 text-green-600" />
+              {/* Stats Grid - Row 2 */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                <div className="bg-white rounded-lg shadow-sm p-3 border border-gray-100 hover:shadow-lg transition-shadow">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="w-8 h-8 bg-green-50 rounded flex items-center justify-center">
+                      <ShoppingBag className="w-4 h-4 text-green-600" />
                     </div>
                     <span className="px-2 py-1 bg-green-50 text-green-700 text-xs font-semibold rounded-full flex items-center gap-1">
-                      <TrendingUp className="w-3 h-3" /> 15%
+                      <TrendingUp className="w-2 h-2" /> 15%
                     </span>
                   </div>
-                  <h3 className="text-gray-600 text-sm font-medium mb-1">
+                  <h3 className="text-gray-600 text-xs font-medium mb-1">
                     Total Orders
                   </h3>
-                  <p className="text-3xl font-bold text-gray-900">
+                  <p className="text-base font-bold text-gray-900">
                     {stats.totalOrders.toLocaleString()}
                   </p>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-lg transition-shadow">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-12 h-12 bg-yellow-50 rounded-lg flex items-center justify-center">
-                      <DollarSign className="w-6 h-6 text-yellow-600" />
+                <div className="bg-white rounded-lg shadow-sm p-3 border border-gray-100 hover:shadow-lg transition-shadow">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="w-8 h-8 bg-yellow-50 rounded flex items-center justify-center">
+                      <DollarSign className="w-4 h-4 text-yellow-600" />
                     </div>
                     <span className="px-2 py-1 bg-green-50 text-green-700 text-xs font-semibold rounded-full flex items-center gap-1">
-                      <TrendingUp className="w-3 h-3" /> 23%
+                      <TrendingUp className="w-2 h-2" /> 23%
                     </span>
                   </div>
-                  <h3 className="text-gray-600 text-sm font-medium mb-1">
+                  <h3 className="text-gray-600 text-xs font-medium mb-1">
                     Total Revenue
                   </h3>
-                  <p className="text-3xl font-bold text-gray-900">
+                  <p className="text-base font-bold text-gray-900">
                     PKR {(stats.totalRevenue / 1000).toFixed(0)}K
                   </p>
                 </div>
               </div>
 
               {/* Secondary Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-6 text-white">
-                  <div className="flex items-center justify-between mb-4">
-                    <Clock className="w-10 h-10 opacity-80" />
-                    <span className="text-3xl font-bold">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow-lg p-4 text-white">
+                  <div className="flex items-center justify-between mb-2">
+                    <Clock className="w-8 h-8 opacity-80" />
+                    <span className="text-2xl font-bold">
                       {stats.activeAuctions}
                     </span>
                   </div>
-                  <h3 className="text-red-100 text-sm font-medium mb-1">
+                  <h3 className="text-red-100 text-xs font-medium mb-1">
                     Active Auctions
                   </h3>
                   <p className="text-red-50 text-xs">
@@ -830,14 +920,14 @@ export default function Admin() {
                   </p>
                 </div>
 
-                <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-6 text-white">
-                  <div className="flex items-center justify-between mb-4">
-                    <AlertCircle className="w-10 h-10 opacity-80" />
-                    <span className="text-3xl font-bold">
+                <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg shadow-lg p-4 text-white">
+                  <div className="flex items-center justify-between mb-2">
+                    <AlertCircle className="w-8 h-8 opacity-80" />
+                    <span className="text-2xl font-bold">
                       {stats.pendingApprovals}
                     </span>
                   </div>
-                  <h3 className="text-orange-100 text-sm font-medium mb-1">
+                  <h3 className="text-orange-100 text-xs font-medium mb-1">
                     Pending Approvals
                   </h3>
                   <p className="text-orange-50 text-xs">
@@ -847,16 +937,16 @@ export default function Admin() {
               </div>
 
               {/* Analytics Graphs */}
-              <div className="mb-8">
+              <div className="mb-6">
                 <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
                   <TrendingUp className="w-6 h-6 text-red-600" />
                   Analytics Overview
                 </h3>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
                   {/* Revenue & Orders Line Chart */}
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                    <h4 className="text-lg font-bold text-gray-900 mb-6">
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                    <h4 className="text-base font-bold text-gray-900 mb-6">
                       Revenue & Orders Trend
                     </h4>
                     <div className="relative h-64">
@@ -1018,8 +1108,8 @@ export default function Admin() {
                   </div>
 
                   {/* User Growth Line Chart */}
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                    <h4 className="text-lg font-bold text-gray-900 mb-6">
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                    <h4 className="text-base font-bold text-gray-900 mb-6">
                       User Growth
                     </h4>
                     <div className="relative h-64">
@@ -1160,10 +1250,10 @@ export default function Admin() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {/* Category Distribution */}
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                    <h4 className="text-lg font-bold text-gray-900 mb-6">
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                    <h4 className="text-base font-bold text-gray-900 mb-6">
                       Sales by Category
                     </h4>
                     <div className="space-y-4">
@@ -1194,7 +1284,7 @@ export default function Admin() {
                         <span className="text-sm text-gray-600">
                           Total Categories
                         </span>
-                        <span className="text-lg font-bold text-gray-900">
+                        <span className="text-base font-bold text-gray-900">
                           {categoryChartData.length}
                         </span>
                       </div>
@@ -1202,8 +1292,8 @@ export default function Admin() {
                   </div>
 
                   {/* Top Products */}
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                    <h4 className="text-lg font-bold text-gray-900 mb-6">
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                    <h4 className="text-base font-bold text-gray-900 mb-6">
                       Top Selling Products
                     </h4>
                     <div className="space-y-4">
@@ -1243,11 +1333,11 @@ export default function Admin() {
               </div>
 
               {/* Recent Activity */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Recent Orders */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
                   <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
                       <ShoppingBag className="w-5 h-5 text-red-600" />
                       Recent Orders
                     </h3>
@@ -1300,9 +1390,9 @@ export default function Admin() {
                 </div>
 
                 {/* Recent Products */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
                   <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
                       <Package className="w-5 h-5 text-red-600" />
                       Recent Products
                     </h3>
@@ -1352,7 +1442,7 @@ export default function Admin() {
           )}
 
           {isProducts && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                 <div>
                   <h3 className="text-xl font-bold text-gray-900">
@@ -1392,25 +1482,25 @@ export default function Admin() {
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Product
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Seller
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Price
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Status
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Reviews
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Date
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
@@ -1431,18 +1521,18 @@ export default function Admin() {
                           key={product.id}
                           className="hover:bg-gray-50 transition-colors"
                         >
-                          <td className="px-6 py-4">
+                          <td className="px-4 py-2">
                             <div className="text-sm font-semibold text-gray-900">
                               {product.name}
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-sm text-gray-600">
+                          <td className="px-4 py-2 text-sm text-gray-600">
                             {product.seller}
                           </td>
-                          <td className="px-6 py-4 text-sm text-gray-900 font-bold">
+                          <td className="px-4 py-2 text-sm text-gray-900 font-bold">
                             PKR {product.price.toLocaleString()}
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-4 py-2">
                             <span
                               className={`px-3 py-1 text-xs rounded-full font-semibold ${
                                 product.status === "approved"
@@ -1453,7 +1543,7 @@ export default function Admin() {
                               {product.status}
                             </span>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-4 py-2">
                             <div className="flex items-center gap-1">
                               <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                               <span className="text-sm text-gray-600">
@@ -1461,10 +1551,10 @@ export default function Admin() {
                               </span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-sm text-gray-600">
+                          <td className="px-4 py-2 text-sm text-gray-600">
                             {product.date}
                           </td>
-                          <td className="px-6 py-4 text-sm font-medium space-x-3">
+                          <td className="px-4 py-2 text-sm font-medium space-x-3">
                             <Link
                               to={`/products/${product.id}`}
                               className="text-blue-600 hover:text-blue-800"
@@ -1491,7 +1581,7 @@ export default function Admin() {
                     p.name.toLowerCase().includes(searchQuery.toLowerCase()))
               ).length === 0 && (
                 <div className="text-center py-12 text-gray-500">
-                  <Package className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                  <Package className="w-16 h-16 mx-auto mb-3 text-gray-300" />
                   <p className="text-lg font-medium">No products found</p>
                   <p className="text-sm text-gray-400 mt-1">
                     Try adjusting your search or filters
@@ -1502,7 +1592,7 @@ export default function Admin() {
           )}
 
           {isReviews && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                 <div>
                   <h3 className="text-xl font-bold text-gray-900">
@@ -1528,9 +1618,9 @@ export default function Admin() {
                 {reviews.map((review) => (
                   <div
                     key={review.id}
-                    className="border border-gray-200 rounded-xl p-6 hover:shadow-md hover:border-gray-300 transition-all"
+                    className="border border-gray-200 rounded-xl p-4 hover:shadow-md hover:border-gray-300 transition-all"
                   >
-                    <div className="flex justify-between items-start mb-4">
+                    <div className="flex justify-between items-start mb-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <div className="w-10 h-10 rounded-full bg-gradient-to-r from-red-600 to-red-700 flex items-center justify-center">
@@ -1585,7 +1675,7 @@ export default function Admin() {
 
               {reviews.length === 0 && (
                 <div className="text-center py-12 text-gray-500">
-                  <Star className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                  <Star className="w-16 h-16 mx-auto mb-3 text-gray-300" />
                   <p className="text-lg font-medium">No reviews found</p>
                   <p className="text-sm text-gray-400 mt-1">
                     Reviews will appear here when customers leave feedback
@@ -1596,7 +1686,7 @@ export default function Admin() {
           )}
 
           {isAuctions && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
               <div className="text-center py-12">
                 <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
                   <Clock className="w-10 h-10 text-red-600" />
@@ -1608,7 +1698,7 @@ export default function Admin() {
                   Monitor live auctions, track bids, and manage auction listings
                   in real-time
                 </p>
-                <button className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition-all shadow-md font-semibold">
+                <button className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition-all shadow-md font-semibold">
                   Coming Soon
                 </button>
               </div>
@@ -1616,7 +1706,7 @@ export default function Admin() {
           )}
 
           {isUsers && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                 <div>
                   <h3 className="text-xl font-bold text-gray-900">
@@ -1645,78 +1735,78 @@ export default function Admin() {
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                  <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
                     <tr>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wide">
                         Name
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wide">
                         Email
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                        Role
+                      </th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wide">
                         Join Date
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-center text-xs font-semibold text-gray-700 uppercase tracking-wide">
                         Actions
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {buyers
+                  <tbody className="bg-white divide-y divide-gray-100">
+                    {allUsers
                       .filter(
-                        (b) =>
+                        (u) =>
                           searchQuery === "" ||
-                          b.name
+                          u.name
                             .toLowerCase()
                             .includes(searchQuery.toLowerCase()) ||
-                          b.email
+                          u.email
                             .toLowerCase()
                             .includes(searchQuery.toLowerCase())
                       )
-                      .map((buyer) => (
+                      .map((user) => (
                         <tr
-                          key={buyer.id}
-                          className="hover:bg-gray-50 transition-colors"
+                          key={user.id}
+                          className="hover:bg-gray-50 transition-colors duration-150"
                         >
-                          <td className="px-6 py-4">
+                          <td className="px-4 py-2">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-red-600 to-red-700 flex items-center justify-center">
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-red-600 to-red-700 flex items-center justify-center flex-shrink-0">
                                 <span className="text-white font-semibold text-sm">
-                                  {buyer.name ? buyer.name[0] : "U"}
+                                  {user.name ? user.name[0].toUpperCase() : "U"}
                                 </span>
                               </div>
-                              <div className="text-sm font-semibold text-gray-900">
-                                {buyer.name || "Unknown User"}
+                              <div className="text-sm font-medium text-gray-900">
+                                {user.name || "Unknown User"}
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-sm text-gray-600">
-                            {buyer.email}
+                          <td className="px-4 py-2 text-sm text-gray-600">
+                            {user.email}
                           </td>
-                          <td className="px-6 py-4 text-sm text-gray-600">
-                            {buyer.joinDate}
-                          </td>
-                          <td className="px-6 py-4">
-                            <span
-                              className={`px-3 py-1 text-xs rounded-full font-semibold ${
-                                buyer.verified === "Verified"
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-yellow-100 text-yellow-800"
-                              }`}
-                            >
-                              {buyer.verified}
+                          <td className="px-4 py-2">
+                            <span className="inline-flex px-3 py-1 text-xs rounded-full font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                              {user.role || "User"}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-sm font-medium space-x-3">
-                            <button className="text-blue-600 hover:text-blue-800">
-                              View Profile
-                            </button>
-                            <button className="text-red-600 hover:text-red-800">
-                              Deactivate
-                            </button>
+                          <td className="px-4 py-2 text-sm text-gray-600">
+                            {user.joinDate}
+                          </td>
+                          <td className="px-4 py-2 text-sm font-medium">
+                            <div className="flex items-center justify-center gap-2">
+                              <button className="text-blue-600 hover:text-blue-800 hover:underline transition-colors">
+                                View
+                              </button>
+                              <span className="text-gray-300">|</span>
+                              <button 
+                                onClick={() => handleDeleteUser(user.id)}
+                                className="text-red-600 hover:text-red-800 hover:underline transition-colors"
+                              >
+                                Delete
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -1724,14 +1814,14 @@ export default function Admin() {
                 </table>
               </div>
 
-              {buyers.filter(
-                (b) =>
+              {allUsers.filter(
+                (u) =>
                   searchQuery === "" ||
-                  b.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  b.email.toLowerCase().includes(searchQuery.toLowerCase())
+                  u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  u.email.toLowerCase().includes(searchQuery.toLowerCase())
               ).length === 0 && (
                 <div className="text-center py-12 text-gray-500">
-                  <Users className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                  <Users className="w-16 h-16 mx-auto mb-3 text-gray-300" />
                   <p className="text-lg font-medium">No users found</p>
                   <p className="text-sm text-gray-400 mt-1">
                     Try adjusting your search criteria
@@ -1742,7 +1832,7 @@ export default function Admin() {
           )}
 
           {isOrders && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                 <div>
                   <h3 className="text-xl font-bold text-gray-900">
@@ -1753,33 +1843,28 @@ export default function Admin() {
                     transactions efficiently
                   </p>
                 </div>
-                <div className="flex gap-3">
-                  <button className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                    <Filter className="w-4 h-4" />
-                  </button>
-                </div>
               </div>
 
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Order ID
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Customer
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Amount
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Status
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Date
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
@@ -1791,18 +1876,18 @@ export default function Admin() {
                           key={order.id}
                           className="hover:bg-gray-50 transition-colors"
                         >
-                          <td className="px-6 py-4">
+                          <td className="px-4 py-2">
                             <div className="text-sm font-semibold text-gray-900">
                               {order.id}
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-sm text-gray-600">
+                          <td className="px-4 py-2 text-sm text-gray-600">
                             {order.customer}
                           </td>
-                          <td className="px-6 py-4 text-sm text-gray-900 font-bold">
+                          <td className="px-4 py-2 text-sm text-gray-900 font-bold">
                             PKR {order.amount.toLocaleString()}
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-4 py-2">
                             <span
                               className={`px-3 py-1 text-xs rounded-full font-semibold ${
                                 order.status === "completed"
@@ -1815,12 +1900,21 @@ export default function Admin() {
                               {order.status}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-sm text-gray-600">
+                          <td className="px-4 py-2 text-sm text-gray-600">
                             {order.date}
                           </td>
-                          <td className="px-6 py-4 text-sm font-medium space-x-3">
-                            <button className="text-blue-600 hover:text-blue-800">
-                              View Details
+                          <td className="px-4 py-2 text-sm font-medium space-x-3">
+                            <button
+                              onClick={() => handleEditOrder(order)}
+                              className="text-blue-600 hover:text-blue-800 font-semibold"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteOrder(order.id)}
+                              className="text-red-600 hover:text-red-800 font-semibold"
+                            >
+                              Delete
                             </button>
                           </td>
                         </tr>
@@ -1829,9 +1923,9 @@ export default function Admin() {
                       <tr>
                         <td
                           colSpan={6}
-                          className="px-6 py-12 text-center text-gray-500"
+                          className="px-4 py-12 text-center text-gray-500"
                         >
-                          <ShoppingBag className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                          <ShoppingBag className="w-16 h-16 mx-auto mb-3 text-gray-300" />
                           <p className="text-lg font-medium">No orders found</p>
                         </td>
                       </tr>
@@ -1843,6 +1937,83 @@ export default function Admin() {
           )}
         </main>
       </div>
+
+      {/* Edit Order Modal */}
+      {editModalOpen && editingOrder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full">
+            <div className="px-4 py-2 border-b border-gray-200">
+              <h2 className="text-xl font-bold text-gray-900">Edit Order</h2>
+            </div>
+
+            <div className="px-4 py-2 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Order ID
+                </label>
+                <input
+                  type="text"
+                  value={editingOrder.id}
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Payment Status
+                </label>
+                <select
+                  value={orderPaymentStatus}
+                  onChange={(e) => setOrderPaymentStatus(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="pending">Pending</option>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="completed">Completed</option>
+                  <option value="failed">Failed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Delivery Status
+                </label>
+                <select
+                  value={orderDeliveryStatus}
+                  onChange={(e) => setOrderDeliveryStatus(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="pending">Pending</option>
+                  <option value="processing">Processing</option>
+                  <option value="in-transit">In Transit</option>
+                  <option value="delivered">Delivered</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="px-4 py-2 border-t border-gray-200 flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setEditModalOpen(false);
+                  setEditingOrder(null);
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveOrder}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

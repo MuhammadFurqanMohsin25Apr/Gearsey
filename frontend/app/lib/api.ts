@@ -190,22 +190,32 @@ export const api = {
         body: JSON.stringify(data),
       }),
 
-    confirm: (orderId: string) =>
+    update: (data: {
+      orderId: string;
+      payment_status?: string;
+      delivery_status?: string;
+    }) =>
+      request("/orders", {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
+
+    confirm: (data: { userId: string; orderId: string }) =>
       request("/orders/confirm", {
         method: "PUT",
-        body: JSON.stringify({ orderId }),
+        body: JSON.stringify(data),
       }),
 
-    cancel: (orderId: string) =>
+    cancel: (data: { userId: string; orderId: string }) =>
       request("/orders/cancel", {
         method: "PUT",
-        body: JSON.stringify({ orderId }),
+        body: JSON.stringify(data),
       }),
 
-    delete: (orderId: string) =>
+    delete: (data: { userId: string; orderId: string }) =>
       request("/orders", {
         method: "DELETE",
-        body: JSON.stringify({ orderId }),
+        body: JSON.stringify(data),
       }),
   },
 
@@ -231,6 +241,35 @@ export const api = {
     delete: (reviewId: string) =>
       request(`/review/${reviewId}`, {
         method: "DELETE",
+      }),
+  },
+
+  // Payments
+  payments: {
+    getAll: (params?: { limit?: number }) => request("/payment/details", { params }),
+
+    getById: (paymentId: string) => request(`/payment/details/${paymentId}`),
+
+    create: (data: {
+      orderId: string;
+      payment_method: string;
+      amount: number;
+    }) =>
+      request("/payment/create", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+
+    process: (data: { paymentId: string }) =>
+      request("/payment/process", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+
+    refund: (data: { paymentId: string }) =>
+      request("/payment/refund", {
+        method: "POST",
+        body: JSON.stringify(data),
       }),
   },
 

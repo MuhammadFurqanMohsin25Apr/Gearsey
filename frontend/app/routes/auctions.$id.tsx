@@ -105,7 +105,7 @@ export default function AuctionDetail({
             This auction could not be loaded. Please try again later.
           </p>
           <Link
-            href="/auctions"
+            to="/auctions"
             className="text-red-600 hover:text-red-700 font-semibold"
           >
             Back to Auctions

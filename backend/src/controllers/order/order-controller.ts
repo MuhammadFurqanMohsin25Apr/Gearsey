@@ -173,12 +173,17 @@ export async function cancelOrder(req: Request, res: Response) {
 export async function deleteOrder(req: Request, res: Response) {
   try {
     const { userId, orderId } = req.body;
-    if (!userId || !orderId) {
+    if (!orderId) {
       return res
         .status(403)
-        .json({ message: "Missing userId or orderId in request body" });
+        .json({ message: "Missing orderId in request body" });
     }
-    const deletedOrder = await Order.deleteOne({ _id: orderId, userId });
+    
+    // If userId is provided, delete only that user's order
+    // Otherwise allow admin to delete any order by orderId
+    const query = userId ? { _id: orderId, userId } : { _id: orderId };
+    const deletedOrder = await Order.deleteOne(query);
+    
     if (!deletedOrder) {
       return res
         .status(404)
@@ -189,6 +194,42 @@ export async function deleteOrder(req: Request, res: Response) {
     console.error("Error deleting order:", error as Error);
     res.status(400).json({
       message: "Failed to delete order",
+      error: (error as Error).message,
+    });
+  }
+}
+
+export async function updateOrder(req: Request, res: Response) {
+  try {
+    const { orderId, payment_status, delivery_status } = req.body;
+    if (!orderId) {
+      return res
+        .status(403)
+        .json({ message: "Missing orderId in request body" });
+    }
+
+    const updateData: any = {};
+    if (payment_status) updateData.payment_status = payment_status;
+    if (delivery_status) updateData.delivery_status = delivery_status;
+
+    const updatedOrder = await Order.updateOne(
+      { _id: orderId },
+      { $set: updateData }
+    );
+
+    if (!updatedOrder) {
+      return res
+        .status(404)
+        .json({ message: "Order not found or could not be updated" });
+    }
+
+    res
+      .status(200)
+      .json({ message: "Order updated successfully", updatedOrder });
+  } catch (error) {
+    console.error("Error updating order:", error as Error);
+    res.status(400).json({
+      message: "Failed to update order",
       error: (error as Error).message,
     });
   }

@@ -28,7 +28,14 @@ export default function Signup() {
   // Redirect if already logged in (client-side check)
   useEffect(() => {
     if (session?.user) {
-      navigate("/dashboard");
+      const role = session.user.role || "buyer";
+      if (role === "admin") {
+        navigate("/admin", { replace: true });
+      } else if (role === "seller") {
+        navigate("/dashboard", { replace: true });
+      } else {
+        navigate("/products", { replace: true });
+      }
     }
   }, [session, navigate]);
 
@@ -61,16 +68,15 @@ export default function Signup() {
           email: formData.email,
           password: formData.password,
           name: formData.name,
-          phone: formData.phone,
           address: formData.address,
+          phone: formData.phone,
           role: formData.role,
         },
         {
           onRequest: () => {
             // Show loading state
           },
-          onSuccess: (ctx) => {
-            // Successfully signed up
+          onSuccess: async (ctx) => {            
           },
           onError: (ctx) => {
             setError(ctx.error.message || "Signup failed");
@@ -81,15 +87,18 @@ export default function Signup() {
       if (signUpError) {
         setError(signUpError.message || "Signup failed");
       } else if (data?.user) {
-        // Redirect based on role after successful signup
-        const userRole = data.user.role;
-        if (userRole === "seller") {
-          navigate("/dashboard");
-        } else if (userRole === "admin") {
-          navigate("/admin");
-        } else {
-          navigate("/products");
-        }
+        // Wait a moment for session to update, then redirect based on role
+        setTimeout(() => {
+          const userRole = formData.role || "buyer";
+          if (userRole === "admin") {
+            navigate("/admin", { replace: true });
+          } else if (userRole === "seller") {
+            navigate("/dashboard", { replace: true });
+          } else {
+            // buyer, customer, or any other role
+            navigate("/products", { replace: true });
+          }
+        }, 500);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Signup failed");

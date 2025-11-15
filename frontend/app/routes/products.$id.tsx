@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useLoaderData } from "react-router";
 import { api } from "~/lib/api";
 import type { Listing } from "~/types";
 import {
@@ -58,12 +58,8 @@ type LoaderData = {
   relatedProducts: Listing[];
 };
 
-export default function ProductDetail({
-  loaderData,
-}: {
-  loaderData: LoaderData;
-}) {
-  const { product, relatedProducts } = loaderData;
+export default function ProductDetail() {
+  const { product, relatedProducts } = useLoaderData<LoaderData>();
 
   if (!product) {
     return (

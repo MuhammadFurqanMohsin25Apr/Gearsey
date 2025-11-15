@@ -24,11 +24,6 @@ export function meta() {
   ];
 }
 
-type LoaderData = {
-  myListings: any[];
-  sellerId: string;
-};
-
 export default function Dashboard() {
   const { data: session, isPending } = useSession();
   const user = session?.user;
@@ -37,17 +32,24 @@ export default function Dashboard() {
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [myListings, setMyListings] = useState<Listing[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const isBuyer = user?.role === "buyer";
-  const isSeller = user?.role === "seller";
+  const userRole = user?.role || "buyer";
+  const isBuyer = userRole === "buyer" || userRole === "customer";
+  const isSeller = userRole === "seller";
 
   // Protect dashboard - authenticated users (buyers and sellers) can access
   useEffect(() => {
-    if (!isPending && !session) {
+    if (!isPending && !session?.session) {
       // Not authenticated - redirect to login
-      navigate("/login");
+      navigate("/login", { replace: true });
       return;
     }
-  }, [session, isPending, navigate]);
+    
+    // Redirect admin users to admin panel
+    if (!isPending && user?.role === "admin") {
+      navigate("/admin", { replace: true });
+      return;
+    }
+  }, [session, isPending, user?.role, navigate]);
 
   // If not authenticated or still loading, don't render the page
   if (isPending || !session) {
