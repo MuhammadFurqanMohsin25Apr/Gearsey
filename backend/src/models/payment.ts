@@ -17,9 +17,6 @@ const paymentSchema = new Schema<IPayment>(
       enum: [
         "Credit Card",
         "Debit Card",
-        "Cash On Delivery",
-        "EasyPaisa",
-        "Bank Transfer",
       ],
       required: true,
     },

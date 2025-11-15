@@ -5,8 +5,6 @@ import { useSession } from "~/lib/auth-client";
 import { cartManager } from "~/lib/cart";
 import { api } from "~/lib/api";
 import type { CartItem } from "~/lib/cart";
-import type { Route } from "./+types/checkout";
-import type { User } from "better-auth";
 
 export function meta() {
   return [
@@ -17,7 +15,7 @@ export function meta() {
 
 export default function Checkout() {
   const { data: session } = useSession();
-  const user : User | undefined = session?.user;
+  const user = session?.user;
   const navigate = useNavigate();
   const [paymentMethod, setPaymentMethod] = useState("Credit Card");
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -92,13 +90,14 @@ export default function Checkout() {
       });
 
       // Create payment record
-      if (orderResponse && (orderResponse as any).data?.order) {
-        const order = (orderResponse as any).data.order;
+      if (orderResponse && (orderResponse as any).order) {
+        const order = (orderResponse as any).order;
 
+      
         try {
           await api.payments.create({
             orderId: order._id,
-            payment_method: paymentMethod,
+            payment_method: paymentMethod === "card" ? "Credit Card" : paymentMethod,
             amount: orderTotal,
           });
         } catch (paymentError) {

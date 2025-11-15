@@ -246,7 +246,11 @@ export const api = {
 
   // Payments
   payments: {
-    getAll: (params?: { limit?: number }) => request("/payment/details", { params }),
+    getAll: (params?: { limit?: number }) =>
+      request("/payment/details", {
+        method: "GET",
+        params,
+      }),
 
     getById: (paymentId: string) => request(`/payment/details/${paymentId}`),
 

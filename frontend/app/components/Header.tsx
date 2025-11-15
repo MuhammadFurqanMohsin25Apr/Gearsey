@@ -217,11 +217,11 @@ export function Header() {
                         </p>
                       </div>
 
-                      {/* Buyer-specific menu items */}
-                      {user.role === "buyer" && (
+                      {/* customer-specific menu items */}
+                      {user.role === "customer" && (
                         <>
                           <Link
-                            to="/dashboard"
+                            to="/orders"
                             className="w-full text-left px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
                             onClick={() => setIsSettingsOpen(false)}
                           >
@@ -451,7 +451,7 @@ export function Header() {
 
             {user ? (
               <>
-                {user.role === "buyer" && (
+                {user.role === "customer" && (
                   <Link
                     to="/dashboard"
                     className="block px-4 py-2 hover:bg-gray-100 rounded-lg transition-all text-sm font-bold text-gray-700"

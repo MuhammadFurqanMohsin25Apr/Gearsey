@@ -124,3 +124,26 @@ export async function listTransactions(req: Request, res: Response) {
     res.status(400).json({ error: (error as Error).message });
   }
 }
+
+export async function getAllPayments(req: Request, res: Response) {
+  try {
+    const { limit } = req.query;
+
+    if (limit && isNaN(Number(limit))) {
+      return res.status(400).json({ error: "Invalid limit parameter" });
+    }
+
+    // Fetch all payments sorted by creation date (newest first)
+    const payments = await Payment.find()
+      .sort({ createdAt: -1 })
+      .limit(limit ? Number(limit) : 100);
+
+    res.status(200).json({
+      data: payments,
+      count: payments.length,
+      message: "All payments fetched successfully",
+    });
+  } catch (error) {
+    res.status(400).json({ error: (error as Error).message });
+  }
+}

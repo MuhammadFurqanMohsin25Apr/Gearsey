@@ -19,28 +19,38 @@ export default function Payments() {
     const fetchPayments = async () => {
       try {
         setLoading(true);
-        const paymentsData: any = await api.payments
-          .getAll({ limit: 1000 })
-          .catch(() => ({ data: [] }));
+        const paymentsData: any = await api.payments.getAll({ limit: 1000 });
 
-        if (paymentsData.data && Array.isArray(paymentsData.data)) {
-          const formattedPayments = paymentsData.data.map((p: any) => ({
+        // Handle different response formats
+        let paymentsArray = [];
+        if (Array.isArray(paymentsData)) {
+          paymentsArray = paymentsData;
+        } else if (paymentsData?.data && Array.isArray(paymentsData.data)) {
+          paymentsArray = paymentsData.data;
+        }
+
+        if (paymentsArray.length > 0) {
+          const formattedPayments = paymentsArray.map((p: any) => ({
             id: p._id,
             orderId: p.orderId,
             paymentMethod: p.payment_method,
             amount: p.amount,
             status: p.status,
-            date: new Date(p.createdAt).toISOString().split("T")[0],
-            time: new Date(p.createdAt).toLocaleTimeString("en-US", {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
+            date: p.createdAt
+              ? new Date(p.createdAt).toISOString().split("T")[0]
+              : "N/A",
+            time: p.createdAt
+              ? new Date(p.createdAt).toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "N/A",
           }));
           setPayments(formattedPayments);
 
           // Calculate stats
           const totalAmount = formattedPayments.reduce(
-            (sum: number, p: any) => sum + p.amount,
+            (sum: number, p: any) => sum + (p.amount || 0),
             0
           );
           const completedCount = formattedPayments.filter(
@@ -56,9 +66,12 @@ export default function Payments() {
             completedPayments: completedCount,
             pendingPayments: pendingCount,
           });
+        } else {
+          setPayments([]);
         }
       } catch (error) {
         console.error("Error fetching payments:", error);
+        setPayments([]);
       } finally {
         setLoading(false);
       }

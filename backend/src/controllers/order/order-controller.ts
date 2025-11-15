@@ -87,15 +87,21 @@ export async function createOrder(req: Request, res: Response) {
       });
     }
 
-    // Here you would typically create the order in the database
-    const order = await Order.insertOne({
+    // Create the order first
+    const order = await Order.create({
       userId,
       total_amount,
       payment_status: "Pending",
       delivery_status: "Pending",
     });
 
-    const orderItems = await OrderItem.insertMany(items);
+    // Add orderId to each item and create them
+    const itemsWithOrderId = items.map(item => ({
+      ...item,
+      orderId: (order._id as any).toString(),
+    }));
+
+    const orderItems = await OrderItem.insertMany(itemsWithOrderId);
 
     res
       .status(201)

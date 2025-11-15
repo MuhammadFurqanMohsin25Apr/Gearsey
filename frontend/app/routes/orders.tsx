@@ -1,5 +1,7 @@
 import { Link } from "react-router";
 import { useSession } from "~/lib/auth-client";
+import { useState, useEffect } from "react";
+import { api } from "~/lib/api";
 import type { Route } from "./+types/orders";
 
 export function meta({}: Route.MetaArgs) {
@@ -12,59 +14,42 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-// Mock data - replace with API call
-const mockOrders = [
-  {
-    _id: "ORD001",
-    orderNumber: "ORD-2024-001",
-    date: "2024-11-08",
-    status: "delivered",
-    total: 45000,
-    items: [
-      {
-        productId: "1",
-        name: "Honda Civic Brake Pads (Front)",
-        image: "/placeholder-product.jpg",
-        quantity: 2,
-        price: 15000,
-      },
-      {
-        productId: "2",
-        name: "Engine Oil Filter",
-        image: "/placeholder-product.jpg",
-        quantity: 1,
-        price: 15000,
-      },
-    ],
-    paymentMethod: "JazzCash",
-    paymentStatus: "paid",
-    deliveryStatus: "delivered",
-  },
-  {
-    _id: "ORD002",
-    orderNumber: "ORD-2024-002",
-    date: "2024-11-05",
-    status: "in-transit",
-    total: 28000,
-    items: [
-      {
-        productId: "3",
-        name: "Headlight Assembly",
-        image: "/placeholder-product.jpg",
-        quantity: 1,
-        price: 28000,
-      },
-    ],
-    paymentMethod: "Debit Card",
-    paymentStatus: "paid",
-    deliveryStatus: "in-transit",
-  },
-];
-
 export default function Orders() {
   const { data: session } = useSession();
   const user = session?.user;
   const isAuthenticated = !!user;
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      if (!isAuthenticated || !user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError("");
+        const response = await api.orders.getByUser(user.id);
+        const data = response as any;
+        if (data?.orders) {
+          setOrders(data.orders);
+        } else {
+          setOrders([]);
+        }
+      } catch (err) {
+        console.error("Failed to fetch orders:", err);
+        setError("Failed to load orders. Please try again later.");
+        setOrders([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, [isAuthenticated, user]);
 
   if (!isAuthenticated) {
     return (
@@ -98,21 +83,6 @@ export default function Orders() {
     );
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "delivered":
-        return "bg-green-100 text-green-800";
-      case "in-transit":
-        return "bg-blue-100 text-blue-800";
-      case "processing":
-        return "bg-yellow-100 text-yellow-800";
-      case "cancelled":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
@@ -122,38 +92,56 @@ export default function Orders() {
           <p className="text-gray-600">Track and manage your orders</p>
         </div>
 
-        {/* Orders List */}
-        {mockOrders.length > 0 ? (
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 bg-red-50 border-l-4 border-red-600 text-red-700 px-4 py-3 rounded">
+            <p className="font-medium">{error}</p>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading ? (
+          <div className="bg-white rounded-xl shadow-md p-12 text-center">
+            <div className="flex justify-center items-center gap-2">
+              <div className="w-2 h-2 bg-red-600 rounded-full animate-bounce"></div>
+              <div className="w-2 h-2 bg-red-600 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
+              <div className="w-2 h-2 bg-red-600 rounded-full animate-bounce" style={{ animationDelay: "0.4s" }}></div>
+            </div>
+            <p className="text-gray-600 mt-4">Loading your orders...</p>
+          </div>
+        ) : orders.length > 0 ? (
           <div className="space-y-6">
-            {mockOrders.map((order) => (
+            {orders.map((order) => (
               <div
                 key={order._id}
                 className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow"
               >
                 {/* Order Header */}
-                <div className="bg-gradient-to-r from-red-50 to-orange-50 px-6 py-4 border-b border-gray-200">
+                <div className="bg-linear-to-r from-red-50 to-orange-50 px-6 py-4 border-b border-gray-200">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">
-                        Order #{order.orderNumber}
+                        Order #{order._id?.substring(0, 8).toUpperCase() || "N/A"}
                       </h3>
                       <p className="text-sm text-gray-600">
                         Placed on{" "}
-                        {new Date(order.date).toLocaleDateString("en-US", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })}
+                        {order.createdAt
+                          ? new Date(order.createdAt).toLocaleDateString("en-US", {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            })
+                          : "N/A"}
                       </p>
                     </div>
                     <div className="flex items-center gap-4">
                       <span
-                        className={`px-4 py-2 rounded-full text-sm font-semibold capitalize ${getStatusColor(order.status)}`}
+                        className={`px-4 py-2 rounded-full text-sm font-semibold capitalize ${getStatusColor(order.delivery_status)}`}
                       >
-                        {order.deliveryStatus.replace("-", " ")}
+                        {order.delivery_status?.replace("-", " ") || "Pending"}
                       </span>
                       <p className="text-lg font-bold text-gray-900">
-                        PKR {order.total.toLocaleString()}
+                        PKR {order.total_amount?.toLocaleString() || "0"}
                       </p>
                     </div>
                   </div>
@@ -161,48 +149,37 @@ export default function Orders() {
 
                 {/* Order Items */}
                 <div className="p-6">
+                  <p className="text-sm text-gray-600 mb-4">
+                    Payment Status: <span className="font-semibold">{order.payment_status || "Pending"}</span>
+                  </p>
+                  
+                  {/* Placeholder for items - backend will return items separately */}
                   <div className="space-y-4">
-                    {order.items.map((item, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center gap-4 pb-4 border-b border-gray-100 last:border-0"
-                      >
-                        <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <svg
-                            className="w-10 h-10 text-gray-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                            />
-                          </svg>
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-gray-900">
-                            {item.name}
-                          </h4>
-                          <p className="text-sm text-gray-600">
-                            Quantity: {item.quantity}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-gray-900">
-                            PKR {(item.price * item.quantity).toLocaleString()}
-                          </p>
-                          <Link
-                            to={`/products/${item.productId}`}
-                            className="text-sm text-blue-600 hover:underline"
-                          >
-                            View Product
-                          </Link>
-                        </div>
+                    <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
+                      <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center shrink-0">
+                        <svg
+                          className="w-10 h-10 text-gray-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          />
+                        </svg>
                       </div>
-                    ))}
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900">
+                          Order Items
+                        </h4>
+                        <p className="text-sm text-gray-600">
+                          {order.total_amount ? `Total: PKR ${order.total_amount.toLocaleString()}` : "N/A"}
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Order Actions */}
@@ -215,15 +192,15 @@ export default function Orders() {
                     >
                       View Details
                     </button>
-                    {order.deliveryStatus === "delivered" && (
-                      <Link
-                        to={`/products/${order.items[0].productId}`}
+                    {order.delivery_status === "Delivered" && (
+                      <button
+                        onClick={() => alert("Review feature coming soon!")}
                         className="px-6 py-2 border-2 border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
                       >
                         Leave Review
-                      </Link>
+                      </button>
                     )}
-                    {order.deliveryStatus === "in-transit" && (
+                    {order.delivery_status === "Dispatched" && (
                       <button
                         onClick={() => alert("Tracking feature coming soon!")}
                         className="px-6 py-2 border-2 border-blue-600 text-blue-600 font-medium rounded-lg hover:bg-blue-50 transition-colors"
@@ -267,7 +244,7 @@ export default function Orders() {
             </p>
             <Link
               to="/products"
-              className="inline-block px-8 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-lg hover:from-red-700 hover:to-red-800 transition-all duration-300 shadow-lg"
+              className="inline-block px-8 py-3 bg-linear-to-r from-red-600 to-red-700 text-white font-semibold rounded-lg hover:from-red-700 hover:to-red-800 transition-all duration-300 shadow-lg"
             >
               Browse Products
             </Link>
@@ -276,4 +253,21 @@ export default function Orders() {
       </div>
     </div>
   );
+
+  function getStatusColor(status: string) {
+    switch (status) {
+      case "Delivered":
+        return "bg-green-100 text-green-800";
+      case "Dispatched":
+        return "bg-blue-100 text-blue-800";
+      case "Processing":
+        return "bg-yellow-100 text-yellow-800";
+      case "Cancelled":
+        return "bg-red-100 text-red-800";
+      case "Pending":
+        return "bg-orange-100 text-orange-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  }
 }

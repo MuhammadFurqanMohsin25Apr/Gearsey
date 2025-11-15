@@ -20,7 +20,7 @@ export default function Signup() {
     name: "",
     phone: "",
     address: "",
-    role: "buyer",
+    role: "customer",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,7 +28,7 @@ export default function Signup() {
   // Redirect if already logged in (client-side check)
   useEffect(() => {
     if (session?.user) {
-      const role = session.user.role || "buyer";
+      const role = session.user.role || "customer";
       if (role === "admin") {
         navigate("/admin", { replace: true });
       } else if (role === "seller") {
@@ -71,6 +71,8 @@ export default function Signup() {
           address: formData.address,
           phone: formData.phone,
           role: formData.role,
+          rating: 0,
+          total_reviews: 0,
         },
         {
           onRequest: () => {
@@ -83,19 +85,20 @@ export default function Signup() {
           },
         }
       );
+      
 
       if (signUpError) {
         setError(signUpError.message || "Signup failed");
       } else if (data?.user) {
         // Wait a moment for session to update, then redirect based on role
         setTimeout(() => {
-          const userRole = formData.role || "buyer";
+          const userRole = formData.role || "customer";
           if (userRole === "admin") {
             navigate("/admin", { replace: true });
           } else if (userRole === "seller") {
             navigate("/dashboard", { replace: true });
           } else {
-            // buyer, customer, or any other role
+            // customer, customer, or any other role
             navigate("/products", { replace: true });
           }
         }, 500);
@@ -345,7 +348,7 @@ export default function Signup() {
                   }
                   className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-sm text-gray-900 bg-white"
                 >
-                  <option value="buyer">Buy auto parts</option>
+                  <option value="customer">Buy auto parts</option>
                   <option value="seller">Sell auto parts</option>
                   <option value="admin">Manage the platform (Admin)</option>
                 </select>
