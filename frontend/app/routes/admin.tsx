@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { useSession, signOut } from "~/lib/auth-client";
 import { cartManager } from "~/lib/cart";
-import { api } from "~/lib/api";
+import { api, fetchUserCountsByRole } from "~/lib/api";
 import type { Route } from "./+types/admin";
 import {
   CheckCircle,
@@ -39,6 +39,8 @@ export function meta({}: Route.MetaArgs) {
 const mockStats = {
   totalProducts: 1247,
   totalUsers: 5632,
+  totalBuyers: 0,
+  totalSellers: 0,
   totalOrders: 892,
   totalRevenue: 4523000,
   activeAuctions: 45,
@@ -173,7 +175,13 @@ const topProducts = [
   { name: "Spark Plugs", sales: 128, revenue: 256000 },
 ];
 
-type TabType = "overview" | "products" | "auctions" | "users" | "orders" | "reviews";
+type TabType =
+  | "overview"
+  | "products"
+  | "auctions"
+  | "users"
+  | "orders"
+  | "reviews";
 
 // Force recompile - fixing JSX structure
 export default function Admin() {
@@ -182,7 +190,7 @@ export default function Admin() {
   const isAuthenticated = !!user;
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>("overview");
-  
+
   const isOverview: boolean = activeTab === "overview";
   const isProducts: boolean = activeTab === "products";
   const isReviews: boolean = activeTab === "reviews";
@@ -192,6 +200,7 @@ export default function Admin() {
   const [products, setProducts] = useState(mockRecentProducts);
   const [reviews, setReviews] = useState(mockReviews);
   const [orders, setOrders] = useState<any[]>([]);
+  const [buyers, setBuyers] = useState<any[]>([]);
   const [stats, setStats] = useState(mockStats);
   const [revenueChartData, setRevenueData] = useState(revenueData);
   const [userChartData, setUserGrowthData] = useState(userGrowthData);
@@ -209,13 +218,26 @@ export default function Admin() {
       try {
         setLoading(true);
 
-        // Fetch orders and products in parallel
-        const [ordersData, productsData, reviewsData] = await Promise.all([
+        // Fetch orders, products, reviews, users, auctions, and user counts by role in parallel
+        const [
+          ordersData,
+          productsData,
+          reviewsData,
+          usersData,
+          auctionsData,
+          buyersData,
+          userCounts,
+        ] = (await Promise.all([
           api.orders.getAll().catch(() => ({ orders: [] })),
-          api.products.getAll({ limit: 50 }).catch(() => ({ products: [] })),
+          api.products.getAll({ limit: 5000 }).catch(() => ({ products: [] })),
           api.reviews.getAll().catch(() => ({ reviews: [] })),
-        ]) as [any, any, any];
+          api.users.getTotalCount().catch(() => ({ totalUsers: 100 })),
+          api.auctions.getAll({ limit: 1000 }).catch(() => ({ auctions: [] })),
+          api.users.getAll().catch(() => ({ buyers: [] })),
+          fetchUserCountsByRole().catch(() => ({ buyers: 0, sellers: 0 })),
+        ])) as [any, any, any, any, any, any, any];
 
+        console.log("Users Data:", usersData);
         // Update products
         if (productsData.products && Array.isArray(productsData.products)) {
           const formattedProducts = productsData.products
@@ -246,11 +268,15 @@ export default function Admin() {
           setOrders(formattedOrders);
 
           // Calculate monthly revenue and order counts
-          const monthlyStats: { [key: string]: { revenue: number; orders: number } } = {};
+          const monthlyStats: {
+            [key: string]: { revenue: number; orders: number };
+          } = {};
           ordersData.orders.forEach((order: any) => {
             const date = new Date(order.createdAt);
-            const monthKey = date.toLocaleDateString('en-US', { month: 'short' });
-            
+            const monthKey = date.toLocaleDateString("en-US", {
+              month: "short",
+            });
+
             if (!monthlyStats[monthKey]) {
               monthlyStats[monthKey] = { revenue: 0, orders: 0 };
             }
@@ -259,8 +285,8 @@ export default function Admin() {
           });
 
           // Create revenue chart data
-          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-          const newRevenueData = months.map(month => ({
+          const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
+          const newRevenueData = months.map((month) => ({
             month,
             revenue: monthlyStats[month]?.revenue || 0,
             orders: monthlyStats[month]?.orders || 0,
@@ -271,8 +297,10 @@ export default function Admin() {
           const userGrowthByMonth: { [key: string]: Set<string> } = {};
           ordersData.orders.forEach((order: any) => {
             const date = new Date(order.createdAt);
-            const monthKey = date.toLocaleDateString('en-US', { month: 'short' });
-            
+            const monthKey = date.toLocaleDateString("en-US", {
+              month: "short",
+            });
+
             if (!userGrowthByMonth[monthKey]) {
               userGrowthByMonth[monthKey] = new Set();
             }
@@ -280,7 +308,7 @@ export default function Admin() {
           });
 
           let cumulativeUsers = 0;
-          const newUserGrowthData = months.map(month => {
+          const newUserGrowthData = months.map((month) => {
             cumulativeUsers += userGrowthByMonth[month]?.size || 0;
             return { month, users: cumulativeUsers };
           });
@@ -303,16 +331,36 @@ export default function Admin() {
           setReviews(formattedReviews);
         }
 
+        // Update buyers
+        if (buyersData.buyers && Array.isArray(buyersData.buyers)) {
+          const formattedBuyers = buyersData.buyers
+            .slice(0, 10)
+            .map((b: any) => ({
+              id: b._id,
+              name: b.name,
+              email: b.email,
+              joinDate: new Date(b.createdAt).toISOString().split("T")[0],
+              verified: b.emailVerified ? "Verified" : "Pending",
+            }));
+          setBuyers(formattedBuyers);
+        }
+
         // Calculate category distribution from products
         if (productsData.products && Array.isArray(productsData.products)) {
           const categoryStats: { [key: string]: number } = {};
           productsData.products.forEach((p: any) => {
-            const category = p.categoryId?.name || 'Other';
+            const category = p.categoryId?.name || "Other";
             categoryStats[category] = (categoryStats[category] || 0) + 1;
           });
 
           // Format category data
-          const colors = ["#ef4444", "#f59e0b", "#3b82f6", "#8b5cf6", "#6b7280"];
+          const colors = [
+            "#ef4444",
+            "#f59e0b",
+            "#3b82f6",
+            "#8b5cf6",
+            "#6b7280",
+          ];
           const newCategoryData = Object.entries(categoryStats)
             .map(([name, value], i) => ({
               name,
@@ -320,15 +368,25 @@ export default function Admin() {
               color: colors[i % colors.length],
             }))
             .slice(0, 5);
-          
+
           setCategoryData(newCategoryData);
         }
 
         // Calculate stats from real data
+        // Count active auctions
+        const activeAuctionsCount = Array.isArray(auctionsData?.auctions)
+          ? auctionsData.auctions.filter((a: any) => a.status === "Active")
+              .length
+          : 0;
+
         setStats((prev) => ({
           ...prev,
           totalProducts: productsData.products?.length || 0,
           totalOrders: ordersData.orders?.length || 0,
+          totalUsers: usersData?.totalUsers || 0,
+          totalBuyers: userCounts?.buyers || 0,
+          totalSellers: userCounts?.sellers || 0,
+          activeAuctions: activeAuctionsCount,
           totalRevenue:
             ordersData.orders?.reduce(
               (sum: number, o: any) => sum + (o.total_amount || 0),
@@ -553,7 +611,8 @@ export default function Admin() {
         <aside
           className={`${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } lg:translate-x-0 fixed lg:sticky top-16 left-0 z-40 w-64 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 transition-transform duration-300 ease-in-out overflow-y-auto`}>
+          } lg:translate-x-0 fixed lg:sticky top-16 left-0 z-40 w-64 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 transition-transform duration-300 ease-in-out overflow-y-auto`}
+        >
           <nav className="p-4 space-y-2">
             {[
               { id: "overview", label: "Dashboard", icon: TrendingUp },
@@ -650,7 +709,7 @@ export default function Admin() {
           {isOverview && (
             <div>
               {/* Stats Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6 mb-8">
                 <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-lg transition-shadow">
                   <div className="flex items-center justify-between mb-4">
                     <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
@@ -682,6 +741,40 @@ export default function Admin() {
                   </h3>
                   <p className="text-3xl font-bold text-gray-900">
                     {stats.totalUsers.toLocaleString()}
+                  </p>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-lg transition-shadow">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-12 h-12 bg-cyan-50 rounded-lg flex items-center justify-center">
+                      <Users className="w-6 h-6 text-cyan-600" />
+                    </div>
+                    <span className="px-2 py-1 bg-green-50 text-green-700 text-xs font-semibold rounded-full flex items-center gap-1">
+                      <TrendingUp className="w-3 h-3" /> 5%
+                    </span>
+                  </div>
+                  <h3 className="text-gray-600 text-sm font-medium mb-1">
+                    Total Buyers
+                  </h3>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {stats.totalBuyers.toLocaleString()}
+                  </p>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-lg transition-shadow">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-12 h-12 bg-indigo-50 rounded-lg flex items-center justify-center">
+                      <Users className="w-6 h-6 text-indigo-600" />
+                    </div>
+                    <span className="px-2 py-1 bg-green-50 text-green-700 text-xs font-semibold rounded-full flex items-center gap-1">
+                      <TrendingUp className="w-3 h-3" /> 7%
+                    </span>
+                  </div>
+                  <h3 className="text-gray-600 text-sm font-medium mb-1">
+                    Total Sellers
+                  </h3>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {stats.totalSellers.toLocaleString()}
                   </p>
                 </div>
 
@@ -802,7 +895,8 @@ export default function Admin() {
                         <polyline
                           points={revenueChartData
                             .map((data, i) => {
-                              const x = (i / (revenueChartData.length - 1)) * 600;
+                              const x =
+                                (i / (revenueChartData.length - 1)) * 600;
                               const maxRevenue = Math.max(
                                 ...revenueChartData.map((d) => d.revenue)
                               );
@@ -821,7 +915,8 @@ export default function Admin() {
                         <polyline
                           points={revenueChartData
                             .map((data, i) => {
-                              const x = (i / (revenueChartData.length - 1)) * 600;
+                              const x =
+                                (i / (revenueChartData.length - 1)) * 600;
                               const maxOrders = Math.max(
                                 ...revenueChartData.map((d) => d.orders)
                               );
@@ -1052,8 +1147,7 @@ export default function Admin() {
                             <p className="text-xs text-green-600">
                               +
                               {(
-                                ((data.users -
-                                  userChartData[index - 1].users) /
+                                ((data.users - userChartData[index - 1].users) /
                                   userChartData[index - 1].users) *
                                 100
                               ).toFixed(0)}
@@ -1220,25 +1314,43 @@ export default function Admin() {
                     </Link>
                   </div>
                   <div className="space-y-3">
-                    {products.length > 0 && products.map((product) => (
-                      <div key={product.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                        <div className="flex-1">
-                          <p className="font-semibold text-gray-900">{product.name}</p>
-                          <p className="text-sm text-gray-500">by {product.seller}</p>
+                    {products.length > 0 &&
+                      products.map((product) => (
+                        <div
+                          key={product.id}
+                          className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                        >
+                          <div className="flex-1">
+                            <p className="font-semibold text-gray-900">
+                              {product.name}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              by {product.seller}
+                            </p>
+                          </div>
+                          <div className="text-right ml-4">
+                            <p className="font-bold text-gray-900">
+                              PKR {product.price.toLocaleString()}
+                            </p>
+                            <span
+                              className={`text-xs px-2 py-1 rounded-full font-semibold ${product.status === "approved" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}
+                            >
+                              {product.status}
+                            </span>
+                          </div>
                         </div>
-                        <div className="text-right ml-4">
-                          <p className="font-bold text-gray-900">PKR {product.price.toLocaleString()}</p>
-                          <span className={`text-xs px-2 py-1 rounded-full font-semibold ${product.status === "approved" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}>{product.status}</span>
-                        </div>
+                      ))}
+                    {products.length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        No products found
                       </div>
-                    ))}
-                    {products.length === 0 && <div className="text-center py-8 text-gray-500">No products found</div>}
+                    )}
                   </div>
                 </div>
               </div>
             </div>
           )}
-          
+
           {isProducts && (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
@@ -1504,22 +1616,128 @@ export default function Admin() {
           )}
 
           {isUsers && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
-              <div className="text-center py-12">
-                <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Users className="w-10 h-10 text-purple-600" />
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    User Management
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    View and manage all registered buyers in the marketplace
+                  </p>
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                  User Management
-                </h3>
-                <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                  Manage user accounts, permissions, and monitor user activity
-                  across the platform
-                </p>
-                <button className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition-all shadow-md font-semibold">
-                  Coming Soon
-                </button>
+                <div className="flex flex-wrap gap-3 w-full sm:w-auto">
+                  <div className="relative flex-1 sm:flex-initial">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="search"
+                      placeholder="Search users..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full sm:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    />
+                  </div>
+                  <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2">
+                    <Filter className="w-4 h-4" />
+                    Filter
+                  </button>
+                </div>
               </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Name
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Email
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Join Date
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {buyers
+                      .filter(
+                        (b) =>
+                          searchQuery === "" ||
+                          b.name
+                            .toLowerCase()
+                            .includes(searchQuery.toLowerCase()) ||
+                          b.email
+                            .toLowerCase()
+                            .includes(searchQuery.toLowerCase())
+                      )
+                      .map((buyer) => (
+                        <tr
+                          key={buyer.id}
+                          className="hover:bg-gray-50 transition-colors"
+                        >
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-red-600 to-red-700 flex items-center justify-center">
+                                <span className="text-white font-semibold text-sm">
+                                  {buyer.name ? buyer.name[0] : "U"}
+                                </span>
+                              </div>
+                              <div className="text-sm font-semibold text-gray-900">
+                                {buyer.name || "Unknown User"}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600">
+                            {buyer.email}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600">
+                            {buyer.joinDate}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span
+                              className={`px-3 py-1 text-xs rounded-full font-semibold ${
+                                buyer.verified === "Verified"
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-yellow-100 text-yellow-800"
+                              }`}
+                            >
+                              {buyer.verified}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium space-x-3">
+                            <button className="text-blue-600 hover:text-blue-800">
+                              View Profile
+                            </button>
+                            <button className="text-red-600 hover:text-red-800">
+                              Deactivate
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {buyers.filter(
+                (b) =>
+                  searchQuery === "" ||
+                  b.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  b.email.toLowerCase().includes(searchQuery.toLowerCase())
+              ).length === 0 && (
+                <div className="text-center py-12 text-gray-500">
+                  <Users className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                  <p className="text-lg font-medium">No users found</p>
+                  <p className="text-sm text-gray-400 mt-1">
+                    Try adjusting your search criteria
+                  </p>
+                </div>
+              )}
             </div>
           )}
 

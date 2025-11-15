@@ -30,7 +30,7 @@ type LoaderData = {
 };
 
 export default function Dashboard() {
-  const { data: session } = useSession();
+  const { data: session, isPending } = useSession();
   const user = session?.user;
   const navigate = useNavigate();
   const revalidator = useRevalidator();
@@ -40,23 +40,17 @@ export default function Dashboard() {
   const isBuyer = user?.role === "buyer";
   const isSeller = user?.role === "seller";
 
-  // Protect dashboard - only sellers can access
+  // Protect dashboard - authenticated users (buyers and sellers) can access
   useEffect(() => {
-    if (!session) {
+    if (!isPending && !session) {
       // Not authenticated - redirect to login
       navigate("/login");
       return;
     }
+  }, [session, isPending, navigate]);
 
-    if (!isSeller) {
-      // Not a seller - redirect to login
-      navigate("/login");
-      return;
-    }
-  }, [session, isSeller, navigate]);
-
-  // If not authenticated or not a seller, don't render the page
-  if (!session || !isSeller) {
+  // If not authenticated or still loading, don't render the page
+  if (isPending || !session) {
     return null;
   }
 
@@ -66,7 +60,9 @@ export default function Dashboard() {
       if (isSeller && user?.id) {
         setIsLoading(true);
         try {
-          const response = await api.products.getAll({ sellerId: user.id }) as ProductsResponse;
+          const response = (await api.products.getAll({
+            sellerId: user.id,
+          })) as ProductsResponse;
           setMyListings(response.products || []);
         } catch (error) {
           console.error("Failed to fetch seller products:", error);
@@ -79,8 +75,12 @@ export default function Dashboard() {
     fetchSellerProducts();
   }, [isSeller, user?.id, revalidator.state]);
 
-  const activeListings = myListings.filter((l: Listing) => l.status === "Active");
-  const soldListings = myListings.filter((l: Listing) => l.status === "Sold");
+  const activeListings = isSeller
+    ? myListings.filter((l: Listing) => l.status === "Active")
+    : [];
+  const soldListings = isSeller
+    ? myListings.filter((l: Listing) => l.status === "Sold")
+    : [];
 
   // Mock buyer data - replace with actual API calls
   const buyerOrders = [
@@ -562,7 +562,9 @@ export default function Dashboard() {
           {isLoading ? (
             <div className="p-16 text-center">
               <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-red-600 mx-auto mb-4"></div>
-              <p className="text-gray-600 font-semibold">Loading your products...</p>
+              <p className="text-gray-600 font-semibold">
+                Loading your products...
+              </p>
             </div>
           ) : myListings.length > 0 ? (
             <div className="overflow-x-auto">

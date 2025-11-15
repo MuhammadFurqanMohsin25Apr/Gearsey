@@ -4,20 +4,19 @@ import { type Request, type Response } from "express";
 export async function getAuctions(req: Request, res: Response) {
   try {
     const { limit, start_time, end_time } = req.query;
-    let formattedStartTime: Date | undefined;
-    let formattedEndTime: Date | undefined;
+    const query: any = {};
+
     if (start_time) {
-      formattedStartTime = new Date(start_time as string);
+      query.start_time = { $gte: new Date(start_time as string) };
     }
 
     if (end_time) {
-      formattedEndTime = new Date(end_time as string);
+      query.end_time = { $lte: new Date(end_time as string) };
     }
 
-    const auctions: IAuction[] = await Auction.find({
-      start_time: formattedStartTime,
-      end_time: formattedEndTime,
-    }).limit(limit ? Number(limit) : 10);
+    const auctions: IAuction[] = await Auction.find(query).limit(
+      limit ? Number(limit) : 10
+    );
     res
       .status(200)
       .json({ auctions, message: "Auctions fetched successfully." });

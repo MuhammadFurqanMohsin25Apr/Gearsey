@@ -5,6 +5,7 @@ import listingRouter from "@/api/listing/router.js";
 import auctionRouter from "@/api/auction/router.js";
 import categoryRouter from "@/api/category/router.js";
 import reviewRouter from "@/api/review/router.js";
+import usersRouter from "@/api/users/router.js";
 
 const router = express.Router();
 
@@ -14,6 +15,7 @@ router.use("/products", listingRouter);
 router.use("/auction", auctionRouter);
 router.use("/category", categoryRouter);
 router.use("/review", reviewRouter);
+router.use("/users", usersRouter);
 
 router.get("/health", (req: Request, res: Response) => {
   res
@@ -27,6 +29,7 @@ router.get("/health", (req: Request, res: Response) => {
         "/auction": "OK",
         "/category": "OK",
         "/review": "OK",
+        "/users": "OK",
       },
     })
     .status(200);

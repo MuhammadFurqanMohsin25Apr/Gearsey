@@ -234,8 +234,49 @@ export const api = {
       }),
   },
 
+  // Users
+  users: {
+    getTotalCount: () => request<{ totalUsers: number }>("/users/count"),
+    getAll: () => request<{ buyers: any[] }>("/users"),
+  },
+
   // Health check
   health: () => request("/health"),
 };
+
+// Function to fetch user counts by role using Better Auth admin API
+export async function fetchUserCountsByRole(): Promise<{
+  buyers: number;
+  sellers: number;
+}> {
+  try {
+    const { authClient } = await import("./auth-client");
+
+    // Fetch buyers
+    const buyersResponse = await authClient.admin.listUsers({
+      filterField: "role",
+      filterValue: "buyer",
+      filterOperator: "eq",
+    });
+
+    // Fetch sellers
+    const sellersResponse = await authClient.admin.listUsers({
+      filterField: "role",
+      filterValue: "seller",
+      filterOperator: "eq",
+    });
+
+    return {
+      buyers: buyersResponse.data?.length || 0,
+      sellers: sellersResponse.data?.length || 0,
+    };
+  } catch (error) {
+    console.error("Failed to fetch user counts:", error);
+    return {
+      buyers: 0,
+      sellers: 0,
+    };
+  }
+}
 
 export { ApiError, API_BASE_URL };

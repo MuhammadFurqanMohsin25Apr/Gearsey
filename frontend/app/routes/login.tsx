@@ -11,7 +11,7 @@ export function meta() {
 
 export default function Login() {
   const navigate = useNavigate();
-  const { data: session } = useSession();
+  const { data: session, isPending } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -19,15 +19,21 @@ export default function Login() {
 
   // Redirect if already logged in (client-side check)
   useEffect(() => {
-    if (session?.user) {
+    // Only check after session has loaded
+    if (!isPending && session?.user) {
       // Redirect based on user role
       if (session.user.role === "admin") {
         navigate("/admin");
-      } else {
+      } else if (
+        session.user.role === "seller" ||
+        session.user.role === "buyer"
+      ) {
         navigate("/dashboard");
+      } else {
+        navigate("/products");
       }
     }
-  }, [session, navigate]);
+  }, [session?.user?.id, session?.user?.role, isPending, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,8 +66,10 @@ export default function Login() {
         const userRole = data.user.role;
         if (userRole === "admin") {
           navigate("/admin");
-        } else {
+        } else if (userRole === "seller" || userRole === "buyer") {
           navigate("/dashboard");
+        } else {
+          navigate("/products");
         }
       }
     } catch (err) {
