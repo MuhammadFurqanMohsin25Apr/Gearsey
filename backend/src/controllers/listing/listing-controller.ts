@@ -138,7 +138,7 @@ export async function createProduct(req: Request, res: Response) {
     const product = await Listing.create({
       name: title,
       description,
-      price,
+      price: Number(price),
       categoryId: category,
       imageIds,
       sellerId,
@@ -194,7 +194,7 @@ export async function updateProduct(req: Request, res: Response) {
     const updateData: Record<string, unknown> = {};
     if (title) updateData.name = title;
     if (description) updateData.description = description;
-    if (price) updateData.price = price;
+    if (price) updateData.price = Number(price);
     if (condition) updateData.condition = condition;
     if (is_auction !== undefined)
       updateData.is_auction = is_auction === true || is_auction === "true";
@@ -253,9 +253,11 @@ export async function updateProduct(req: Request, res: Response) {
     }
 
     if (category) {
-      const categoryDoc = await Category.findOne({ name: category }).select(
-        "_id"
-      );
+      // Try to find by ID first (for edit operations), then by name (for legacy support)
+      let categoryDoc = await Category.findById(category).select("_id");
+      if (!categoryDoc) {
+        categoryDoc = await Category.findOne({ name: category }).select("_id");
+      }
       if (!categoryDoc) {
         return res.status(403).json({ message: "Invalid category" });
       }

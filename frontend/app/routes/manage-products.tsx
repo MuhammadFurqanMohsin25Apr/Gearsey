@@ -2,11 +2,12 @@ import { Link, useRevalidator } from "react-router";
 import { api } from "~/lib/api";
 import { useSession } from "~/lib/auth-client";
 import { formatPrice, formatDate, getStatusBadgeColor } from "~/lib/utils";
-import type { ProductsResponse } from "~/types";
+import type { ProductsResponse, Listing } from "~/types";
 import type { Route } from "./+types/manage-products";
-import { Package, Search, Filter, Edit, Trash2, Star, Eye } from "lucide-react";
-import { useState } from "react";
+import { Package, Search, Filter, Edit, Trash2, Eye } from "lucide-react";
+import { useState, useEffect } from "react";
 import { AddProductDialog } from "~/components/AddProductDialog";
+import { EditProductDialog } from "~/components/EditProductDialog";
 
 export function meta() {
   return [
@@ -16,18 +17,39 @@ export function meta() {
 }
 
 export default function ManageProducts() {
-  // Use mock data - will be replaced by useSession in component
-  const myListings: any[] = [];
-  const sellerId = "mock-seller-id";
   const { data: session } = useSession();
   const user = session?.user;
   const revalidator = useRevalidator();
+  const [myListings, setMyListings] = useState<Listing[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterCondition, setFilterCondition] = useState("all");
   const [filterType, setFilterType] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedProductToEdit, setSelectedProductToEdit] = useState<Listing | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Fetch seller's products
+  useEffect(() => {
+    async function fetchSellerProducts() {
+      if (user?.id) {
+        setIsLoading(true);
+        try {
+          const response = await api.products.getAll({ sellerId: user.id }) as ProductsResponse;
+          setMyListings(response.products || []);
+        } catch (error) {
+          console.error("Failed to fetch seller products:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    fetchSellerProducts();
+  }, [user?.id, revalidator.state]);
 
   // Filter products
   let filteredProducts = myListings.filter((product) =>
@@ -82,8 +104,8 @@ export default function ManageProducts() {
     }
   });
 
-  const activeListings = myListings.filter((l: any) => l.status === "Active");
-  const soldListings = myListings.filter((l: any) => l.status === "Sold");
+  const activeListings = myListings.filter((l: Listing) => l.status === "Active");
+  const soldListings = myListings.filter((l: Listing) => l.status === "Sold");
 
   return (
     <div className="bg-gradient-to-br from-gray-50 via-white to-gray-100 min-h-screen">
@@ -248,12 +270,12 @@ export default function ManageProducts() {
                     onChange={(e) => setSortBy(e.target.value)}
                     className="px-4 py-2.5 border-2 border-gray-200 rounded-xl font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-red-500 bg-white hover:border-gray-300 transition-colors"
                   >
-                    <option value="newest">📅 Newest First</option>
-                    <option value="oldest">📅 Oldest First</option>
-                    <option value="price-low">💰 Price: Low to High</option>
-                    <option value="price-high">💎 Price: High to Low</option>
-                    <option value="name-asc">🔤 Name: A to Z</option>
-                    <option value="name-desc">🔤 Name: Z to A</option>
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="price-low">Price: Low to High</option>
+                    <option value="price-high">Price: High to Low</option>
+                    <option value="name-asc">Name: A to Z</option>
+                    <option value="name-desc">Name: Z to A</option>
                   </select>
                 </div>
               </div>
@@ -366,7 +388,12 @@ export default function ManageProducts() {
             </div>
           </div>
 
-          {filteredProducts.length > 0 ? (
+          {isLoading ? (
+            <div className="p-16 text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-red-600 mx-auto mb-4"></div>
+              <p className="text-gray-600 font-semibold">Loading your products...</p>
+            </div>
+          ) : filteredProducts.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
@@ -389,7 +416,7 @@ export default function ManageProducts() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
-                  {filteredProducts.map((product: any) => (
+                  {filteredProducts.map((product: Listing) => (
                     <tr
                       key={product._id}
                       className="hover:bg-gray-50 transition-colors"
@@ -454,35 +481,35 @@ export default function ManageProducts() {
                           <button
                             className="px-3 py-2 bg-green-100 hover:bg-green-200 text-green-700 font-bold rounded-lg transition-colors flex items-center gap-1.5"
                             title="Edit Product"
-                            onClick={() =>
-                              alert("Edit functionality coming soon!")
-                            }
+                            onClick={() => {
+                              setSelectedProductToEdit(product);
+                              setIsEditDialogOpen(true);
+                            }}
                           >
                             <Edit className="w-4 h-4" />
                             Edit
                           </button>
                           <button
-                            className="px-3 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 font-bold rounded-lg transition-colors flex items-center gap-1.5"
-                            title="View Reviews"
-                            onClick={() =>
-                              alert("Reviews functionality coming soon!")
-                            }
-                          >
-                            <Star className="w-4 h-4" />
-                            Reviews
-                          </button>
-                          <button
-                            className="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 font-bold rounded-lg transition-colors flex items-center gap-1.5"
+                            className="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 font-bold rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                             title="Delete Product"
-                            onClick={() => {
+                            disabled={isDeleting}
+                            onClick={async () => {
                               if (
                                 confirm(
                                   `Are you sure you want to delete "${product.name}"? This action cannot be undone.`
                                 )
                               ) {
-                                alert(
-                                  "Delete functionality will be implemented with backend API"
-                                );
+                                setIsDeleting(true);
+                                try {
+                                  await api.products.delete(product._id);
+                                  alert("Product deleted successfully!");
+                                  revalidator.revalidate();
+                                } catch (error) {
+                                  console.error("Failed to delete product:", error);
+                                  alert("Failed to delete product. Please try again.");
+                                } finally {
+                                  setIsDeleting(false);
+                                }
                               }
                             }}
                           >
@@ -534,6 +561,19 @@ export default function ManageProducts() {
         onSuccess={() => {
           revalidator.revalidate();
         }}
+      />
+
+      {/* Edit Product Dialog */}
+      <EditProductDialog
+        isOpen={isEditDialogOpen}
+        onClose={() => {
+          setIsEditDialogOpen(false);
+          setSelectedProductToEdit(null);
+        }}
+        onSuccess={() => {
+          revalidator.revalidate();
+        }}
+        product={selectedProductToEdit}
       />
     </div>
   );

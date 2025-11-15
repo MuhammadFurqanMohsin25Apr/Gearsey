@@ -2,7 +2,7 @@ import { Link, useNavigate, useRevalidator } from "react-router";
 import { api } from "~/lib/api";
 import { useSession } from "~/lib/auth-client";
 import { formatPrice, formatDate, getStatusBadgeColor } from "~/lib/utils";
-import type { ProductsResponse } from "~/types";
+import type { ProductsResponse, Listing } from "~/types";
 import type { Route } from "./+types/dashboard";
 import {
   Package,
@@ -30,16 +30,34 @@ type LoaderData = {
 };
 
 export default function Dashboard() {
-  // Use mock data - will be replaced by useSession in component
-  const myListings: any[] = [];
-  const sellerId = "mock-seller-id";
   const { data: session } = useSession();
   const user = session?.user;
   const navigate = useNavigate();
   const revalidator = useRevalidator();
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+  const [myListings, setMyListings] = useState<Listing[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const isBuyer = user?.role === "buyer";
   const isSeller = user?.role === "seller";
+
+  // Fetch seller's products
+  useEffect(() => {
+    async function fetchSellerProducts() {
+      if (isSeller && user?.id) {
+        setIsLoading(true);
+        try {
+          const response = await api.products.getAll({ sellerId: user.id }) as ProductsResponse;
+          setMyListings(response.products || []);
+        } catch (error) {
+          console.error("Failed to fetch seller products:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    fetchSellerProducts();
+  }, [isSeller, user?.id, revalidator.state]);
 
   // Redirect admin users to admin dashboard
   useEffect(() => {
@@ -48,8 +66,8 @@ export default function Dashboard() {
     }
   }, [user?.role, navigate]);
 
-  const activeListings = myListings.filter((l: any) => l.status === "Active");
-  const soldListings = myListings.filter((l: any) => l.status === "Sold");
+  const activeListings = myListings.filter((l: Listing) => l.status === "Active");
+  const soldListings = myListings.filter((l: Listing) => l.status === "Sold");
 
   // Mock buyer data - replace with actual API calls
   const buyerOrders = [
@@ -414,14 +432,14 @@ export default function Dashboard() {
                 </p>
               </div>
               <select className="px-5 py-2.5 border-2 border-gray-300 rounded-xl font-bold text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-gradient-to-r from-white to-gray-50 hover:border-red-400 transition-all cursor-pointer shadow-sm">
-                <option value="7">📅 Last 7 days</option>
-                <option value="14">📅 Last 14 days</option>
-                <option value="30">📅 Last 30 days</option>
-                <option value="60">📅 Last 60 days</option>
-                <option value="90">📅 Last 90 days</option>
-                <option value="180">📅 Last 6 months</option>
-                <option value="365">📅 Last year</option>
-                <option value="custom">🗓️ Custom range</option>
+                <option value="7">Last 7 days</option>
+                <option value="14">Last 14 days</option>
+                <option value="30">Last 30 days</option>
+                <option value="60">Last 60 days</option>
+                <option value="90">Last 90 days</option>
+                <option value="180">Last 6 months</option>
+                <option value="365">Last year</option>
+                <option value="custom">Custom range</option>
               </select>
             </div>
             <div className="h-64 flex items-end justify-between gap-3">
@@ -528,7 +546,12 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {myListings.length > 0 ? (
+          {isLoading ? (
+            <div className="p-16 text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-red-600 mx-auto mb-4"></div>
+              <p className="text-gray-600 font-semibold">Loading your products...</p>
+            </div>
+          ) : myListings.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
@@ -545,13 +568,10 @@ export default function Dashboard() {
                     <th className="px-6 py-4 text-left text-xs font-black text-gray-700 uppercase tracking-wider">
                       Listed
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-black text-gray-700 uppercase tracking-wider">
-                      Actions
-                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
-                  {myListings.map((listing: any) => (
+                  {myListings.map((listing: Listing) => (
                     <tr
                       key={listing._id}
                       className="hover:bg-gray-50 transition-colors"
@@ -602,110 +622,6 @@ export default function Dashboard() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-semibold">
                         {formatDate(listing.createdAt)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex gap-2 flex-wrap">
-                          <Link
-                            to={`/products/${listing._id}`}
-                            className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold rounded-lg transition-colors flex items-center gap-1"
-                            title="View Product"
-                          >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                              />
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                              />
-                            </svg>
-                            View
-                          </Link>
-                          <button
-                            className="px-3 py-1.5 bg-green-100 hover:bg-green-200 text-green-700 font-bold rounded-lg transition-colors flex items-center gap-1"
-                            title="Edit Product"
-                            onClick={() =>
-                              alert("Edit functionality coming soon!")
-                            }
-                          >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                              />
-                            </svg>
-                            Edit
-                          </button>
-                          <button
-                            className="px-3 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-700 font-bold rounded-lg transition-colors flex items-center gap-1"
-                            title="View Reviews"
-                            onClick={() =>
-                              alert("Reviews functionality coming soon!")
-                            }
-                          >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
-                              />
-                            </svg>
-                            Reviews
-                          </button>
-                          <button
-                            className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 font-bold rounded-lg transition-colors flex items-center gap-1"
-                            title="Delete Product"
-                            onClick={() => {
-                              if (
-                                confirm(
-                                  `Are you sure you want to delete "${listing.name}"? This action cannot be undone.`
-                                )
-                              ) {
-                                alert(
-                                  "Delete functionality will be implemented with backend API"
-                                );
-                              }
-                            }}
-                          >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                              />
-                            </svg>
-                            Delete
-                          </button>
-                        </div>
                       </td>
                     </tr>
                   ))}

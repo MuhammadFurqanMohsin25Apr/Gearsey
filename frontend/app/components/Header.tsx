@@ -3,7 +3,6 @@ import { useState, useEffect, useRef } from "react";
 import { useSession, signOut } from "~/lib/auth-client";
 import {
   Search,
-  Flame,
   Package,
   ShoppingCart,
   User,
@@ -491,59 +490,6 @@ export function Header() {
             )}
           </div>
         )}
-      </div>
-
-      {/* Category Bar */}
-      <div className="bg-gray-100 border-t border-gray-200">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center space-x-6 py-3 overflow-x-auto">
-            <Link
-              to="/products"
-              className="text-xs text-gray-900 hover:text-red-600 whitespace-nowrap transition-colors duration-300 font-bold"
-            >
-              ALL PARTS
-            </Link>
-            <Link
-              to="/products?category=Engine"
-              className="text-xs text-gray-700 hover:text-red-600 whitespace-nowrap transition-colors duration-300 font-semibold"
-            >
-              ENGINE
-            </Link>
-            <Link
-              to="/products?category=Wheels"
-              className="text-xs text-gray-700 hover:text-red-600 whitespace-nowrap transition-colors duration-300 font-semibold"
-            >
-              WHEELS & TIRES
-            </Link>
-            <Link
-              to="/products?category=Brakes"
-              className="text-xs text-gray-700 hover:text-red-600 whitespace-nowrap transition-colors duration-300 font-semibold"
-            >
-              BRAKES
-            </Link>
-            <Link
-              to="/products?category=Suspension"
-              className="text-xs text-gray-700 hover:text-red-600 whitespace-nowrap transition-colors duration-300 font-semibold"
-            >
-              SUSPENSION
-            </Link>
-            <Link
-              to="/products?category=Electrical"
-              className="text-xs text-gray-700 hover:text-red-600 whitespace-nowrap transition-colors duration-300 font-semibold"
-            >
-              ELECTRICAL
-            </Link>
-            <Link
-              to="/products?category=Body"
-              className="text-xs text-gray-700 hover:text-red-600 whitespace-nowrap transition-colors duration-300 font-semibold"
-            >
-              BODY PARTS
-            </Link>
-            <span className="text-xs text-red-600 font-bold flex items-center gap-1">
-              <Flame className="w-3 h-3" /> SALE
-            </span>
-          </div>
-        </div>
       </div>
 
       {/* Add Product Dialog */}
