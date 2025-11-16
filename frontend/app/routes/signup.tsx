@@ -78,14 +78,12 @@ export default function Signup() {
           onRequest: () => {
             // Show loading state
           },
-          onSuccess: async (ctx) => {            
-          },
+          onSuccess: async (ctx) => {},
           onError: (ctx) => {
             setError(ctx.error.message || "Signup failed");
           },
         }
       );
-      
 
       if (signUpError) {
         setError(signUpError.message || "Signup failed");
@@ -350,7 +348,6 @@ export default function Signup() {
                 >
                   <option value="customer">Buy auto parts</option>
                   <option value="seller">Sell auto parts</option>
-                  <option value="admin">Manage the platform (Admin)</option>
                 </select>
               </div>
 

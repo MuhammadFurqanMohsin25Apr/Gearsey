@@ -43,18 +43,13 @@ export default function Dashboard() {
       navigate("/login", { replace: true });
       return;
     }
-    
+
     // Redirect admin users to admin panel
     if (!isPending && user?.role === "admin") {
       navigate("/admin", { replace: true });
       return;
     }
   }, [session, isPending, user?.role, navigate]);
-
-  // If not authenticated or still loading, don't render the page
-  if (isPending || !session) {
-    return null;
-  }
 
   // Fetch seller's products
   useEffect(() => {
@@ -76,6 +71,11 @@ export default function Dashboard() {
 
     fetchSellerProducts();
   }, [isSeller, user?.id, revalidator.state]);
+
+  // If not authenticated or still loading, don't render the page
+  if (isPending || !session) {
+    return null;
+  }
 
   const activeListings = isSeller
     ? myListings.filter((l: Listing) => l.status === "Active")

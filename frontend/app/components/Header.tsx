@@ -50,7 +50,7 @@ export function Header() {
 
     // Listen for storage changes from other tabs
     window.addEventListener("storage", updateCartCount);
-    
+
     // Also listen for a custom event we'll dispatch when cart changes
     window.addEventListener("cartUpdated", updateCartCount);
 

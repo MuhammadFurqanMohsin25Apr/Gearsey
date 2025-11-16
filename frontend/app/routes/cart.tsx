@@ -224,12 +224,6 @@ export default function Cart() {
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <div className="px-3 py-1 bg-gray-100 rounded text-xs font-semibold text-gray-800">
-                      JazzCash
-                    </div>
-                    <div className="px-3 py-1 bg-gray-100 rounded text-xs font-semibold text-gray-800">
-                      Easypaisa
-                    </div>
-                    <div className="px-3 py-1 bg-gray-100 rounded text-xs font-semibold text-gray-800">
                       Credit Card
                     </div>
                     <div className="px-3 py-1 bg-gray-100 rounded text-xs font-semibold text-gray-800">

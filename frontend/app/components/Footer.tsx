@@ -199,16 +199,10 @@ export function Footer() {
               </p>
               <div className="flex gap-2">
                 <div className="px-3 py-1 bg-gray-800 rounded text-xs font-bold">
-                  VISA
+                  Credit Card
                 </div>
                 <div className="px-3 py-1 bg-gray-800 rounded text-xs font-bold">
-                  MC
-                </div>
-                <div className="px-3 py-1 bg-gray-800 rounded text-xs font-bold">
-                  JAZZ
-                </div>
-                <div className="px-3 py-1 bg-gray-800 rounded text-xs font-bold">
-                  EASY
+                  Debit Card
                 </div>
               </div>
             </div>

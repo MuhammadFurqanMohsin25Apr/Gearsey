@@ -17,7 +17,7 @@ export default function Checkout() {
   const { data: session } = useSession();
   const user = session?.user;
   const navigate = useNavigate();
-  const [paymentMethod, setPaymentMethod] = useState("Credit Card");
+  const [paymentMethod, setPaymentMethod] = useState("credit_card");
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -32,6 +32,14 @@ export default function Checkout() {
     city: "",
     province: "Punjab",
     postalCode: "",
+  });
+
+  // Card details form data
+  const [cardDetails, setCardDetails] = useState({
+    cardholderName: "",
+    cardNumber: "",
+    expiryDate: "",
+    cvv: "",
   });
 
   useEffect(() => {
@@ -55,6 +63,11 @@ export default function Checkout() {
   ) => {
     const { name, value } = e.target;
     setShippingData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCardDetailsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setCardDetails((prev) => ({ ...prev, [name]: value }));
   };
 
   const handlePlaceOrder = async (e: React.FormEvent) => {
@@ -93,11 +106,15 @@ export default function Checkout() {
       if (orderResponse && (orderResponse as any).order) {
         const order = (orderResponse as any).order;
 
-      
         try {
           await api.payments.create({
             orderId: order._id,
-            payment_method: paymentMethod === "card" ? "Credit Card" : paymentMethod,
+            payment_method:
+              paymentMethod === "credit_card"
+                ? "Credit Card"
+                : paymentMethod === "debit_card"
+                  ? "Debit Card"
+                  : paymentMethod,
             amount: orderTotal,
           });
         } catch (paymentError) {
@@ -282,17 +299,17 @@ export default function Checkout() {
                     <input
                       type="radio"
                       name="payment"
-                      value="jazzcash"
-                      checked={paymentMethod === "jazzcash"}
+                      value="credit_card"
+                      checked={paymentMethod === "credit_card"}
                       onChange={(e) => setPaymentMethod(e.target.value)}
                       className="mr-3"
                     />
                     <div className="flex-1 flex items-center justify-between">
                       <span className="font-medium text-gray-900">
-                        JazzCash
+                        Credit Card
                       </span>
                       <span className="text-sm text-gray-600">
-                        Mobile Wallet
+                        Visa, Mastercard
                       </span>
                     </div>
                   </label>
@@ -301,33 +318,14 @@ export default function Checkout() {
                     <input
                       type="radio"
                       name="payment"
-                      value="easypaisa"
-                      checked={paymentMethod === "easypaisa"}
+                      value="debit_card"
+                      checked={paymentMethod === "debit_card"}
                       onChange={(e) => setPaymentMethod(e.target.value)}
                       className="mr-3"
                     />
                     <div className="flex-1 flex items-center justify-between">
                       <span className="font-medium text-gray-900">
-                        Easypaisa
-                      </span>
-                      <span className="text-sm text-gray-600">
-                        Mobile Wallet
-                      </span>
-                    </div>
-                  </label>
-
-                  <label className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500">
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="card"
-                      checked={paymentMethod === "card"}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="mr-3"
-                    />
-                    <div className="flex-1 flex items-center justify-between">
-                      <span className="font-medium text-gray-900">
-                        Credit/Debit Card
+                        Debit Card
                       </span>
                       <span className="text-sm text-gray-600">
                         Visa, Mastercard
@@ -335,6 +333,91 @@ export default function Checkout() {
                     </div>
                   </label>
                 </div>
+
+                {/* Card Details Form */}
+                {(paymentMethod === "credit_card" ||
+                  paymentMethod === "debit_card") && (
+                  <div className="mt-6 pt-6 border-t border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      {paymentMethod === "credit_card"
+                        ? "Credit Card Details"
+                        : "Debit Card Details"}
+                    </h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          {paymentMethod === "credit_card"
+                            ? "Credit Card Holder Name"
+                            : "Debit Card Holder Name"}
+                        </label>
+                        <input
+                          type="text"
+                          name="cardholderName"
+                          value={cardDetails.cardholderName}
+                          onChange={handleCardDetailsChange}
+                          placeholder="John Doe"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          {paymentMethod === "credit_card"
+                            ? "Credit Card Number"
+                            : "Debit Card Number"}
+                        </label>
+                        <input
+                          type="text"
+                          name="cardNumber"
+                          value={cardDetails.cardNumber}
+                          onChange={handleCardDetailsChange}
+                          placeholder="1234 5678 9012 3456"
+                          maxLength="19"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          required
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            {paymentMethod === "credit_card"
+                              ? "Card Expiry Date"
+                              : "Card Expiry Date"}
+                          </label>
+                          <input
+                            type="text"
+                            name="expiryDate"
+                            value={cardDetails.expiryDate}
+                            onChange={handleCardDetailsChange}
+                            placeholder="MM/YY"
+                            maxLength="5"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            {paymentMethod === "credit_card"
+                              ? "Card CVV"
+                              : "Card CVV"}
+                          </label>
+                          <input
+                            type="text"
+                            name="cvv"
+                            value={cardDetails.cvv}
+                            onChange={handleCardDetailsChange}
+                            placeholder="123"
+                            maxLength="4"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

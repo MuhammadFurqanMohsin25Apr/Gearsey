@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import { Link, useLoaderData } from "react-router";
 import { api } from "~/lib/api";
 import type { AuctionsResponse, ProductsResponse } from "~/types";
 import { formatPrice, formatDateTime, getTimeRemaining } from "~/lib/utils";
@@ -78,8 +78,8 @@ type LoaderData = {
   auctions: any[];
 };
 
-export default function Auctions({ loaderData }: { loaderData: LoaderData }) {
-  const { auctions } = loaderData;
+export default function Auctions() {
+  const { auctions } = useLoaderData<LoaderData>();
 
   const activeAuctions = auctions.filter((a: any) => a.status === "Active");
   const closedAuctions = auctions.filter((a: any) => a.status !== "Active");
