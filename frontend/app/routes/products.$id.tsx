@@ -7,10 +7,12 @@ import {
   getConditionBadgeColor,
   getStatusBadgeColor,
 } from "~/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "~/lib/auth-client";
 import { cartManager } from "~/lib/cart";
 import { Flame, CheckCircle, Star, Package } from "lucide-react";
+import { ReviewDialog } from "~/components/ReviewDialog";
+import { ReviewsList } from "~/components/ReviewsList";
 
 export function meta() {
   return [
@@ -89,27 +91,26 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState(1);
 
   // Review state
-  const [reviews, setReviews] = useState<any[]>([
-    // Mock reviews
-    {
-      id: 1,
-      userName: "Ahmed Khan",
-      rating: 5,
-      comment: "Excellent quality! Exactly as described. Highly recommended.",
-      date: "2024-01-15",
-      verified: true,
-    },
-    {
-      id: 2,
-      userName: "Fatima Ali",
-      rating: 4,
-      comment: "Good product, delivery was fast.",
-      date: "2024-01-10",
-      verified: true,
-    },
-  ]);
-  const [showReviewForm, setShowReviewForm] = useState(false);
-  const [newReview, setNewReview] = useState({ rating: 5, comment: "" });
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [showReviewDialog, setShowReviewDialog] = useState(false);
+
+  // Fetch reviews on mount
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        const response = (await api.reviews.getByProduct(product._id)) as any;
+        setReviews(response.reviews || []);
+      } catch (error) {
+        console.error("Failed to load reviews:", error);
+        setReviews([]);
+      } finally {
+        setReviewsLoading(false);
+      }
+    };
+
+    fetchReviews();
+  }, [product._id]);
 
   const images = product.imageIds.map((img) =>
     api.products.getImage(img.fileName)
@@ -126,33 +127,19 @@ export default function ProductDetail() {
     // Add to cart
     cartManager.addItem(product, quantity);
     alert(`Added ${quantity} item(s) to cart!`);
-    
+
     // Reset quantity
     setQuantity(1);
   };
 
-  const handleSubmitReview = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!user || user.role !== "buyer") {
-      alert("Only buyers can submit reviews!");
-      return;
+  const handleReviewSubmitted = async () => {
+    // Reload reviews after submission
+    try {
+      const response = (await api.reviews.getByProduct(product._id)) as any;
+      setReviews(response.reviews || []);
+    } catch (error) {
+      console.error("Failed to reload reviews:", error);
     }
-
-    // Add review
-    const review = {
-      id: reviews.length + 1,
-      userName: user.name || "Anonymous Buyer",
-      rating: newReview.rating,
-      comment: newReview.comment,
-      date: new Date().toISOString().split("T")[0],
-      verified: true,
-    };
-
-    setReviews([review, ...reviews]);
-    setNewReview({ rating: 5, comment: "" });
-    setShowReviewForm(false);
-    alert("Review submitted successfully!");
   };
 
   return (
@@ -420,161 +407,41 @@ export default function ProductDetail() {
               </p>
             </div>
 
-            {/* Only buyers can write reviews */}
-            {user?.role === "buyer" && (
+            {/* Only logged in users can write reviews */}
+            {user && (
               <button
-                onClick={() => setShowReviewForm(!showReviewForm)}
+                onClick={() => setShowReviewDialog(true)}
                 className="px-6 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-lg hover:from-red-700 hover:to-red-800 transition-all duration-300"
               >
-                {showReviewForm ? "Cancel" : "Write a Review"}
+                Write a Review
               </button>
             )}
           </div>
 
-          {/* Review Form (Buyers Only) */}
-          {showReviewForm && user?.role === "buyer" && (
-            <form
-              onSubmit={handleSubmitReview}
-              className="bg-gradient-to-br from-red-50 to-orange-50 rounded-lg p-6 mb-6 border-2 border-red-200"
-            >
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Share Your Experience
-              </h3>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Rating
-                </label>
-                <div className="flex gap-2">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      type="button"
-                      onClick={() =>
-                        setNewReview({ ...newReview, rating: star })
-                      }
-                      className="transition-transform"
-                    >
-                      <Star
-                        className={`w-8 h-8 ${star <= newReview.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
-                      />
-                    </button>
-                  ))}
-                  <span className="ml-2 text-gray-600 font-medium">
-                    {newReview.rating}/5
-                  </span>
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Your Review
-                </label>
-                <textarea
-                  value={newReview.comment}
-                  onChange={(e) =>
-                    setNewReview({ ...newReview, comment: e.target.value })
-                  }
-                  required
-                  rows={4}
-                  placeholder="Tell us about your experience with this product..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="px-6 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-lg hover:from-red-700 hover:to-red-800 transition-all duration-300"
-              >
-                Submit Review
-              </button>
-            </form>
-          )}
-
-          {/* Message for non-buyers */}
+          {/* Message for non-logged in users */}
           {!user && (
             <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-lg p-4 mb-6 border-2 border-red-200">
               <p className="text-red-800 font-medium">
-                <Link to="/login" className="underline hover:text-amber-900">
-                  Sign in as a buyer
+                <Link to="/login" className="underline hover:text-red-900">
+                  Sign in
                 </Link>{" "}
                 to write a review
               </p>
             </div>
           )}
 
-          {user && user.role !== "buyer" && (
-            <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-lg p-4 mb-6 border-2 border-red-200">
-              <p className="text-red-800 font-medium">
-                Only buyers can submit product reviews
-              </p>
-            </div>
-          )}
-
           {/* Reviews List */}
-          <div className="space-y-6">
-            {reviews.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                <svg
-                  className="w-16 h-16 mx-auto mb-4 text-gray-300"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
-                  />
-                </svg>
-                <p className="text-lg font-medium">No reviews yet</p>
-                <p className="text-sm mt-1">
-                  Be the first to review this product!
-                </p>
-              </div>
-            ) : (
-              reviews.map((review) => (
-                <div
-                  key={review.id}
-                  className="border-b border-gray-200 pb-6 last:border-0"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold text-gray-900">
-                          {review.userName}
-                        </p>
-                        {review.verified && (
-                          <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded flex items-center gap-1">
-                            <CheckCircle className="w-3 h-3" /> Verified
-                            Purchase
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="flex gap-0.5">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-4 h-4 ${i < review.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
-                            />
-                          ))}
-                        </div>
-                        <span className="text-sm text-gray-600">
-                          {review.date}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-gray-700 leading-relaxed">
-                    {review.comment}
-                  </p>
-                </div>
-              ))
-            )}
-          </div>
+          <ReviewsList reviews={reviews} isLoading={reviewsLoading} />
         </div>
+
+        {/* Review Dialog */}
+        <ReviewDialog
+          productId={product._id}
+          productName={product.title}
+          isOpen={showReviewDialog}
+          onClose={() => setShowReviewDialog(false)}
+          onReviewSubmitted={handleReviewSubmitted}
+        />
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (

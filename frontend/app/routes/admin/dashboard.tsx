@@ -171,45 +171,50 @@ export default function AdminDashboard() {
         setLoading(true);
 
         // Fetch orders, products, reviews in parallel
-        const [ordersData, productsData, auctionsData, buyersData, sellersData] =
-          await Promise.all([
-            api.orders.getAll().catch((err) => {
-              console.error("Orders API error:", err);
-              return { orders: [] };
+        const [
+          ordersData,
+          productsData,
+          auctionsData,
+          buyersData,
+          sellersData,
+        ] = (await Promise.all([
+          api.orders.getAll().catch((err) => {
+            console.error("Orders API error:", err);
+            return { orders: [] };
+          }),
+          api.products.getAll({ limit: 5000 }).catch((err) => {
+            console.error("Products API error:", err);
+            return { products: [] };
+          }),
+          api.auctions.getAll({ limit: 1000 }).catch((err) => {
+            console.error("Auctions API error:", err);
+            return { auctions: [] };
+          }),
+          authClient.admin
+            .listUsers({
+              query: {
+                filterField: "role",
+                filterValue: "buyer",
+                filterOperator: "eq",
+              },
+            })
+            .catch((err) => {
+              console.error("Buyers list error:", err);
+              return { data: { users: [] } };
             }),
-            api.products.getAll({ limit: 5000 }).catch((err) => {
-              console.error("Products API error:", err);
-              return { products: [] };
+          authClient.admin
+            .listUsers({
+              query: {
+                filterField: "role",
+                filterValue: "seller",
+                filterOperator: "eq",
+              },
+            })
+            .catch((err) => {
+              console.error("Sellers list error:", err);
+              return { data: { users: [] } };
             }),
-            api.auctions.getAll({ limit: 1000 }).catch((err) => {
-              console.error("Auctions API error:", err);
-              return { auctions: [] };
-            }),
-            authClient.admin
-              .listUsers({
-                query: {
-                  filterField: "role",
-                  filterValue: "buyer",
-                  filterOperator: "eq",
-                },
-              })
-              .catch((err) => {
-                console.error("Buyers list error:", err);
-                return { data: { users: [] } };
-              }),
-            authClient.admin
-              .listUsers({
-                query: {
-                  filterField: "role",
-                  filterValue: "seller",
-                  filterOperator: "eq",
-                },
-              })
-              .catch((err) => {
-                console.error("Sellers list error:", err);
-                return { data: { users: [] } };
-              }),
-          ]) as [any, any, any, any, any];
+        ])) as [any, any, any, any, any];
 
         console.log("API Responses:", {
           ordersData,
@@ -229,14 +234,20 @@ export default function AdminDashboard() {
               seller: p.sellerId,
               price: p.price,
               status: "approved",
-              date: p.createdAt ? new Date(p.createdAt).toISOString().split("T")[0] : "N/A",
+              date: p.createdAt
+                ? new Date(p.createdAt).toISOString().split("T")[0]
+                : "N/A",
               reviews: 0,
             }));
           setProducts(formattedProducts);
         }
 
         // Process orders
-        if (ordersData.orders && Array.isArray(ordersData.orders)) {
+        if (
+          ordersData.orders &&
+          Array.isArray(ordersData.orders) &&
+          ordersData.orders.length > 0
+        ) {
           const formattedOrders = ordersData.orders
             .slice(0, 3)
             .map((o: any) => ({
@@ -244,14 +255,18 @@ export default function AdminDashboard() {
               customer: o.userId,
               amount: o.total_amount,
               status: o.payment_status?.toLowerCase() || "pending",
-              date: o.createdAt ? new Date(o.createdAt).toISOString().split("T")[0] : "N/A",
+              date: o.createdAt
+                ? new Date(o.createdAt).toISOString().split("T")[0]
+                : "N/A",
             }));
           setOrders(formattedOrders);
+        }
 
-          // Calculate monthly revenue and order counts
-          const monthlyStats: {
-            [key: string]: { revenue: number; orders: number };
-          } = {};
+        // Calculate monthly revenue and order counts from all orders
+        const monthlyStats: {
+          [key: string]: { revenue: number; orders: number };
+        } = {};
+        if (ordersData.orders && Array.isArray(ordersData.orders)) {
           ordersData.orders.forEach((order: any) => {
             if (!order.createdAt) return;
             const date = new Date(order.createdAt);
@@ -266,21 +281,48 @@ export default function AdminDashboard() {
             monthlyStats[monthKey].revenue += order.total_amount || 0;
             monthlyStats[monthKey].orders += 1;
           });
+        }
 
-          // Create revenue chart data
-          const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
-          const newRevenueData = months.map((month) => ({
-            month,
-            revenue: monthlyStats[month]?.revenue || 0,
-            orders: monthlyStats[month]?.orders || 0,
-          }));
-          setRevenueData(newRevenueData);
+        // Create revenue chart data - always show this
+        const months = [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ];
+        const newRevenueData = months.map((month) => ({
+          month,
+          revenue: monthlyStats[month]?.revenue || 0,
+          orders: monthlyStats[month]?.orders || 0,
+        }));
 
-          // Calculate user growth
-          const userGrowthByMonth: { [key: string]: Set<string> } = {};
-          ordersData.orders.forEach((order: any) => {
-            if (!order.createdAt) return;
-            const date = new Date(order.createdAt);
+        console.log("Monthly Stats:", monthlyStats);
+        console.log("Revenue Chart Data:", newRevenueData);
+
+        // Always update with calculated data from database
+        setRevenueData(newRevenueData);
+
+        // Calculate user growth - count unique users who created accounts in each month
+        const userGrowthByMonth: { [key: string]: Set<string> } = {};
+
+        // Use buyer and seller data to calculate user growth
+        const allUsers = [
+          ...(buyersData?.data?.users || []),
+          ...(sellersData?.data?.users || []),
+        ];
+
+        if (allUsers.length > 0) {
+          allUsers.forEach((user: any) => {
+            if (!user.createdAt) return;
+            const date = new Date(user.createdAt);
             if (isNaN(date.getTime())) return;
             const monthKey = date.toLocaleDateString("en-US", {
               month: "short",
@@ -289,16 +331,35 @@ export default function AdminDashboard() {
             if (!userGrowthByMonth[monthKey]) {
               userGrowthByMonth[monthKey] = new Set();
             }
-            userGrowthByMonth[monthKey].add(order.userId);
+            userGrowthByMonth[monthKey].add(user.id);
           });
-
-          let cumulativeUsers = 0;
-          const newUserGrowthData = months.map((month) => {
-            cumulativeUsers += userGrowthByMonth[month]?.size || 0;
-            return { month, users: cumulativeUsers };
-          });
-          setUserGrowthData(newUserGrowthData);
         }
+
+        let cumulativeUsers = 0;
+        const months2 = [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ];
+        const newUserGrowthData = months2.map((month) => {
+          cumulativeUsers += userGrowthByMonth[month]?.size || 0;
+          return { month, users: cumulativeUsers };
+        });
+
+        console.log("User Growth By Month:", userGrowthByMonth);
+        console.log("User Growth Chart Data:", newUserGrowthData);
+
+        // Always update with calculated data from database
+        setUserGrowthData(newUserGrowthData);
 
         // Calculate category distribution from products
         if (productsData.products && Array.isArray(productsData.products)) {
@@ -355,7 +416,7 @@ export default function AdminDashboard() {
         setStats({
           totalProducts: totalProductsCount,
           totalOrders: totalOrdersCount,
-          totalUsers: (buyerCount + sellerCount),
+          totalUsers: buyerCount + sellerCount,
           totalBuyers: buyerCount,
           totalSellers: sellerCount,
           activeAuctions: activeAuctionsCount,
@@ -364,7 +425,10 @@ export default function AdminDashboard() {
         });
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
-        // Keep mock data on error
+        // Use mock data as fallback
+        setRevenueData(mockRevenueData);
+        setUserGrowthData(mockUserGrowthData);
+        setCategoryData(mockCategoryData);
       } finally {
         setLoading(false);
       }
@@ -372,7 +436,7 @@ export default function AdminDashboard() {
 
     fetchData();
   }, []);
-  
+
   return (
     <div className="flex-1 p-4 lg:p-4">
       {/* Stats Grid - Row 1 */}

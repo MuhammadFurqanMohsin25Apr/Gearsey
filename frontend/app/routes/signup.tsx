@@ -88,6 +88,9 @@ export default function Signup() {
       if (signUpError) {
         setError(signUpError.message || "Signup failed");
       } else if (data?.user) {
+        // Refresh session to get the updated user data with role
+        await authClient.getSession();
+
         // Wait a moment for session to update, then redirect based on role
         setTimeout(() => {
           const userRole = formData.role || "customer";
@@ -96,7 +99,7 @@ export default function Signup() {
           } else if (userRole === "seller") {
             navigate("/dashboard", { replace: true });
           } else {
-            // customer, customer, or any other role
+            // customer, buyer, or any other role
             navigate("/products", { replace: true });
           }
         }, 500);

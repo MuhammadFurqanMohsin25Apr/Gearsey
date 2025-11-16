@@ -3,6 +3,7 @@ import { useSession } from "~/lib/auth-client";
 import { useState, useEffect } from "react";
 import { api } from "~/lib/api";
 import type { Route } from "./+types/orders";
+import { ReviewDialog } from "~/components/ReviewDialog";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -21,6 +22,11 @@ export default function Orders() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -35,6 +41,7 @@ export default function Orders() {
         const response = await api.orders.getByUser(user.id);
         const data = response as any;
         if (data?.orders) {
+          console.log("Orders fetched:", data.orders);
           setOrders(data.orders);
         } else {
           setOrders([]);
@@ -104,8 +111,14 @@ export default function Orders() {
           <div className="bg-white rounded-xl shadow-md p-12 text-center">
             <div className="flex justify-center items-center gap-2">
               <div className="w-2 h-2 bg-red-600 rounded-full animate-bounce"></div>
-              <div className="w-2 h-2 bg-red-600 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
-              <div className="w-2 h-2 bg-red-600 rounded-full animate-bounce" style={{ animationDelay: "0.4s" }}></div>
+              <div
+                className="w-2 h-2 bg-red-600 rounded-full animate-bounce"
+                style={{ animationDelay: "0.2s" }}
+              ></div>
+              <div
+                className="w-2 h-2 bg-red-600 rounded-full animate-bounce"
+                style={{ animationDelay: "0.4s" }}
+              ></div>
             </div>
             <p className="text-gray-600 mt-4">Loading your orders...</p>
           </div>
@@ -121,16 +134,20 @@ export default function Orders() {
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">
-                        Order #{order._id?.substring(0, 8).toUpperCase() || "N/A"}
+                        Order #
+                        {order._id?.substring(0, 8).toUpperCase() || "N/A"}
                       </h3>
                       <p className="text-sm text-gray-600">
                         Placed on{" "}
                         {order.createdAt
-                          ? new Date(order.createdAt).toLocaleDateString("en-US", {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            })
+                          ? new Date(order.createdAt).toLocaleDateString(
+                              "en-US",
+                              {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                              }
+                            )
                           : "N/A"}
                       </p>
                     </div>
@@ -150,9 +167,12 @@ export default function Orders() {
                 {/* Order Items */}
                 <div className="p-6">
                   <p className="text-sm text-gray-600 mb-4">
-                    Payment Status: <span className="font-semibold">{order.payment_status || "Pending"}</span>
+                    Payment Status:{" "}
+                    <span className="font-semibold">
+                      {order.payment_status || "Pending"}
+                    </span>
                   </p>
-                  
+
                   {/* Placeholder for items - backend will return items separately */}
                   <div className="space-y-4">
                     <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
@@ -176,7 +196,9 @@ export default function Orders() {
                           Order Items
                         </h4>
                         <p className="text-sm text-gray-600">
-                          {order.total_amount ? `Total: PKR ${order.total_amount.toLocaleString()}` : "N/A"}
+                          {order.total_amount
+                            ? `Total: PKR ${order.total_amount.toLocaleString()}`
+                            : "N/A"}
                         </p>
                       </div>
                     </div>
@@ -192,11 +214,36 @@ export default function Orders() {
                     >
                       View Details
                     </button>
-                    {order.delivery_status === "Delivered" && (
+                    {(order.delivery_status
+                      ?.toLowerCase()
+                      .includes("delivered") ||
+                      order.delivery_status
+                        ?.toLowerCase()
+                        .includes("completed") ||
+                      order.payment_status?.toLowerCase() === "completed") && (
                       <button
-                        onClick={() => alert("Review feature coming soon!")}
-                        className="px-6 py-2 border-2 border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                        onClick={() => {
+                          setSelectedProduct({
+                            id: order._id,
+                            name: `Order #${order._id?.substring(0, 8).toUpperCase() || "N/A"}`,
+                          });
+                          setReviewDialogOpen(true);
+                        }}
+                        className="px-6 py-2 border-2 border-red-300 text-red-700 font-medium rounded-lg hover:bg-red-50 transition-colors flex items-center gap-2"
                       >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+                          />
+                        </svg>
                         Leave Review
                       </button>
                     )}
@@ -249,6 +296,22 @@ export default function Orders() {
               Browse Products
             </Link>
           </div>
+        )}
+
+        {/* Review Dialog */}
+        {selectedProduct && (
+          <ReviewDialog
+            productId={selectedProduct.id}
+            productName={selectedProduct.name}
+            isOpen={reviewDialogOpen}
+            onClose={() => {
+              setReviewDialogOpen(false);
+              setSelectedProduct(null);
+            }}
+            onReviewSubmitted={() => {
+              // Optionally refresh orders here
+            }}
+          />
         )}
       </div>
     </div>
