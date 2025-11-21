@@ -1,6 +1,7 @@
 import { Category } from "@/models/category.js";
 import { Listing, type IListing } from "@/models/listing.js";
 import { Image } from "@/models/images.js";
+import { Auction } from "@/models/auction.js";
 import { type Request, type Response } from "express";
 import { ObjectId } from "mongodb";
 import { writeFile, mkdir } from "fs/promises";
@@ -61,6 +62,8 @@ export async function createProduct(req: Request, res: Response) {
       sellerId,
       condition,
       is_auction,
+      auctionStartTime,
+      auctionEndTime,
     } = req.body;
     const images = req.files as Express.Multer.File[];
 
@@ -152,6 +155,32 @@ export async function createProduct(req: Request, res: Response) {
       { $set: { listingId: product._id } }
     );
 
+    // If this is an auction product, create an Auction record
+    if (is_auction === true || is_auction === "true") {
+      const startPrice = Number(price);
+      
+      // Use provided times or default to 7 days from now
+      let startTime = new Date();
+      let endTime = new Date(startTime.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+      // Override with user-provided times if available
+      if (auctionStartTime) {
+        startTime = new Date(auctionStartTime);
+      }
+      if (auctionEndTime) {
+        endTime = new Date(auctionEndTime);
+      }
+
+      await Auction.create({
+        partId: product._id.toString(),
+        start_price: startPrice,
+        current_price: startPrice,
+        start_time: startTime,
+        end_time: endTime,
+        status: "Active",
+      });
+    }
+
     // Populate the product data before returning
     const populatedProduct = await Listing.findById(product._id)
       .populate("categoryId", ["name", "description"])
@@ -182,6 +211,8 @@ export async function updateProduct(req: Request, res: Response) {
       category,
       condition,
       is_auction,
+      auctionStartTime,
+      auctionEndTime,
     } = req.body;
     const images = req.files as Express.Multer.File[] | undefined;
 
@@ -277,6 +308,41 @@ export async function updateProduct(req: Request, res: Response) {
       return res.status(404).json({ message: "Product not found" });
     }
 
+    // Handle auction status changes
+    if (is_auction !== undefined) {
+      const isNowAuction = is_auction === true || is_auction === "true";
+      const existingAuction = await Auction.findOne({ partId: productId });
+
+      if (isNowAuction && !existingAuction) {
+        // Create a new auction if converting to auction
+        const startPrice = updatedProduct.price;
+        
+        // Use provided times or default to 7 days from now
+        let startTime = new Date();
+        let endTime = new Date(startTime.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+        // Override with user-provided times if available
+        if (auctionStartTime) {
+          startTime = new Date(auctionStartTime);
+        }
+        if (auctionEndTime) {
+          endTime = new Date(auctionEndTime);
+        }
+
+        await Auction.create({
+          partId: productId,
+          start_price: startPrice,
+          current_price: startPrice,
+          start_time: startTime,
+          end_time: endTime,
+          status: "Active",
+        });
+      } else if (!isNowAuction && existingAuction) {
+        // Delete the auction if removing auction status
+        await Auction.deleteOne({ _id: existingAuction._id });
+      }
+    }
+
     res
       .status(200)
       .json({ message: "Product updated successfully", updatedProduct });
@@ -303,6 +369,11 @@ export async function deleteProduct(req: Request, res: Response) {
     const deletedProduct = await Listing.findByIdAndDelete(productId);
     if (!deletedProduct) {
       return res.status(404).json({ message: "Product not found" });
+    }
+
+    // If this was an auction product, delete the associated auction
+    if (deletedProduct.is_auction) {
+      await Auction.deleteOne({ partId: productId });
     }
 
     // Optionally delete associated images from database and disk

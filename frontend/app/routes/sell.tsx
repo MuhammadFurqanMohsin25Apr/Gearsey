@@ -38,6 +38,8 @@ export default function Sell() {
     category: "",
     condition: "New",
     price: "",
+    auctionStartTime: "",
+    auctionEndTime: "",
   });
 
   const handleInputChange = (
@@ -67,6 +69,38 @@ export default function Sell() {
     e.preventDefault();
     setLoading(true);
 
+    // Ensure user is logged in
+    if (!user?.id) {
+      alert("You must be logged in to list a product");
+      setLoading(false);
+      return;
+    }
+
+    // Validate auction times if listing as auction
+    if (isAuction) {
+      if (!formData.auctionStartTime || !formData.auctionEndTime) {
+        alert("Please set auction start and end times");
+        setLoading(false);
+        return;
+      }
+
+      const startTime = new Date(formData.auctionStartTime);
+      const endTime = new Date(formData.auctionEndTime);
+      const now = new Date();
+
+      if (startTime < now) {
+        alert("Start time must be in the future");
+        setLoading(false);
+        return;
+      }
+
+      if (endTime <= startTime) {
+        alert("End time must be after start time");
+        setLoading(false);
+        return;
+      }
+    }
+
     const formDataToSend = new FormData();
     formDataToSend.append("title", formData.title);
     formDataToSend.append("description", formData.description);
@@ -74,7 +108,11 @@ export default function Sell() {
     formDataToSend.append("condition", formData.condition);
     formDataToSend.append("price", formData.price);
     formDataToSend.append("is_auction", isAuction.toString());
-    formDataToSend.append("sellerId", "mock-seller-id");
+    if (isAuction) {
+      formDataToSend.append("auctionStartTime", formData.auctionStartTime);
+      formDataToSend.append("auctionEndTime", formData.auctionEndTime);
+    }
+    formDataToSend.append("sellerId", user.id);
 
     images.forEach((image) => {
       formDataToSend.append("images", image);
@@ -120,10 +158,10 @@ export default function Sell() {
         </div>
 
         {/* Main Content - Scrollable */}
-        <div className="flex-1 overflow-y-auto">
-          <form onSubmit={handleSubmit} className="flex">
+        <div className="flex-1 overflow-hidden flex">
+          <form onSubmit={handleSubmit} className="flex w-full">
             {/* Left Column */}
-            <div className="w-1/2 px-6 py-5 border-r border-gray-200">
+            <div className="w-1/2 overflow-y-auto px-6 py-5 border-r border-gray-200">
               <div className="space-y-4">
                 {/* Product Title */}
                 <div>
@@ -201,7 +239,7 @@ export default function Sell() {
             </div>
 
             {/* Right Column */}
-            <div className="w-1/2 px-6 py-5">
+            <div className="w-1/2 overflow-y-auto px-6 py-5">
               <div className="space-y-4">
                 {/* Pricing Section */}
                 <div className="bg-red-50 p-4 rounded-lg border-2 border-red-200">
@@ -210,19 +248,72 @@ export default function Sell() {
                     Pricing Information
                   </h3>
 
-                  <div className="mb-3">
+                  <div className="mb-4">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={isAuction}
-                        onChange={(e) => setIsAuction(e.target.checked)}
+                        onChange={(e) => {
+                          const newValue = e.target.checked;
+                          console.log("Auction checkbox changed to:", newValue);
+                          console.log("Current isAuction state:", isAuction);
+                          setIsAuction(newValue);
+                        }}
                         className="w-4 h-4 rounded accent-red-600"
                       />
                       <span className="font-bold text-gray-900 text-xs">
-                        List as Auction (for rare parts)
+                        Enable Auction Mode
                       </span>
                     </label>
+                    <p className="text-xs text-gray-600 mt-1 ml-6">
+                      Perfect for vintage, rare, or collectible parts. Let buyers bid on your item!
+                    </p>
                   </div>
+
+                  {isAuction && (
+                    <>
+                      <div className="bg-white p-3 rounded-lg border-2 border-amber-300 mb-4">
+                        <h4 className="text-xs font-bold text-gray-900 mb-3 uppercase tracking-wide">
+                          Auction Duration
+                        </h4>
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">
+                              Start Time *
+                            </label>
+                            <input
+                              type="datetime-local"
+                              name="auctionStartTime"
+                              value={formData.auctionStartTime}
+                              onChange={handleInputChange}
+                              required
+                              className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all text-sm text-gray-900 font-medium"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              When should the auction start?
+                            </p>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">
+                              End Time *
+                            </label>
+                            <input
+                              type="datetime-local"
+                              name="auctionEndTime"
+                              value={formData.auctionEndTime}
+                              onChange={handleInputChange}
+                              required
+                              className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all text-sm text-gray-900 font-medium"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              When should the auction end?
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
 
                   <div>
                     <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">

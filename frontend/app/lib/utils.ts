@@ -70,3 +70,36 @@ export function formatDate(date: string | Date): string {
     day: "numeric",
   }).format(dateObj)
 }
+
+export function formatDateTime(date: string | Date): string {
+  const dateObj = typeof date === 'string' ? new Date(date) : date
+  
+  return new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  }).format(dateObj)
+}
+
+export function getTimeRemaining(endTime: string | Date): {
+  total: number
+  days: number
+  hours: number
+  minutes: number
+  seconds: number
+} {
+  const now = new Date().getTime()
+  const end = typeof endTime === 'string' ? new Date(endTime).getTime() : (endTime as Date).getTime()
+  const total = Math.max(0, end - now)
+
+  return {
+    total,
+    days: Math.floor(total / (1000 * 60 * 60 * 24)),
+    hours: Math.floor((total / (1000 * 60 * 60)) % 24),
+    minutes: Math.floor((total / 1000 / 60) % 60),
+    seconds: Math.floor((total / 1000) % 60),
+  }
+}

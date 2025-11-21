@@ -32,7 +32,7 @@ export async function loader({ params }: { params: { id: string } }) {
     );
 
     if (!product) {
-      return { product: null, relatedProducts: [] };
+      return { product: null, relatedProducts: [], auction: null };
     }
 
     // Get related products from same category
@@ -48,20 +48,30 @@ export async function loader({ params }: { params: { id: string } }) {
       relatedResponse.products?.filter((p: Listing) => p._id !== product._id) ||
       [];
 
-    return { product, relatedProducts };
+    // If this is an auction product, find the auction
+    let auction = null;
+    if (product.is_auction) {
+      const auctionsData = (await api.auctions.getAll({ limit: 100 })) as any;
+      auction = auctionsData.auctions?.find(
+        (a: any) => a.partId === product._id
+      );
+    }
+
+    return { product, relatedProducts, auction };
   } catch (error) {
     console.error("Failed to load product:", error);
-    return { product: null, relatedProducts: [] };
+    return { product: null, relatedProducts: [], auction: null };
   }
 }
 
 type LoaderData = {
   product: Listing;
   relatedProducts: Listing[];
+  auction: any;
 };
 
 export default function ProductDetail() {
-  const { product, relatedProducts } = useLoaderData<LoaderData>();
+  const { product, relatedProducts, auction } = useLoaderData<LoaderData>();
 
   if (!product) {
     return (
@@ -296,12 +306,21 @@ export default function ProductDetail() {
               {product.status === "Active" && (
                 <div className="border-t border-gray-200 pt-6">
                   {product.is_auction ? (
-                    <Link
-                      to={`/auctions/${product._id}`}
-                      className="block w-full px-6 py-4 bg-red-600 text-white text-center font-bold rounded-lg hover:bg-red-700 transition-colors text-lg"
-                    >
-                      Place Bid on Auction
-                    </Link>
+                    auction ? (
+                      <Link
+                        to={`/auctions/${auction._id}`}
+                        className="block w-full px-6 py-4 bg-red-600 text-white text-center font-bold rounded-lg hover:bg-red-700 transition-colors text-lg"
+                      >
+                        Place Bid on Auction
+                      </Link>
+                    ) : (
+                      <button
+                        disabled
+                        className="block w-full px-6 py-4 bg-gray-400 text-white text-center font-bold rounded-lg text-lg cursor-not-allowed"
+                      >
+                        Auction Not Found
+                      </button>
+                    )
                   ) : (
                     <div>
                       {/* Quantity Selector */}

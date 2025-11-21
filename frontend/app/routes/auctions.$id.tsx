@@ -1,8 +1,9 @@
-import { Form, Link } from "react-router";
+import { Form, Link, useLoaderData } from "react-router";
 import { api } from "~/lib/api";
 import type { Auction } from "~/types";
 import { formatPrice, formatDateTime, getTimeRemaining } from "~/lib/utils";
 import { useState, useEffect } from "react";
+import { useSession } from "~/lib/auth-client";
 
 export function meta() {
   return [
@@ -87,12 +88,8 @@ type LoaderData = {
   product: any;
 };
 
-export default function AuctionDetail({
-  loaderData,
-}: {
-  loaderData: LoaderData;
-}) {
-  const { auction, product } = loaderData;
+export default function AuctionDetail() {
+  const { auction, product } = useLoaderData() as LoaderData;
 
   if (!auction) {
     return (
@@ -116,19 +113,106 @@ export default function AuctionDetail({
   }
   const [bidAmount, setBidAmount] = useState(auction.current_price + 100);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [bidLoading, setBidLoading] = useState(false);
+  const [bidError, setBidError] = useState<string | null>(null);
+  const [bidSuccess, setBidSuccess] = useState(false);
+  const [isActive, setIsActive] = useState(false);
+  const [currentAuction, setCurrentAuction] = useState(auction);
+  const [forceShowForm, setForceShowForm] = useState(false);
+  const { data: session } = useSession();
 
-  const isActive =
-    auction.status === "Active" && getTimeRemaining(auction.end_time).total > 0;
-  const minimumBid = auction.current_price + 100;
+  const minimumBid = currentAuction.current_price + 100;
 
-  const handlePlaceBid = (e: React.FormEvent) => {
+  // Update bidAmount when auction current_price changes
+  useEffect(() => {
+    setBidAmount(currentAuction.current_price + 100);
+  }, [currentAuction.current_price]);
+
+  // Check auction status and update isActive every second
+  useEffect(() => {
+    const updateActive = () => {
+      const now = new Date();
+      const startTime = new Date(currentAuction.start_time);
+      const endTime = new Date(currentAuction.end_time);
+      const timeRemaining = getTimeRemaining(currentAuction.end_time);
+      
+      const active = 
+        currentAuction.status === "Active" && 
+        now >= startTime && 
+        now < endTime && 
+        timeRemaining.total > 0;
+      
+      console.log("Current Time:", now);
+      console.log("Auction Start:", startTime);
+      console.log("Auction End:", endTime);
+      console.log("Auction Status:", currentAuction.status);
+      console.log("Time Remaining:", timeRemaining);
+      console.log("Is Active:", active);
+      setIsActive(active);
+    };
+
+    updateActive();
+    const interval = setInterval(updateActive, 1000);
+    return () => clearInterval(interval);
+  }, [currentAuction]);
+
+  const handlePlaceBid = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (bidAmount < minimumBid) {
-      alert(`Minimum bid is ${formatPrice(minimumBid)}`);
+    setBidError(null);
+    setBidSuccess(false);
+
+    // Client-side validation
+    if (!session?.user) {
+      setBidError("You must be logged in to place a bid");
       return;
     }
-    // TODO: Implement bid placement
-    alert(`Bid placed: ${formatPrice(bidAmount)}`);
+
+    if (bidAmount < minimumBid) {
+      setBidError(`Bid amount must be at least ${formatPrice(minimumBid)}`);
+      return;
+    }
+
+    setBidLoading(true);
+
+    try {
+      const result = await api.bids.placeBid({
+        auctionId: currentAuction._id,
+        userId: session.user.id,
+        bid_amount: bidAmount,
+      }) as any;
+
+      // Check if result is empty or missing data
+      if (!result || !result.updatedAuction) {
+        setBidError("Failed to place bid. Please try again.");
+        setBidSuccess(false);
+        setBidLoading(false);
+        return;
+      }
+
+      setCurrentAuction(result.updatedAuction);
+      setBidSuccess(true);
+      setBidError(null);
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setBidSuccess(false);
+      }, 3000);
+    } catch (error: any) {
+      let errorMessage = "Failed to place bid";
+      
+      if (error?.data?.message) {
+        errorMessage = error.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      setBidError(errorMessage);
+      setBidSuccess(false);
+    } finally {
+      setBidLoading(false);
+    }
   };
 
   const images =
@@ -259,14 +343,14 @@ export default function AuctionDetail({
               <div className="mb-4">
                 <span
                   className={`inline-block px-4 py-2 rounded-full text-sm font-bold ${
-                    auction.status === "Active"
+                    currentAuction.status === "Active"
                       ? "bg-green-100 text-green-800"
-                      : auction.status === "Closed"
+                      : currentAuction.status === "Closed"
                         ? "bg-gray-100 text-gray-800"
                         : "bg-red-100 text-red-800"
                   }`}
                 >
-                  {auction.status}
+                  {currentAuction.status}
                 </span>
               </div>
 
@@ -274,7 +358,7 @@ export default function AuctionDetail({
               <div className="mb-6">
                 <p className="text-sm text-gray-600 mb-1">Current Bid</p>
                 <p className="text-4xl font-bold text-gray-900">
-                  {formatPrice(auction.current_price)}
+                  {formatPrice(currentAuction.current_price)}
                 </p>
               </div>
 
@@ -282,17 +366,17 @@ export default function AuctionDetail({
               <div className="mb-6 pb-6 border-b border-gray-200">
                 <p className="text-sm text-gray-600">Starting Price</p>
                 <p className="text-xl font-semibold text-gray-700">
-                  {formatPrice(auction.start_price)}
+                  {formatPrice(currentAuction.start_price)}
                 </p>
               </div>
 
               {/* Countdown */}
               <div className="mb-6">
-                <AuctionCountdown endTime={auction.end_time} />
+                <AuctionCountdown endTime={currentAuction.end_time} />
               </div>
 
               {/* Bidding Form */}
-              {isActive && (
+              {(isActive || forceShowForm) && (
                 <form onSubmit={handlePlaceBid} className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Your Bid Amount
@@ -307,17 +391,36 @@ export default function AuctionDetail({
                       onChange={(e) => setBidAmount(Number(e.target.value))}
                       min={minimumBid}
                       step="100"
-                      className="w-full pl-14 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-lg font-semibold text-gray-900"
+                      disabled={bidLoading}
+                      className="w-full pl-14 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-lg font-semibold text-gray-900 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     />
                   </div>
                   <p className="text-xs text-gray-600 mb-4">
                     Minimum bid: {formatPrice(minimumBid)}
                   </p>
+
+                  {/* Error Message */}
+                  {bidError && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <p className="text-sm text-red-800">{bidError}</p>
+                    </div>
+                  )}
+
+                  {/* Success Message */}
+                  {bidSuccess && (
+                    <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <p className="text-sm text-green-800 font-medium">
+                        ✓ Bid placed successfully! Refreshing...
+                      </p>
+                    </div>
+                  )}
+
                   <button
                     type="submit"
-                    className="w-full px-6 py-4 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition-colors text-lg"
+                    disabled={bidLoading}
+                    className="w-full px-6 py-4 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition-colors text-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
                   >
-                    Place Bid
+                    {bidLoading ? "Placing Bid..." : "Place Bid"}
                   </button>
                 </form>
               )}
@@ -333,7 +436,7 @@ export default function AuctionDetail({
                       <button
                         key={increment}
                         onClick={() =>
-                          setBidAmount(auction.current_price + increment)
+                          setBidAmount(currentAuction.current_price + increment)
                         }
                         className="px-3 py-2 bg-gray-100 text-gray-900 font-medium rounded hover:bg-gray-200 transition-colors text-sm"
                       >
@@ -349,20 +452,20 @@ export default function AuctionDetail({
                 <div className="flex justify-between">
                   <span className="text-gray-600">Starts:</span>
                   <span className="text-gray-900 font-medium">
-                    {formatDateTime(auction.start_time)}
+                    {formatDateTime(currentAuction.start_time)}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Ends:</span>
                   <span className="text-gray-900 font-medium">
-                    {formatDateTime(auction.end_time)}
+                    {formatDateTime(currentAuction.end_time)}
                   </span>
                 </div>
-                {auction.winnerId && (
+                {currentAuction.winnerId && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Winner:</span>
                     <span className="text-gray-900 font-medium font-mono">
-                      {auction.winnerId.slice(0, 8)}...
+                      {currentAuction.winnerId.slice(0, 8)}...
                     </span>
                   </div>
                 )}
@@ -371,11 +474,20 @@ export default function AuctionDetail({
               {/* Not Active Message */}
               {!isActive && (
                 <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm text-yellow-800 font-medium">
-                    {auction.status === "Closed"
+                  <p className="text-sm text-yellow-800 font-medium mb-3">
+                    {currentAuction.status === "Closed"
                       ? "This auction has ended"
+                      : new Date() < new Date(currentAuction.start_time)
+                      ? `Auction starts at ${formatDateTime(currentAuction.start_time)}`
                       : "This auction is no longer active"}
                   </p>
+                  <button
+                    type="button"
+                    onClick={() => setForceShowForm(!forceShowForm)}
+                    className="text-xs bg-yellow-200 hover:bg-yellow-300 px-2 py-1 rounded font-medium text-yellow-900"
+                  >
+                    {forceShowForm ? "Hide" : "Show"} Bid Form (Debug)
+                  </button>
                 </div>
               )}
             </div>

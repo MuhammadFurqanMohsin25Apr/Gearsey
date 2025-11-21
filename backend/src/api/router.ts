@@ -6,6 +6,7 @@ import auctionRouter from "@/api/auction/router.js";
 import categoryRouter from "@/api/category/router.js";
 import reviewRouter from "@/api/review/router.js";
 import usersRouter from "@/api/users/router.js";
+import bidsRouter from "@/api/bids/router.js";
 
 const router = express.Router();
 
@@ -13,6 +14,7 @@ router.use("/orders", ordersRouter);
 router.use("/payment", paymentRouter);
 router.use("/products", listingRouter);
 router.use("/auction", auctionRouter);
+router.use("/bids", bidsRouter);
 router.use("/category", categoryRouter);
 router.use("/review", reviewRouter);
 router.use("/users", usersRouter);

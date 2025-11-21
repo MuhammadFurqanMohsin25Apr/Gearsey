@@ -175,6 +175,25 @@ export const api = {
       }),
   },
 
+  // Bids
+  bids: {
+    placeBid: (data: {
+      auctionId: string;
+      userId: string;
+      bid_amount: number;
+    }) =>
+      request("/bids", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+
+    getByAuction: (auctionId: string) =>
+      request(`/bids/auction/${auctionId}`),
+
+    getByUser: (userId: string) =>
+      request(`/bids/user/${userId}`),
+  },
+
   // Orders
   orders: {
     getAll: () => request("/orders"),
