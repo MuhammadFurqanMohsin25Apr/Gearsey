@@ -85,7 +85,6 @@ export function AppSidebar() {
 
           {/* Quick Stats Group */}
         </SidebarContent>
-        <SidebarRail />
       </Sidebar>
     </>
   );

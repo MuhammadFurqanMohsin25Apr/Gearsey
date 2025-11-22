@@ -67,10 +67,18 @@ export interface Order {
   _id: string;
   userId: string;
   total_amount: number;
-  payment_status: "Pending" | "Paid" | "Failed" | "Refunded";
   delivery_status: "Pending" | "Shipped" | "Delivered" | "Cancelled";
   createdAt: string;
   updatedAt: string;
+  payment?: {
+    _id: string;
+    orderId: string;
+    payment_method: "Credit Card" | "Debit Card";
+    amount: number;
+    status: "Pending" | "Completed" | "Failed" | "Refunded";
+    createdAt: string;
+    updatedAt: string;
+  } | null;
 }
 
 export interface OrderItem {

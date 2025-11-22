@@ -13,48 +13,6 @@ import { Link } from "react-router";
 import { api } from "../../lib/api";
 import { authClient } from "../../lib/auth-client";
 
-// Mock data for fallback
-const mockStats = {
-  totalProducts: 1247,
-  totalUsers: 5632,
-  totalBuyers: 1200,
-  totalSellers: 850,
-  totalOrders: 892,
-  totalRevenue: 4523000,
-  activeAuctions: 45,
-  pendingApprovals: 23,
-};
-
-const mockRecentProducts = [
-  {
-    id: "1",
-    name: "Honda Civic Brake Pads",
-    seller: "Auto Parts Pro",
-    price: 15000,
-    status: "approved",
-    date: "2024-11-10",
-    reviews: 12,
-  },
-  {
-    id: "2",
-    name: "Toyota Corolla Headlights",
-    seller: "Quality Parts",
-    price: 28000,
-    status: "pending",
-    date: "2024-11-10",
-    reviews: 5,
-  },
-  {
-    id: "3",
-    name: "Suzuki Alto Engine Oil",
-    seller: "Spare Parts Hub",
-    price: 3500,
-    status: "approved",
-    date: "2024-11-09",
-    reviews: 8,
-  },
-];
-
 const mockReviews = [
   {
     id: 1,
@@ -156,8 +114,17 @@ const mockTopProducts = [
 export const loader = async () => {};
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState(mockStats);
-  const [products, setProducts] = useState(mockRecentProducts);
+  const [stats, setStats] = useState({
+    totalProducts: 0,
+    totalUsers: 0,
+    totalBuyers: 0,
+    totalSellers: 0,
+    totalOrders: 0,
+    totalRevenue: 0,
+    activeAuctions: 0,
+    pendingApprovals: 0,
+  });
+  const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState(mockRecentOrders);
   const [revenueChartData, setRevenueData] = useState(mockRevenueData);
   const [userChartData, setUserGrowthData] = useState(mockUserGrowthData);
@@ -171,14 +138,15 @@ export default function AdminDashboard() {
       try {
         setLoading(true);
 
-        // Fetch orders, products, reviews in parallel
+        // Fetch orders, products, reviews, top products in parallel
         const [
           ordersData,
           productsData,
           auctionsData,
           buyersData,
           sellersData,
-          pendingProductsData,
+          pendingOrdersData,
+          topProductsData,
         ] = (await Promise.all([
           api.orders.getAll().catch((err) => {
             console.error("Orders API error:", err);
@@ -216,13 +184,15 @@ export default function AdminDashboard() {
               console.error("Sellers list error:", err);
               return { data: { users: [] } };
             }),
-          api.products
-            .getAll({ limit: 5000, status: "Pending" })
-            .catch((err) => {
-              console.error("Pending Products API error:", err);
-              return { products: [] };
-            }),
-        ])) as [any, any, any, any, any, any];
+          api.orders.getAll().catch((err) => {
+            console.error("Pending Orders API error:", err);
+            return { orders: [] };
+          }),
+          api.orders.getTopProducts(5).catch((err) => {
+            console.error("Top Products API error:", err);
+            return { topProducts: [] };
+          }),
+        ])) as [any, any, any, any, any, any, any];
 
         console.log("API Responses:", {
           ordersData,
@@ -248,50 +218,22 @@ export default function AdminDashboard() {
               reviews: 0,
             }));
           setProducts(formattedProducts);
+        }
 
-          // Calculate top products by counting occurrences in orders
-          const productSalesMap: {
-            [key: string]: {
-              name: string;
-              sales: number;
-              revenue: number;
-            };
-          } = {};
-
-          if (ordersData.orders && Array.isArray(ordersData.orders)) {
-            ordersData.orders.forEach((order: any) => {
-              if (order.items && Array.isArray(order.items)) {
-                order.items.forEach((item: any) => {
-                  const productId = item.productId || item.id;
-                  const product = productsData.products.find(
-                    (p: any) => p._id === productId
-                  );
-
-                  if (product) {
-                    if (!productSalesMap[productId]) {
-                      productSalesMap[productId] = {
-                        name: product.name || product.title,
-                        sales: 0,
-                        revenue: 0,
-                      };
-                    }
-                    productSalesMap[productId].sales += item.quantity || 1;
-                    productSalesMap[productId].revenue +=
-                      (item.price || product.price) * (item.quantity || 1);
-                  }
-                });
-              }
-            });
-          }
-
-          // Convert to array and sort by sales
-          const topProductsList = Object.values(productSalesMap)
-            .sort((a, b) => b.sales - a.sales)
-            .slice(0, 5);
-
-          if (topProductsList.length > 0) {
-            setTopProducts(topProductsList);
-          }
+        // Process top products from backend
+        if (
+          topProductsData.topProducts &&
+          Array.isArray(topProductsData.topProducts) &&
+          topProductsData.topProducts.length > 0
+        ) {
+          const formattedTopProducts = topProductsData.topProducts.map(
+            (product: any) => ({
+              name: product.name || "Unknown Product",
+              sales: product.orderCount || 0,
+              revenue: product.totalRevenue || 0,
+            })
+          );
+          setTopProducts(formattedTopProducts);
         }
 
         // Process orders
@@ -306,7 +248,7 @@ export default function AdminDashboard() {
               id: o._id,
               customer: o.userId,
               amount: o.total_amount,
-              status: o.payment_status?.toLowerCase() || "pending",
+              status: o.payment?.status?.toLowerCase() || "pending",
               date: o.createdAt
                 ? new Date(o.createdAt).toISOString().split("T")[0]
                 : "N/A",
@@ -449,7 +391,13 @@ export default function AdminDashboard() {
         const sellerCount = sellersData?.data?.users?.length || 0;
         const totalProductsCount = productsData.products?.length || 0;
         const totalOrdersCount = ordersData.orders?.length || 0;
-        const pendingApprovalsCount = pendingProductsData.products?.length || 0;
+        const pendingApprovalsCount = Array.isArray(pendingOrdersData.orders)
+          ? pendingOrdersData.orders.filter(
+              (o: any) =>
+                o.payment?.status === "Pending" ||
+                o.payment?.status === "pending"
+            ).length
+          : 0;
         const totalRevenueAmount =
           ordersData.orders?.reduce(
             (sum: number, o: any) => sum + (o.total_amount || 0),
@@ -479,10 +427,6 @@ export default function AdminDashboard() {
         });
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
-        // Use mock data as fallback
-        setRevenueData(mockRevenueData);
-        setUserGrowthData(mockUserGrowthData);
-        setCategoryData(mockCategoryData);
       } finally {
         setLoading(false);
       }
@@ -603,9 +547,9 @@ export default function AdminDashboard() {
             <span className="text-2xl font-bold">{stats.pendingApprovals}</span>
           </div>
           <h3 className="text-orange-100 text-xs font-medium mb-1">
-            Pending Approvals
+            Pending Payments
           </h3>
-          <p className="text-orange-50 text-xs">Requires your attention</p>
+          <p className="text-orange-50 text-xs">Orders awaiting payment</p>
         </div>
       </div>
 
@@ -983,16 +927,6 @@ export default function AdminDashboard() {
                         <span className="text-xs font-bold text-gray-900">
                           PKR {(product.revenue / 1000).toFixed(0)}K
                         </span>
-                      </div>
-                    </div>
-                    <div className="shrink-0">
-                      <div className="w-16 h-1 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-linear-to-r from-red-500 to-red-600"
-                          style={{
-                            width: `${(product.sales / topProducts[0].sales) * 100}%`,
-                          }}
-                        ></div>
                       </div>
                     </div>
                   </div>

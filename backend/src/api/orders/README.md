@@ -10,10 +10,18 @@ Orders follow `IOrder` in `src/models/order.ts`:
 {
 	userId: string,
 	total_amount: number,
-	payment_status: "Pending" | "Paid" | "Failed" | "Refunded",
 	delivery_status: "Pending" | "Shipped" | "Delivered" | "Cancelled",
 	createdAt: Date,
-	updatedAt: Date
+	updatedAt: Date,
+	payment: {
+		_id: string,
+		orderId: string,
+		payment_method: "Credit Card" | "Debit Card",
+		amount: number,
+		status: "Pending" | "Completed" | "Failed" | "Refunded",
+		createdAt: Date,
+		updatedAt: Date
+	} | null
 }
 ```
 
@@ -46,8 +54,16 @@ Order items follow `IOrderItem` in `src/models/orderItem.ts`:
 			"_id": "66f33b401d7e0d1b3ac15555",
 			"userId": "6655bb17a8caa6f35dcb1111",
 			"total_amount": 1245.50,
-			"payment_status": "Paid",
 			"delivery_status": "Shipped",
+			"payment": {
+				"_id": "66f33b401d7e0d1b3ac15556",
+				"orderId": "66f33b401d7e0d1b3ac15555",
+				"payment_method": "Credit Card",
+				"amount": 1245.50,
+				"status": "Completed",
+				"createdAt": "2025-10-10T14:22:15.441Z",
+				"updatedAt": "2025-10-11T09:15:30.112Z"
+			},
 			"createdAt": "2025-10-10T14:22:15.441Z",
 			"updatedAt": "2025-10-11T09:15:30.112Z",
 			"__v": 0
@@ -73,8 +89,16 @@ Order items follow `IOrderItem` in `src/models/orderItem.ts`:
 			"_id": "66f33b401d7e0d1b3ac15555",
 			"userId": "6655bb17a8caa6f35dcb1111",
 			"total_amount": 1245.50,
-			"payment_status": "Paid",
 			"delivery_status": "Shipped",
+			"payment": {
+				"_id": "66f33b401d7e0d1b3ac15556",
+				"orderId": "66f33b401d7e0d1b3ac15555",
+				"payment_method": "Credit Card",
+				"amount": 1245.50,
+				"status": "Completed",
+				"createdAt": "2025-10-10T14:22:15.441Z",
+				"updatedAt": "2025-10-11T09:15:30.112Z"
+			},
 			"createdAt": "2025-10-10T14:22:15.441Z",
 			"updatedAt": "2025-10-11T09:15:30.112Z",
 			"__v": 0
@@ -83,8 +107,16 @@ Order items follow `IOrderItem` in `src/models/orderItem.ts`:
 			"_id": "66f44c511d7e0d1b3ac16666",
 			"userId": "6655bb17a8caa6f35dcb1111",
 			"total_amount": 320.00,
-			"payment_status": "Pending",
 			"delivery_status": "Pending",
+			"payment": {
+				"_id": "66f44c511d7e0d1b3ac16667",
+				"orderId": "66f44c511d7e0d1b3ac16666",
+				"payment_method": "Debit Card",
+				"amount": 320.00,
+				"status": "Pending",
+				"createdAt": "2025-10-12T10:05:44.221Z",
+				"updatedAt": "2025-10-12T10:05:44.221Z"
+			},
 			"createdAt": "2025-10-12T10:05:44.221Z",
 			"updatedAt": "2025-10-12T10:05:44.221Z",
 			"__v": 0
@@ -109,8 +141,16 @@ Order items follow `IOrderItem` in `src/models/orderItem.ts`:
 		"_id": "66f33b401d7e0d1b3ac15555",
 		"userId": "6655bb17a8caa6f35dcb1111",
 		"total_amount": 1245.50,
-		"payment_status": "Paid",
 		"delivery_status": "Shipped",
+		"payment": {
+			"_id": "66f33b401d7e0d1b3ac15556",
+			"orderId": "66f33b401d7e0d1b3ac15555",
+			"payment_method": "Credit Card",
+			"amount": 1245.50,
+			"status": "Completed",
+			"createdAt": "2025-10-10T14:22:15.441Z",
+			"updatedAt": "2025-10-11T09:15:30.112Z"
+		},
 		"createdAt": "2025-10-10T14:22:15.441Z",
 		"updatedAt": "2025-10-11T09:15:30.112Z",
 		"__v": 0
@@ -189,10 +229,10 @@ Order items follow `IOrderItem` in `src/models/orderItem.ts`:
 ```
 - **Failure 400 Response:** `{"message": "Missing required fields: userId, total_amount, items"}` — One or more required fields are missing or items array is empty.
 - **Failure 400 Response:** `{"message": "Failed to create order", "error": "<details>"}` — Database insertion error.
-- **Note:** The order is created with default status values: `payment_status: "Pending"` and `delivery_status: "Pending"`.
+- **Note:** The order is created with default delivery_status: "Pending". Payment records must be created separately in the Payment collection.
 
 #### PUT `/api/orders/confirm`
-- **Purpose:** Confirm an order, updating its payment status to "Confirmed" and delivery status to "Processing".
+- **Purpose:** Confirm an order, updating its delivery status to "Processing". Payment status is managed separately in the Payment collection.
 - **Request Body:**
 
 ```json
@@ -219,10 +259,9 @@ Order items follow `IOrderItem` in `src/models/orderItem.ts`:
 - **Failure 403 Response:** `{"message": "Missing userId or orderId in request body"}` — One or both required fields are missing.
 - **Failure 404 Response:** `{"message": "Order not found or could not be updated"}` — No matching order exists or update operation failed.
 - **Failure 400 Response:** `{"message": "Failed to confirm order", "error": "<details>"}` — Database update error.
-- **Note:** The controller currently sets `payment_status: "Confirmed"`, but the schema only allows "Pending", "Paid", "Failed", or "Refunded". Consider using `"Paid"` instead or updating the schema.
 
 #### PUT `/api/orders/cancel`
-- **Purpose:** Cancel an order, updating both payment and delivery status to "Cancelled".
+- **Purpose:** Cancel an order, updating delivery status to "Cancelled". Payment refunds should be handled separately through the Payment API.
 - **Request Body:**
 
 ```json
@@ -249,7 +288,7 @@ Order items follow `IOrderItem` in `src/models/orderItem.ts`:
 - **Failure 403 Response:** `{"message": "Missing userId or orderId in request body"}` — One or both required fields are missing.
 - **Failure 404 Response:** `{"message": "Order not found or could not be updated"}` — No matching order exists or update operation failed.
 - **Failure 400 Response:** `{"message": "Failed to cancel order", "error": "<details>"}` — Database update error.
-- **Note:** `payment_status: "Cancelled"` is not in the schema enum. Consider using `"Refunded"` or adding "Cancelled" to the payment_status enum.
+- **Note:** Order cancellation only updates delivery status. Payment refunds must be handled separately through the Payment API.
 
 #### DELETE `/api/orders`
 - **Purpose:** Permanently delete an order from the database.
@@ -266,14 +305,43 @@ Order items follow `IOrderItem` in `src/models/orderItem.ts`:
 - **Failure 403 Response:** `{"message": "Missing userId or orderId in request body"}` — One or both required fields are missing.
 - **Failure 404 Response:** `{"message": "Order not found or could not be deleted"}` — No matching order exists or deletion failed.
 - **Failure 400 Response:** `{"message": "Failed to delete order", "error": "<details>"}` — Database deletion error.
-- **Note:** Deleting an order does not cascade to delete associated order items. Consider implementing cleanup logic to remove orphaned items.
+- **Note:** Deleting an order does not cascade to delete associated order items or payment records. Consider implementing cleanup logic to remove orphaned data.
+
+#### PUT `/api/orders`
+- **Purpose:** Update an order's delivery status.
+- **Request Body:**
+
+```json
+{
+	"orderId": "66f33b401d7e0d1b3ac15555",
+	"delivery_status": "Shipped"
+}
+```
+- **Validation:** `orderId` is required. `delivery_status` is optional.
+- **Success 200 Response:**
+
+```json
+{
+	"message": "Order updated successfully",
+	"updatedOrder": {
+		"acknowledged": true,
+		"modifiedCount": 1,
+		"upsertedId": null,
+		"upsertedCount": 0,
+		"matchedCount": 1
+	}
+}
+```
+- **Failure 403 Response:** `{"message": "Missing orderId in request body"}` — `orderId` is missing.
+- **Failure 404 Response:** `{"message": "Order not found or could not be updated"}` — No matching order exists or update failed.
+- **Failure 400 Response:** `{"message": "Failed to update order", "error": "<details>"}` — Database update error.
+- **Note:** This endpoint only updates delivery status. Payment status is managed separately in the Payment collection.
 
 ### Notes & Limitations
-- **Schema Mismatch:** The `confirmOrder` controller sets `payment_status: "Confirmed"` and `delivery_status: "Processing"`, which are not valid enum values in the schema. The schema allows:
-	- `payment_status`: "Pending", "Paid", "Failed", "Refunded"
-	- `delivery_status`: "Pending", "Shipped", "Delivered", "Cancelled"
-- **Cascading Deletes:** Deleting an order does not automatically remove its associated order items, potentially leaving orphaned records.
-- **Mixed Data Access:** The controller uses both Mongoose model methods (`find`, `findOne`) and MongoDB driver methods (`insertOne`, `updateOne`, `deleteOne`). Consider standardizing to one approach for consistency.
+- **Payment Management:** Payment status is now managed separately in the Payment collection. Orders include a `payment` field that contains full payment details.
+- **Separation of Concerns:** Orders focus on delivery/fulfillment while Payments handle payment processing separately.
+- **Cascading Deletes:** Deleting an order does not automatically remove its associated order items or payment records, potentially leaving orphaned data.
+- **Mixed Data Access:** The controller uses Mongoose model methods. Consider adding MongoDB aggregation pipelines for complex queries.
 - **Authorization:** Currently relies on `userId` matching in queries for security. Implement proper authentication middleware to validate user identity before allowing order operations.
 - **Transaction Safety:** Order creation inserts both order and items separately without transaction wrapping. Consider using MongoDB transactions to ensure atomic operations.
-- **Item Order ID:** When creating an order via POST, the `items` array includes `orderId` fields, but the order doesn't exist yet. The controller should either auto-populate `orderId` after order creation or accept items without `orderId` in the payload.
+- **Item Order ID:** When creating an order via POST, the `items` array includes `orderId` fields, but the order doesn't exist yet. The controller auto-populates `orderId` after order creation.

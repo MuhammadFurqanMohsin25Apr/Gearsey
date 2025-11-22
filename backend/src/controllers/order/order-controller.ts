@@ -1,5 +1,6 @@
 import { Order } from "@/models/order.js";
 import { OrderItem, type IOrderItem } from "@/models/orderItem.js";
+import { Payment } from "@/models/payment.js";
 import { type Request, type Response } from "express";
 
 type OrderBody = {
@@ -13,9 +14,22 @@ export async function getAllOrders(req: Request, res: Response) {
     const { limit } = req.query;
     const orders = await Order.find().limit(Number(limit) || 10);
 
+    // Fetch payment info for each order
+    const ordersWithPayments = await Promise.all(
+      orders.map(async (order) => {
+        const payment = await Payment.findOne({
+          orderId: (order._id as any).toString(),
+        });
+        return {
+          ...order.toObject(),
+          payment: payment || null,
+        };
+      })
+    );
+
     res.status(200).json({
       message: "All orders fetched successfully",
-      orders,
+      orders: ordersWithPayments,
     });
   } catch (error) {
     console.error("Error fetching all orders:", error as Error);
@@ -38,9 +52,22 @@ export async function getUserOrders(req: Request, res: Response) {
 
     const orders = await Order.find({ userId }).limit(Number(limit) || 10);
 
+    // Fetch payment info for each order
+    const ordersWithPayments = await Promise.all(
+      orders.map(async (order) => {
+        const payment = await Payment.findOne({
+          orderId: (order._id as any).toString(),
+        });
+        return {
+          ...order.toObject(),
+          payment: payment || null,
+        };
+      })
+    );
+
     res.status(200).json({
       message: "Orders fetched successfully",
-      orders,
+      orders: ordersWithPayments,
     });
   } catch (error) {
     console.error("Error fetching orders:", error as Error);
@@ -91,12 +118,11 @@ export async function createOrder(req: Request, res: Response) {
     const order = await Order.create({
       userId,
       total_amount,
-      payment_status: "Pending",
       delivery_status: "Pending",
     });
 
     // Add orderId to each item and create them
-    const itemsWithOrderId = items.map(item => ({
+    const itemsWithOrderId = items.map((item) => ({
       ...item,
       orderId: (order._id as any).toString(),
     }));
@@ -126,7 +152,7 @@ export async function confirmOrder(req: Request, res: Response) {
 
     const updatedOrder = await Order.updateOne(
       { _id: orderId, userId },
-      { $set: { payment_status: "Confirmed", delivery_status: "Processing" } }
+      { $set: { delivery_status: "Processing" } }
     );
 
     if (!updatedOrder) {
@@ -157,7 +183,7 @@ export async function cancelOrder(req: Request, res: Response) {
     }
     const updatedOrder = await Order.updateOne(
       { _id: orderId, userId },
-      { $set: { payment_status: "Cancelled", delivery_status: "Cancelled" } }
+      { $set: { delivery_status: "Cancelled" } }
     );
     if (!updatedOrder) {
       return res
@@ -184,17 +210,21 @@ export async function deleteOrder(req: Request, res: Response) {
         .status(403)
         .json({ message: "Missing orderId in request body" });
     }
-    
+
     // If userId is provided, delete only that user's order
     // Otherwise allow admin to delete any order by orderId
     const query = userId ? { _id: orderId, userId } : { _id: orderId };
     const deletedOrder = await Order.deleteOne(query);
-    
+
     if (!deletedOrder) {
       return res
         .status(404)
         .json({ message: "Order not found or could not be deleted" });
     }
+
+    // Delete related payment entry
+    await Payment.deleteOne({ orderId });
+
     res.status(200).json({ message: "Order deleted successfully" });
   } catch (error) {
     console.error("Error deleting order:", error as Error);
@@ -207,7 +237,7 @@ export async function deleteOrder(req: Request, res: Response) {
 
 export async function updateOrder(req: Request, res: Response) {
   try {
-    const { orderId, payment_status, delivery_status } = req.body;
+    const { orderId, delivery_status } = req.body;
     if (!orderId) {
       return res
         .status(403)
@@ -215,7 +245,6 @@ export async function updateOrder(req: Request, res: Response) {
     }
 
     const updateData: any = {};
-    if (payment_status) updateData.payment_status = payment_status;
     if (delivery_status) updateData.delivery_status = delivery_status;
 
     const updatedOrder = await Order.updateOne(
@@ -236,6 +265,69 @@ export async function updateOrder(req: Request, res: Response) {
     console.error("Error updating order:", error as Error);
     res.status(400).json({
       message: "Failed to update order",
+      error: (error as Error).message,
+    });
+  }
+}
+
+export async function getTopProductsByOrders(req: Request, res: Response) {
+  try {
+    const { limit = 5 } = req.query;
+
+    // Aggregate order items to find top products by order count
+    const topProducts = await OrderItem.aggregate([
+      {
+        $group: {
+          _id: "$partId",
+          orderCount: { $sum: 1 },
+          totalQuantity: { $sum: "$quantity" },
+          totalRevenue: {
+            $sum: { $multiply: ["$price", "$quantity"] },
+          },
+          avgPrice: { $avg: "$price" },
+        },
+      },
+      {
+        $sort: { orderCount: -1 },
+      },
+      {
+        $limit: Number(limit) || 5,
+      },
+      {
+        $lookup: {
+          from: "listings",
+          localField: "_id",
+          foreignField: "_id",
+          as: "productDetails",
+        },
+      },
+      {
+        $unwind: {
+          path: "$productDetails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          productId: "$_id",
+          name: "$productDetails.name",
+          orderCount: 1,
+          totalQuantity: 1,
+          totalRevenue: 1,
+          avgPrice: 1,
+        },
+      },
+    ]);
+
+    res.status(200).json({
+      message: "Top products fetched successfully",
+      topProducts,
+    });
+  } catch (error) {
+    console.error("Error fetching top products:", error as Error);
+    res.status(400).json({
+      message: "Failed to fetch top products",
       error: (error as Error).message,
     });
   }

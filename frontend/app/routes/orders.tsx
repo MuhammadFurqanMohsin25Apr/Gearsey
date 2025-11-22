@@ -169,7 +169,7 @@ export default function Orders() {
                   <p className="text-sm text-gray-600 mb-4">
                     Payment Status:{" "}
                     <span className="font-semibold">
-                      {order.payment_status || "Pending"}
+                      {order.payment?.status || "Pending"}
                     </span>
                   </p>
 
@@ -220,7 +220,7 @@ export default function Orders() {
                       order.delivery_status
                         ?.toLowerCase()
                         .includes("completed") ||
-                      order.payment_status?.toLowerCase() === "completed") && (
+                      order.payment?.status?.toLowerCase() === "completed") && (
                       <button
                         onClick={() => {
                           setSelectedProduct({

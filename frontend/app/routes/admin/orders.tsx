@@ -7,7 +7,6 @@ export default function Orders() {
   const [loading, setLoading] = useState(true);
   const [editingOrder, setEditingOrder] = useState<any>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [orderPaymentStatus, setOrderPaymentStatus] = useState("");
   const [orderDeliveryStatus, setOrderDeliveryStatus] = useState("");
 
   // Fetch orders from backend
@@ -24,7 +23,7 @@ export default function Orders() {
             id: o._id,
             customer: o.userId,
             amount: o.total_amount,
-            status: o.payment_status?.toLowerCase() || "pending",
+            status: o.payment?.status?.toLowerCase() || "pending",
             deliveryStatus: o.delivery_status?.toLowerCase() || "pending",
             date: new Date(o.createdAt).toISOString().split("T")[0],
           }));
@@ -42,7 +41,6 @@ export default function Orders() {
 
   const handleEditOrder = (order: any) => {
     setEditingOrder(order);
-    setOrderPaymentStatus(order.status || "pending");
     setOrderDeliveryStatus(order.deliveryStatus || "pending");
     setEditModalOpen(true);
   };
@@ -53,7 +51,6 @@ export default function Orders() {
     try {
       await api.orders.update({
         orderId: editingOrder.id,
-        payment_status: orderPaymentStatus,
         delivery_status: orderDeliveryStatus,
       });
 
@@ -63,7 +60,6 @@ export default function Orders() {
           o.id === editingOrder.id
             ? {
                 ...o,
-                status: orderPaymentStatus,
                 deliveryStatus: orderDeliveryStatus,
               }
             : o
@@ -252,23 +248,6 @@ export default function Orders() {
                   disabled
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Payment Status
-                </label>
-                <select
-                  value={orderPaymentStatus}
-                  onChange={(e) => setOrderPaymentStatus(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                >
-                  <option value="pending">Pending</option>
-                  <option value="confirmed">Confirmed</option>
-                  <option value="completed">Completed</option>
-                  <option value="failed">Failed</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
               </div>
 
               <div>

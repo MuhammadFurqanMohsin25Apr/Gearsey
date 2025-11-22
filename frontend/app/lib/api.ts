@@ -209,11 +209,7 @@ export const api = {
         body: JSON.stringify(data),
       }),
 
-    update: (data: {
-      orderId: string;
-      payment_status?: string;
-      delivery_status?: string;
-    }) =>
+    update: (data: { orderId: string; delivery_status?: string }) =>
       request("/orders", {
         method: "PUT",
         body: JSON.stringify(data),
@@ -236,6 +232,9 @@ export const api = {
         method: "DELETE",
         body: JSON.stringify(data),
       }),
+
+    getTopProducts: (limit: number = 5) =>
+      request(`/orders/top-products?limit=${limit}`),
   },
 
   // Reviews
