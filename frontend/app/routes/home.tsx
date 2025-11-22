@@ -687,8 +687,8 @@ export default function Home({ loaderData }: Route.ComponentProps) {
                 </svg>
               </Link>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {auctions.slice(0, 3).map((auction, index) => (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {auctions.slice(0, 2).map((auction, index) => (
                 <div
                   key={auction._id}
                   className={hasAnimated ? "animate-scale-in" : "opacity-0"}

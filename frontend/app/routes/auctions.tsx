@@ -4,6 +4,7 @@ import type { AuctionsResponse, ProductsResponse } from "~/types";
 import { formatPrice, formatDateTime, getTimeRemaining } from "~/lib/utils";
 import { useEffect, useState } from "react";
 import { Flame } from "lucide-react";
+import { AuctionCard } from "~/components/AuctionCard";
 
 export function meta() {
   return [
@@ -103,80 +104,9 @@ export default function Auctions() {
             <h2 className="text-2xl font-bold text-gray-900 mb-6">
               Active Auctions ({activeAuctions.length})
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {activeAuctions.map((auction: any) => (
-                <div
-                  key={auction._id}
-                  className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow"
-                >
-                  {/* Product Image */}
-                  {auction.product && auction.product.imageIds[0] && (
-                    <div className="aspect-square bg-gray-100 relative">
-                      <img
-                        src={api.products.getImage(
-                          auction.product.imageIds[0].fileName
-                        )}
-                        alt={auction.product.name}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute top-2 right-2">
-                        <span className="px-3 py-1 bg-red-500 text-white text-sm font-bold rounded-full">
-                          LIVE
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="p-6">
-                    {/* Product Name */}
-                    {auction.product && (
-                      <Link
-                        to={`/products/${auction.product._id}`}
-                        className="text-lg font-semibold text-gray-900 hover:text-blue-600 mb-2 block line-clamp-2"
-                      >
-                        {auction.product.name}
-                      </Link>
-                    )}
-
-                    {/* Auction Info */}
-                    <div className="space-y-3 mb-4">
-                      <div>
-                        <p className="text-sm text-gray-600">Current Bid</p>
-                        <p className="text-2xl font-bold text-gray-900">
-                          {formatPrice(auction.current_price)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Starting Bid</p>
-                        <p className="text-lg text-gray-700">
-                          {formatPrice(auction.start_price)}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Time Remaining */}
-                    <div className="mb-4">
-                      <p className="text-sm text-gray-600 mb-2">
-                        Time Remaining
-                      </p>
-                      <AuctionTimer endTime={auction.end_time} />
-                    </div>
-
-                    {/* Bid Button */}
-                    <Link
-                      to={`/auctions/${auction._id}`}
-                      className="block w-full px-6 py-3 bg-red-600 text-white text-center font-bold rounded-lg hover:bg-red-700 transition-colors"
-                    >
-                      Place Bid
-                    </Link>
-
-                    {/* Auction Details */}
-                    <div className="mt-4 pt-4 border-t border-gray-200 text-xs text-gray-600 space-y-1">
-                      <p>Started: {formatDateTime(auction.start_time)}</p>
-                      <p>Ends: {formatDateTime(auction.end_time)}</p>
-                    </div>
-                  </div>
-                </div>
+                <AuctionCard key={auction._id} auction={auction} />
               ))}
             </div>
           </div>
@@ -219,8 +149,10 @@ export default function Auctions() {
                   className="bg-white rounded-lg shadow-md overflow-hidden opacity-75"
                 >
                   {/* Product Image */}
-                  {auction.product && auction.product.imageIds[0] && (
-                    <div className="aspect-square bg-gray-100 relative">
+                  <div className="aspect-square bg-gray-100 relative">
+                    {auction.product &&
+                    auction.product.imageIds &&
+                    auction.product.imageIds[0] ? (
                       <img
                         src={api.products.getImage(
                           auction.product.imageIds[0].fileName
@@ -228,13 +160,29 @@ export default function Auctions() {
                         alt={auction.product.name}
                         className="w-full h-full object-cover grayscale"
                       />
-                      <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
-                        <span className="px-4 py-2 bg-white text-gray-900 font-bold rounded-lg">
-                          {auction.status}
-                        </span>
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300 grayscale">
+                        <svg
+                          className="w-16 h-16 text-gray-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          />
+                        </svg>
                       </div>
+                    )}
+                    <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
+                      <span className="px-4 py-2 bg-white text-gray-900 font-bold rounded-lg">
+                        {auction.status}
+                      </span>
                     </div>
-                  )}
+                  </div>
 
                   <div className="p-6">
                     {/* Product Name */}
