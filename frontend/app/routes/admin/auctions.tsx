@@ -2,6 +2,7 @@ import { Clock, Gavel, TrendingUp, Users } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { api } from "~/lib/api";
 import type { Auction } from "~/types";
+import { Link } from "react-router";
 
 export default function AuctionManagement() {
   const [auctions, setAuctions] = useState<Auction[]>([]);
@@ -21,6 +22,49 @@ export default function AuctionManagement() {
 
     loadAuctions();
   }, []);
+
+  const handleCloseAuction = async (auctionId: string, sellerId: string) => {
+    if (confirm("Are you sure you want to close this auction?")) {
+      try {
+        await api.auctions.close(auctionId, sellerId || "", true);
+        // Refresh auctions
+        const response = (await api.auctions.getAll({ limit: 100 })) as any;
+        setAuctions(response.auctions || []);
+        alert("Auction closed successfully!");
+      } catch (error) {
+        console.error("Failed to close auction:", error);
+        alert("Failed to close auction. Please try again.");
+      }
+    }
+  };
+
+  const handleCancelAuction = async (auctionId: string) => {
+    if (confirm("Are you sure you want to cancel this auction?")) {
+      try {
+        await api.auctions.cancel(auctionId);
+        // Refresh auctions
+        const response = (await api.auctions.getAll({ limit: 100 })) as any;
+        setAuctions(response.auctions || []);
+        alert("Auction cancelled successfully!");
+      } catch (error) {
+        console.error("Failed to cancel auction:", error);
+        alert("Failed to cancel auction. Please try again.");
+      }
+    }
+  };
+
+  const handleDeleteAuction = async (auctionId: string) => {
+    if (confirm("Are you sure you want to delete this auction? This action cannot be undone.")) {
+      try {
+        await api.auctions.delete(auctionId);
+        setAuctions(auctions.filter((a) => a._id !== auctionId));
+        alert("Auction deleted successfully!");
+      } catch (error) {
+        console.error("Failed to delete auction:", error);
+        alert("Failed to delete auction. Please try again.");
+      }
+    }
+  };
 
   if (loading) {
     return (
@@ -130,6 +174,9 @@ export default function AuctionManagement() {
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
                   End Time
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -167,11 +214,49 @@ export default function AuctionManagement() {
                     <td className="px-6 py-4 text-sm text-gray-600">
                       {new Date(auction.end_time).toLocaleDateString()}
                     </td>
+                    <td className="px-6 py-4 text-sm font-medium">
+                      <div className="flex items-center gap-3">
+                        <Link
+                          to={`/auctions/${auction._id}`}
+                          className="text-blue-600 hover:text-blue-800 font-semibold"
+                        >
+                          View
+                        </Link>
+                        {auction.status === "Active" && (
+                          <>
+                            <button
+                              onClick={() => {
+                                const sellerId =
+                                  typeof auction.partId === "object"
+                                    ? auction.partId?.sellerId
+                                    : "";
+                                handleCloseAuction(auction._id, sellerId || "");
+                              }}
+                              className="text-orange-600 hover:text-orange-800 font-semibold"
+                            >
+                              Close
+                            </button>
+                            <button
+                              onClick={() => handleCancelAuction(auction._id)}
+                              className="text-yellow-600 hover:text-yellow-800 font-semibold"
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        )}
+                        <button
+                          onClick={() => handleDeleteAuction(auction._id)}
+                          className="text-red-600 hover:text-red-800 font-semibold"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center">
+                  <td colSpan={7} className="px-6 py-8 text-center">
                     <p className="text-gray-500">No auctions found</p>
                   </td>
                 </tr>

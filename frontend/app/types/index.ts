@@ -51,6 +51,7 @@ export interface Auction {
   end_time: string;
   status: "Active" | "Closed" | "Cancelled";
   winnerId?: string;
+  bidCount?: number;
 }
 
 export interface Bid {

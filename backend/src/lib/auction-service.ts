@@ -5,17 +5,22 @@ import { Listing } from "@/models/listing.js";
 
 export class AuctionService {
   /**
-   * Closes an auction manually by the seller
+   * Closes an auction manually by the seller or admin
    */
-  static async closeAuctionBySeller(auctionId: string, sellerId: string) {
+  static async closeAuctionBySeller(
+    auctionId: string,
+    sellerId: string,
+    isAdmin: boolean = false
+  ) {
     const auction = await Auction.findById(auctionId);
 
     if (!auction) {
       throw new Error("Auction not found");
     }
 
-    if (auction.sellerId !== sellerId) {
-      throw new Error("Only the seller can close the auction");
+    // Allow admin to close any auction, or seller to close their own
+    if (!isAdmin && auction.sellerId !== sellerId) {
+      throw new Error("Only the seller or admin can close the auction");
     }
 
     if (auction.status !== "Active") {
@@ -28,7 +33,7 @@ export class AuctionService {
       {
         status: "Closed",
         closedAt: new Date(),
-        closedBy: "seller_closed",
+        closedBy: isAdmin ? "admin_closed" : "seller_closed",
       },
       { new: true }
     );

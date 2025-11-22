@@ -101,17 +101,25 @@ export async function deleteAuction(req: Request, res: Response) {
 
 export async function closeAuction(req: Request, res: Response) {
   try {
-    const { auctionId, sellerId } = req.body;
+    const { auctionId, sellerId, isAdmin } = req.body;
 
-    if (!auctionId || !sellerId) {
+    if (!auctionId) {
       return res.status(400).json({
-        message: "Missing required fields: auctionId, sellerId",
+        message: "Missing required field: auctionId",
+      });
+    }
+
+    // If not admin, sellerId is required
+    if (!isAdmin && !sellerId) {
+      return res.status(400).json({
+        message: "Missing required field: sellerId",
       });
     }
 
     const closedAuction = await AuctionService.closeAuctionBySeller(
       auctionId,
-      sellerId
+      sellerId || "",
+      isAdmin || false
     );
 
     res.status(200).json({

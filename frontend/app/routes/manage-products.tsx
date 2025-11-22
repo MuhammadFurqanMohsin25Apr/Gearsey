@@ -33,6 +33,7 @@ export default function ManageProducts() {
     useState<Listing | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [closingAuctionId, setClosingAuctionId] = useState<string | null>(null);
+  const [cancellingAuctionId, setCancellingAuctionId] = useState<string | null>(null);
 
   // Fetch seller's products
   useEffect(() => {
@@ -87,7 +88,7 @@ export default function ManageProducts() {
       }
 
       // Close the auction
-      await api.auctions.close(auction._id, user.id);
+      await api.auctions.close(auction._id, user.id, false);
       alert("Auction closed successfully!");
       revalidator.revalidate();
     } catch (error) {
@@ -95,6 +96,49 @@ export default function ManageProducts() {
       alert("Failed to close auction. Please try again.");
     } finally {
       setClosingAuctionId(null);
+    }
+  };
+
+  // Handle cancelling an auction
+  const handleCancelAuction = async (productId: string, productName: string) => {
+    if (!user?.id) {
+      alert("You must be logged in to cancel an auction");
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Are you sure you want to cancel the auction for "${productName}"?`
+      )
+    ) {
+      return;
+    }
+
+    setCancellingAuctionId(productId);
+    try {
+      // Find the auction for this product
+      const auctionsData = (await api.auctions.getAll({ limit: 100 })) as any;
+      const auction = auctionsData.auctions?.find((a: any) => {
+        const auctionPartId =
+          typeof a.partId === "object" ? a.partId?._id : a.partId;
+        return auctionPartId === productId;
+      });
+
+      if (!auction) {
+        alert("Auction not found for this product");
+        setCancellingAuctionId(null);
+        return;
+      }
+
+      // Cancel the auction
+      await api.auctions.cancel(auction._id);
+      alert("Auction cancelled successfully!");
+      revalidator.revalidate();
+    } catch (error) {
+      console.error("Failed to cancel auction:", error);
+      alert("Failed to cancel auction. Please try again.");
+    } finally {
+      setCancellingAuctionId(null);
     }
   };
 
@@ -542,19 +586,34 @@ export default function ManageProducts() {
                           </button>
                           {product.is_auction &&
                             product.status === "Active" && (
-                              <button
-                                className="px-3 py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 font-bold rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                                title="Close Auction"
-                                disabled={closingAuctionId === product._id}
-                                onClick={() =>
-                                  handleCloseAuction(product._id, product.name)
-                                }
-                              >
-                                <X className="w-4 h-4" />
-                                {closingAuctionId === product._id
-                                  ? "Closing..."
-                                  : "Close"}
-                              </button>
+                              <>
+                                <button
+                                  className="px-3 py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 font-bold rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Close Auction"
+                                  disabled={closingAuctionId === product._id}
+                                  onClick={() =>
+                                    handleCloseAuction(product._id, product.name)
+                                  }
+                                >
+                                  <X className="w-4 h-4" />
+                                  {closingAuctionId === product._id
+                                    ? "Closing..."
+                                    : "Close"}
+                                </button>
+                                <button
+                                  className="px-3 py-2 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 font-bold rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Cancel Auction"
+                                  disabled={cancellingAuctionId === product._id}
+                                  onClick={() =>
+                                    handleCancelAuction(product._id, product.name)
+                                  }
+                                >
+                                  <X className="w-4 h-4" />
+                                  {cancellingAuctionId === product._id
+                                    ? "Cancelling..."
+                                    : "Cancel"}
+                                </button>
+                              </>
                             )}
                           <button
                             className="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 font-bold rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"

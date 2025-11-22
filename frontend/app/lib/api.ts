@@ -154,15 +154,15 @@ export const api = {
     }) => request("/auction", { params }),
 
     update: (auctionId: string, data: Partial<any>) =>
-      request("/auction", {
+      request(`/auction/${auctionId}`, {
         method: "PUT",
-        body: JSON.stringify({ auctionId, ...data }),
+        body: JSON.stringify(data),
       }),
 
-    close: (auctionId: string, sellerId: string) =>
+    close: (auctionId: string, sellerId: string, isAdmin?: boolean) =>
       request("/auction/close", {
         method: "PUT",
-        body: JSON.stringify({ auctionId, sellerId }),
+        body: JSON.stringify({ auctionId, sellerId, isAdmin }),
       }),
 
     cancel: (auctionId: string) =>
@@ -172,9 +172,8 @@ export const api = {
       }),
 
     delete: (auctionId: string) =>
-      request("/auction", {
+      request(`/auction/${auctionId}`, {
         method: "DELETE",
-        body: JSON.stringify({ auctionId }),
       }),
   },
 

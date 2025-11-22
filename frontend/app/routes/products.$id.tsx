@@ -107,6 +107,7 @@ export default function ProductDetail() {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isClosingAuction, setIsClosingAuction] = useState(false);
+  const [isCancellingAuction, setIsCancellingAuction] = useState(false);
   const [auction, setAuction] = useState<any>(initialAuction);
 
   // Review state
@@ -178,7 +179,7 @@ export default function ProductDetail() {
 
     setIsClosingAuction(true);
     try {
-      await api.auctions.close(auction._id, user.id);
+      await api.auctions.close(auction._id, user.id, false);
       alert("Auction closed successfully");
       navigate("/manage-products");
     } catch (error) {
@@ -186,6 +187,34 @@ export default function ProductDetail() {
       alert("Failed to close auction. Please try again.");
     } finally {
       setIsClosingAuction(false);
+    }
+  };
+
+  const handleCancelAuction = async () => {
+    if (!auction?._id) {
+      alert("Auction not found");
+      return;
+    }
+
+    if (!user?.id) {
+      alert("You must be logged in to cancel an auction");
+      return;
+    }
+
+    if (!window.confirm("Are you sure you want to cancel this auction?")) {
+      return;
+    }
+
+    setIsCancellingAuction(true);
+    try {
+      await api.auctions.cancel(auction._id);
+      alert("Auction cancelled successfully");
+      navigate("/manage-products");
+    } catch (error) {
+      console.error("Failed to cancel auction:", error);
+      alert("Failed to cancel auction. Please try again.");
+    } finally {
+      setIsCancellingAuction(false);
     }
   };
 
@@ -377,17 +406,30 @@ export default function ProductDetail() {
                         Place Bid on Auction
                       </Link>
                     ) : isOwner ? (
-                      <button
-                        onClick={handleCloseAuction}
-                        disabled={isClosingAuction || !auction}
-                        className="block w-full px-6 py-4 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400 text-white text-center font-bold rounded-lg text-lg transition-colors"
-                      >
-                        {isClosingAuction
-                          ? "Closing..."
-                          : !auction
-                            ? "Loading Auction..."
-                            : "Close Auction"}
-                      </button>
+                      <>
+                        <button
+                          onClick={handleCloseAuction}
+                          disabled={isClosingAuction || !auction}
+                          className="block w-full px-6 py-4 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400 text-white text-center font-bold rounded-lg text-lg transition-colors mb-3"
+                        >
+                          {isClosingAuction
+                            ? "Closing..."
+                            : !auction
+                              ? "Loading Auction..."
+                              : "Close Auction"}
+                        </button>
+                        <button
+                          onClick={handleCancelAuction}
+                          disabled={isCancellingAuction || !auction}
+                          className="block w-full px-6 py-4 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-400 text-white text-center font-bold rounded-lg text-lg transition-colors"
+                        >
+                          {isCancellingAuction
+                            ? "Cancelling..."
+                            : !auction
+                              ? "Loading Auction..."
+                              : "Cancel Auction"}
+                        </button>
+                      </>
                     ) : (
                       <button
                         disabled
