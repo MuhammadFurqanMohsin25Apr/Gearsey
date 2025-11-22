@@ -88,6 +88,7 @@ export const api = {
       sellerId?: string;
       query?: string;
       is_auction?: boolean;
+      status?: string;
     }) => request("/products", { params }),
 
     create: async (formData: FormData) => {
@@ -158,10 +159,10 @@ export const api = {
         body: JSON.stringify({ auctionId, ...data }),
       }),
 
-    close: (auctionId: string) =>
+    close: (auctionId: string, sellerId: string) =>
       request("/auction/close", {
         method: "PUT",
-        body: JSON.stringify({ auctionId }),
+        body: JSON.stringify({ auctionId, sellerId }),
       }),
 
     cancel: (auctionId: string) =>

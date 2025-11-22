@@ -123,7 +123,7 @@ export default function Orders() {
             <p className="text-gray-600 mt-4">Loading your orders...</p>
           </div>
         ) : orders.length > 0 ? (
-          <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {orders.map((order) => (
               <div
                 key={order._id}
@@ -255,14 +255,6 @@ export default function Orders() {
                         Track Order
                       </button>
                     )}
-                    <button
-                      onClick={() =>
-                        alert("Invoice download feature coming soon!")
-                      }
-                      className="px-6 py-2 border-2 border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      Download Invoice
-                    </button>
                   </div>
                 </div>
               </div>

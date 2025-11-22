@@ -301,7 +301,7 @@ export function Header() {
 
                       {/* Seller-specific menu items */}
                       {user.role === "seller" && (
-                        <>
+                        <div className="flex flex-col items-start justify-center">
                           <Link
                             to="/manage-products"
                             className="text-left px-4 py-2 text-xs sm:text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
@@ -383,7 +383,7 @@ export function Header() {
                             Help & Support
                           </Link>
                           <div className="border-t border-gray-200 my-1"></div>
-                        </>
+                        </div>
                       )}
 
                       <button
@@ -485,7 +485,7 @@ export function Header() {
             )}
 
             {user ? (
-              <>
+              <div className="flex flex-col items-start justify-center">
                 {user.role === "customer" && (
                   <Link
                     to="/dashboard"
@@ -519,7 +519,7 @@ export function Header() {
                 >
                   SIGN OUT
                 </button>
-              </>
+              </div>
             ) : (
               <>
                 <Link

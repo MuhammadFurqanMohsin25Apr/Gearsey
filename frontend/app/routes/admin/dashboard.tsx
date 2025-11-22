@@ -178,6 +178,7 @@ export default function AdminDashboard() {
           auctionsData,
           buyersData,
           sellersData,
+          pendingProductsData,
         ] = (await Promise.all([
           api.orders.getAll().catch((err) => {
             console.error("Orders API error:", err);
@@ -215,7 +216,13 @@ export default function AdminDashboard() {
               console.error("Sellers list error:", err);
               return { data: { users: [] } };
             }),
-        ])) as [any, any, any, any, any];
+          api.products
+            .getAll({ limit: 5000, status: "Pending" })
+            .catch((err) => {
+              console.error("Pending Products API error:", err);
+              return { products: [] };
+            }),
+        ])) as [any, any, any, any, any, any];
 
         console.log("API Responses:", {
           ordersData,
@@ -442,6 +449,7 @@ export default function AdminDashboard() {
         const sellerCount = sellersData?.data?.users?.length || 0;
         const totalProductsCount = productsData.products?.length || 0;
         const totalOrdersCount = ordersData.orders?.length || 0;
+        const pendingApprovalsCount = pendingProductsData.products?.length || 0;
         const totalRevenueAmount =
           ordersData.orders?.reduce(
             (sum: number, o: any) => sum + (o.total_amount || 0),
@@ -454,6 +462,7 @@ export default function AdminDashboard() {
           buyerCount,
           sellerCount,
           activeAuctionsCount,
+          pendingApprovalsCount,
           totalRevenueAmount,
         });
 
@@ -466,7 +475,7 @@ export default function AdminDashboard() {
           totalSellers: sellerCount,
           activeAuctions: activeAuctionsCount,
           totalRevenue: totalRevenueAmount,
-          pendingApprovals: mockStats.pendingApprovals,
+          pendingApprovals: pendingApprovalsCount,
         });
       } catch (error) {
         console.error("Error fetching dashboard data:", error);

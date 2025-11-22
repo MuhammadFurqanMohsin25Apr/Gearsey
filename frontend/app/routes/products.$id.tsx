@@ -52,9 +52,12 @@ export async function loader({ params }: { params: { id: string } }) {
     let auction = null;
     if (product.is_auction) {
       const auctionsData = (await api.auctions.getAll({ limit: 100 })) as any;
-      auction = auctionsData.auctions?.find(
-        (a: any) => a.partId === product._id
-      );
+      auction = auctionsData.auctions?.find((a: any) => {
+        // Handle both cases: partId as string or as object with _id
+        const auctionPartId =
+          typeof a.partId === "object" ? a.partId?._id : a.partId;
+        return auctionPartId === product._id;
+      });
     }
 
     return { product, relatedProducts, auction };
@@ -71,7 +74,11 @@ type LoaderData = {
 };
 
 export default function ProductDetail() {
-  const { product, relatedProducts, auction } = useLoaderData<LoaderData>();
+  const {
+    product,
+    relatedProducts,
+    auction: initialAuction,
+  } = useLoaderData<LoaderData>();
 
   if (!product) {
     return (
@@ -99,15 +106,24 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [isClosingAuction, setIsClosingAuction] = useState(false);
+  const [auction, setAuction] = useState<any>(initialAuction);
 
   // Review state
   const [reviews, setReviews] = useState<any[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [showReviewDialog, setShowReviewDialog] = useState(false);
 
-  // Fetch reviews on mount
+  // Check if the current user is the seller of this product
+  const isOwner =
+    user?.id ===
+    (typeof product.sellerId === "object"
+      ? product.sellerId?.id
+      : product.sellerId);
+
+  // Fetch reviews and auction on mount
   useEffect(() => {
-    const fetchReviews = async () => {
+    const fetchData = async () => {
       try {
         const response = (await api.reviews.getByProduct(product._id)) as any;
         setReviews(response.reviews || []);
@@ -117,14 +133,61 @@ export default function ProductDetail() {
       } finally {
         setReviewsLoading(false);
       }
+
+      // If auction was not found initially and this is an auction product, try to fetch it
+      if (!initialAuction && product.is_auction) {
+        try {
+          const auctionsData = (await api.auctions.getAll({
+            limit: 100,
+          })) as any;
+          const foundAuction = auctionsData.auctions?.find((a: any) => {
+            const auctionPartId =
+              typeof a.partId === "object" ? a.partId?._id : a.partId;
+            return auctionPartId === product._id;
+          });
+          if (foundAuction) {
+            setAuction(foundAuction);
+          }
+        } catch (error) {
+          console.error("Failed to load auction:", error);
+        }
+      }
     };
 
-    fetchReviews();
-  }, [product._id]);
+    fetchData();
+  }, [product._id, product.is_auction, initialAuction]);
 
   const images = product.imageIds.map((img) =>
     api.products.getImage(img.fileName)
   );
+
+  const handleCloseAuction = async () => {
+    if (!auction?._id) {
+      alert("Auction not found");
+      return;
+    }
+
+    if (!user?.id) {
+      alert("You must be logged in to close an auction");
+      return;
+    }
+
+    if (!window.confirm("Are you sure you want to close this auction?")) {
+      return;
+    }
+
+    setIsClosingAuction(true);
+    try {
+      await api.auctions.close(auction._id, user.id);
+      alert("Auction closed successfully");
+      navigate("/manage-products");
+    } catch (error) {
+      console.error("Failed to close auction:", error);
+      alert("Failed to close auction. Please try again.");
+    } finally {
+      setIsClosingAuction(false);
+    }
+  };
 
   const handleAddToCart = () => {
     // Check if user is logged in
@@ -140,18 +203,6 @@ export default function ProductDetail() {
 
     // Reset quantity
     setQuantity(1);
-  };
-
-  const handleBuyNow = () => {
-    // Check if user is logged in
-    if (!session) {
-      // Not authenticated - redirect to login
-      navigate("/login");
-      return;
-    }
-
-    // Redirect to checkout
-    navigate("/checkout");
   };
 
   const handleReviewSubmitted = async () => {
@@ -325,6 +376,18 @@ export default function ProductDetail() {
                       >
                         Place Bid on Auction
                       </Link>
+                    ) : isOwner ? (
+                      <button
+                        onClick={handleCloseAuction}
+                        disabled={isClosingAuction || !auction}
+                        className="block w-full px-6 py-4 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400 text-white text-center font-bold rounded-lg text-lg transition-colors"
+                      >
+                        {isClosingAuction
+                          ? "Closing..."
+                          : !auction
+                            ? "Loading Auction..."
+                            : "Close Auction"}
+                      </button>
                     ) : (
                       <button
                         disabled
@@ -368,12 +431,6 @@ export default function ProductDetail() {
                           className="flex-1 px-6 py-4 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors"
                         >
                           Add to Cart
-                        </button>
-                        <button
-                          onClick={handleBuyNow}
-                          className="flex-1 px-6 py-4 bg-green-600 text-white text-center font-bold rounded-lg hover:bg-green-700 transition-colors"
-                        >
-                          Buy Now
                         </button>
                       </div>
                     </div>

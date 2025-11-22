@@ -4,7 +4,7 @@ import { useSession } from "~/lib/auth-client";
 import { formatPrice, formatDate, getStatusBadgeColor } from "~/lib/utils";
 import type { ProductsResponse, Listing } from "~/types";
 import type { Route } from "./+types/manage-products";
-import { Package, Search, Filter, Edit, Trash2, Eye } from "lucide-react";
+import { Package, Search, Filter, Edit, Trash2, Eye, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { AddProductDialog } from "~/components/AddProductDialog";
 import { EditProductDialog } from "~/components/EditProductDialog";
@@ -29,8 +29,10 @@ export default function ManageProducts() {
   const [sortBy, setSortBy] = useState("newest");
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [selectedProductToEdit, setSelectedProductToEdit] = useState<Listing | null>(null);
+  const [selectedProductToEdit, setSelectedProductToEdit] =
+    useState<Listing | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [closingAuctionId, setClosingAuctionId] = useState<string | null>(null);
 
   // Fetch seller's products
   useEffect(() => {
@@ -38,7 +40,9 @@ export default function ManageProducts() {
       if (user?.id) {
         setIsLoading(true);
         try {
-          const response = await api.products.getAll({ sellerId: user.id }) as ProductsResponse;
+          const response = (await api.products.getAll({
+            sellerId: user.id,
+          })) as ProductsResponse;
           setMyListings(response.products || []);
         } catch (error) {
           console.error("Failed to fetch seller products:", error);
@@ -50,6 +54,49 @@ export default function ManageProducts() {
 
     fetchSellerProducts();
   }, [user?.id, revalidator.state]);
+
+  // Handle closing an auction
+  const handleCloseAuction = async (productId: string, productName: string) => {
+    if (!user?.id) {
+      alert("You must be logged in to close an auction");
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Are you sure you want to close the auction for "${productName}"?`
+      )
+    ) {
+      return;
+    }
+
+    setClosingAuctionId(productId);
+    try {
+      // Find the auction for this product
+      const auctionsData = (await api.auctions.getAll({ limit: 100 })) as any;
+      const auction = auctionsData.auctions?.find((a: any) => {
+        const auctionPartId =
+          typeof a.partId === "object" ? a.partId?._id : a.partId;
+        return auctionPartId === productId;
+      });
+
+      if (!auction) {
+        alert("Auction not found for this product");
+        setClosingAuctionId(null);
+        return;
+      }
+
+      // Close the auction
+      await api.auctions.close(auction._id, user.id);
+      alert("Auction closed successfully!");
+      revalidator.revalidate();
+    } catch (error) {
+      console.error("Failed to close auction:", error);
+      alert("Failed to close auction. Please try again.");
+    } finally {
+      setClosingAuctionId(null);
+    }
+  };
 
   // Filter products
   let filteredProducts = myListings.filter((product) =>
@@ -104,7 +151,9 @@ export default function ManageProducts() {
     }
   });
 
-  const activeListings = myListings.filter((l: Listing) => l.status === "Active");
+  const activeListings = myListings.filter(
+    (l: Listing) => l.status === "Active"
+  );
   const soldListings = myListings.filter((l: Listing) => l.status === "Sold");
 
   return (
@@ -391,7 +440,9 @@ export default function ManageProducts() {
           {isLoading ? (
             <div className="p-16 text-center">
               <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-red-600 mx-auto mb-4"></div>
-              <p className="text-gray-600 font-semibold">Loading your products...</p>
+              <p className="text-gray-600 font-semibold">
+                Loading your products...
+              </p>
             </div>
           ) : filteredProducts.length > 0 ? (
             <div className="overflow-x-auto">
@@ -489,6 +540,22 @@ export default function ManageProducts() {
                             <Edit className="w-4 h-4" />
                             Edit
                           </button>
+                          {product.is_auction &&
+                            product.status === "Active" && (
+                              <button
+                                className="px-3 py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 font-bold rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Close Auction"
+                                disabled={closingAuctionId === product._id}
+                                onClick={() =>
+                                  handleCloseAuction(product._id, product.name)
+                                }
+                              >
+                                <X className="w-4 h-4" />
+                                {closingAuctionId === product._id
+                                  ? "Closing..."
+                                  : "Close"}
+                              </button>
+                            )}
                           <button
                             className="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 font-bold rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                             title="Delete Product"
@@ -505,8 +572,13 @@ export default function ManageProducts() {
                                   alert("Product deleted successfully!");
                                   revalidator.revalidate();
                                 } catch (error) {
-                                  console.error("Failed to delete product:", error);
-                                  alert("Failed to delete product. Please try again.");
+                                  console.error(
+                                    "Failed to delete product:",
+                                    error
+                                  );
+                                  alert(
+                                    "Failed to delete product. Please try again."
+                                  );
                                 } finally {
                                   setIsDeleting(false);
                                 }

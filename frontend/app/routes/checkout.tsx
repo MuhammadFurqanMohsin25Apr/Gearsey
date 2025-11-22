@@ -304,7 +304,7 @@ export default function Checkout() {
                       value="credit_card"
                       checked={paymentMethod === "credit_card"}
                       onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="mr-2 sm:mr-3"
+                      className="scale-50 mr-2 sm:mr-3"
                     />
                     <div className="flex-1 flex items-center justify-between min-w-0">
                       <span className="font-medium text-sm sm:text-base text-gray-900">
@@ -323,7 +323,7 @@ export default function Checkout() {
                       value="debit_card"
                       checked={paymentMethod === "debit_card"}
                       onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="mr-2 sm:mr-3"
+                      className=" mr-2 sm:mr-3"
                     />
                     <div className="flex-1 flex items-center justify-between min-w-0">
                       <span className="font-medium text-sm sm:text-base text-gray-900">
