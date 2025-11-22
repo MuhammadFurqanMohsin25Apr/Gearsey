@@ -12,13 +12,13 @@ export default function AdminLayout() {
 
   useEffect(() => {
     // Redirect to login if not authenticated or not an admin
-    if (!user || user.role !== "admin") {
+    if (!user || user.userRole !== "admin") {
       navigate("/login", { replace: true });
     }
   }, [user, navigate]);
 
   // Show nothing while checking auth
-  if (!user || user.role !== "admin") {
+  if (!user || user.userRole !== "admin") {
     return null;
   }
 

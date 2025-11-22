@@ -161,3 +161,32 @@ export async function cancelAuction(req: Request, res: Response) {
     res.status(400).json({ message: "Failed to cancel the auction" });
   }
 }
+
+export async function getUserWonAuctions(req: Request, res: Response) {
+  try {
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({ message: "Missing userId parameter" });
+    }
+
+    const wonAuctions = await Auction.find({ winnerId: userId })
+      .sort({ closedAt: -1 })
+      .populate({
+        path: "partId",
+        populate: [
+          { path: "categoryId", select: "name description" },
+          { path: "imageIds", select: "fileName mime size" },
+        ],
+      })
+      .exec();
+
+    res.status(200).json({
+      auctions: wonAuctions,
+      message: "Won auctions fetched successfully.",
+    });
+  } catch (error) {
+    console.error("Error fetching won auctions:", error);
+    res.status(400).json({ message: "Failed to fetch won auctions." });
+  }
+}

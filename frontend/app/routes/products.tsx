@@ -236,7 +236,7 @@ export default function Products() {
               {/* Condition Filter */}
               <div className="mb-4 border-t-2 border-gray-100 pt-4">
                 <h3 className="font-bold text-sm sm:text-base text-gray-900 mb-2 sm:mb-4 flex items-center gap-2">
-                  <div className="w-1 h-4 sm:h-5 bg-blue-600 rounded-full flex-shrink-0"></div>
+                  <div className="w-1 h-4 sm:h-5 bg-red-600 rounded-full flex-shrink-0"></div>
                   Condition
                 </h3>
                 <div className="space-y-0.5">

@@ -5,6 +5,14 @@ import { formatPrice, formatDateTime, getTimeRemaining } from "~/lib/utils";
 import { useState, useEffect } from "react";
 import { useSession } from "~/lib/auth-client";
 
+interface Bid {
+  _id: string;
+  auctionId: string;
+  userId: string | { _id: string; name: string; image?: string };
+  bid_amount: number;
+  createdAt: string;
+}
+
 export function meta() {
   return [
     { title: `Auction Details - Gearsey` },
@@ -120,12 +128,44 @@ export default function AuctionDetail() {
   const [currentAuction, setCurrentAuction] = useState(auction);
   const [forceShowForm, setForceShowForm] = useState(false);
   const [isClosingAuction, setIsClosingAuction] = useState(false);
+  const [bidHistory, setBidHistory] = useState<Bid[]>([]);
+  const [loadingBidHistory, setLoadingBidHistory] = useState(true);
   const { data: session } = useSession();
   const navigate = useNavigate();
+
+  // Fetch bid history when component mounts or auction changes
+  useEffect(() => {
+    const fetchBidHistory = async () => {
+      try {
+        setLoadingBidHistory(true);
+        const response = (await api.bids.getByAuction(auction._id)) as any;
+        if (response.bids && Array.isArray(response.bids)) {
+          // Sort bids by newest first
+          setBidHistory(
+            response.bids.sort(
+              (a: Bid, b: Bid) =>
+                new Date(b.createdAt).getTime() -
+                new Date(a.createdAt).getTime()
+            )
+          );
+        }
+      } catch (error) {
+        console.error("Failed to load bid history:", error);
+      } finally {
+        setLoadingBidHistory(false);
+      }
+    };
+
+    fetchBidHistory();
+  }, [auction._id]);
 
   const minimumBid = currentAuction.current_price + 100;
   const isUserSeller = session?.user?.id === currentAuction.sellerId;
   const isAuctionClosed = currentAuction.status === "Closed";
+  const isUserWinner =
+    isAuctionClosed &&
+    session?.user?.id === currentAuction.winnerId &&
+    bidHistory.length > 0;
 
   // Update bidAmount when auction current_price changes
   useEffect(() => {
@@ -202,6 +242,24 @@ export default function AuctionDetail() {
       setCurrentAuction(result.updatedAuction);
       setBidSuccess(true);
       setBidError(null);
+
+      // Refresh bid history
+      try {
+        const response = (await api.bids.getByAuction(
+          currentAuction._id
+        )) as any;
+        if (response.bids && Array.isArray(response.bids)) {
+          setBidHistory(
+            response.bids.sort(
+              (a: Bid, b: Bid) =>
+                new Date(b.createdAt).getTime() -
+                new Date(a.createdAt).getTime()
+            )
+          );
+        }
+      } catch (error) {
+        console.error("Failed to refresh bid history:", error);
+      }
 
       // Clear success message after 3 seconds
       setTimeout(() => {
@@ -378,14 +436,51 @@ export default function AuctionDetail() {
               </div>
             )}
 
-            {/* Auction History */}
+            {/* Bid History */}
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4">
                 Bid History
               </h2>
-              <p className="text-gray-600 text-sm">
-                Bid history will be displayed here once bidding starts.
-              </p>
+
+              {loadingBidHistory ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Loading bid history...</p>
+                </div>
+              ) : bidHistory.length === 0 ? (
+                <div className="text-center py-8 bg-gray-50 rounded-lg">
+                  <p className="text-gray-600">
+                    No bids yet. Be the first to bid!
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {bidHistory.map((bid: Bid, index: number) => (
+                    <div
+                      key={bid._id}
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center justify-center w-10 h-10 bg-red-600 text-white font-bold rounded-full text-sm">
+                          #{index + 1}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">
+                            {typeof bid.userId === "object"
+                              ? bid.userId.name
+                              : "Unknown User"}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            {formatDateTime(bid.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="text-lg font-bold text-gray-900">
+                        {formatPrice(bid.bid_amount)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -498,30 +593,8 @@ export default function AuctionDetail() {
                 </form>
               )}
 
-              {/* Quick Bid Buttons */}
-              {isActive && (
-                <div className="mb-6 pb-6 border-b border-gray-200">
-                  <p className="text-sm font-medium text-gray-700 mb-2">
-                    Quick Bid
-                  </p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[100, 500, 1000].map((increment) => (
-                      <button
-                        key={increment}
-                        onClick={() =>
-                          setBidAmount(currentAuction.current_price + increment)
-                        }
-                        className="px-3 py-2 bg-gray-100 text-gray-900 font-medium rounded hover:bg-gray-200 transition-colors text-sm"
-                      >
-                        +{increment}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* Auction Details */}
-              <div className="space-y-2 text-sm">
+              <div className="space-y-2 text-sm mb-6">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Starts:</span>
                   <span className="text-gray-900 font-medium">
@@ -534,18 +607,51 @@ export default function AuctionDetail() {
                     {formatDateTime(currentAuction.end_time)}
                   </span>
                 </div>
-                {currentAuction.winnerId && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Winner:</span>
-                    <span className="text-gray-900 font-medium font-mono">
-                      {currentAuction.winnerId.slice(0, 8)}...
-                    </span>
-                  </div>
-                )}
               </div>
 
+              {/* Winner Checkout Section */}
+              {isUserWinner && (
+                <div className="mt-6 p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg">
+                  <div className="text-center mb-4">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-green-600 rounded-full mb-3">
+                      <svg
+                        className="w-8 h-8 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-bold text-green-900 mb-2">
+                      Congratulations! You Won!
+                    </h3>
+                    <p className="text-sm text-green-800 mb-1">
+                      You are the highest bidder with{" "}
+                      <span className="font-bold">
+                        {formatPrice(currentAuction.current_price)}
+                      </span>
+                    </p>
+                    <p className="text-xs text-green-700">
+                      This item has been added to your orders
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigate("/orders")}
+                    className="w-full px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold rounded-lg transition-all transform hover:scale-105 shadow-lg"
+                  >
+                    View My Orders
+                  </button>
+                </div>
+              )}
+
               {/* Not Active Message */}
-              {!isActive && (
+              {!isActive && !isUserWinner && (
                 <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <p className="text-sm text-yellow-800 font-medium mb-3">
                     {currentAuction.status === "Closed"

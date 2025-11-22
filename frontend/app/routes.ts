@@ -32,6 +32,7 @@ export default [
   route("profile", "routes/profile.tsx"),
 
   // Admin
+  route("admin-profile", "routes/admin-profile.tsx"),
   ...prefix("admin", [
     layout("routes/admin/layout.tsx", [
       index("routes/admin/dashboard.tsx"),
@@ -41,7 +42,6 @@ export default [
       route("reviews", "routes/admin/reviews.tsx"),
       route("auctions", "routes/admin/auctions.tsx"),
       route("payments", "routes/admin/payments.tsx"),
-      route("admin-profile", "routes/admin-profile.tsx"),
     ]),
   ]),
   // route("admin", "routes/admin.tsx"),

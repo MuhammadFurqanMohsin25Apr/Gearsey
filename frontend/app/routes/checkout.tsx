@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useLocation } from "react-router";
 import { formatPrice } from "~/lib/utils";
 import { useState, useEffect } from "react";
 import { useSession } from "~/lib/auth-client";
@@ -17,10 +17,12 @@ export default function Checkout() {
   const { data: session } = useSession();
   const user = session?.user;
   const navigate = useNavigate();
+  const location = useLocation();
   const [paymentMethod, setPaymentMethod] = useState("credit_card");
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [auctionData, setAuctionData] = useState<any>(null);
 
   // Shipping form data
   const [shippingData, setShippingData] = useState({
@@ -43,8 +45,14 @@ export default function Checkout() {
   });
 
   useEffect(() => {
-    const cart = cartManager.getCart();
-    setCartItems(cart);
+    // Check if auction data is passed via location state
+    const state = location?.state as any;
+    if (state?.auctionData) {
+      setAuctionData(state.auctionData);
+    } else {
+      const cart = cartManager.getCart();
+      setCartItems(cart);
+    }
 
     // Pre-fill user data if available
     if (user) {
@@ -56,7 +64,7 @@ export default function Checkout() {
         address: user.address || prev.address,
       }));
     }
-  }, [user]);
+  }, [user, location]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -79,7 +87,7 @@ export default function Checkout() {
       return;
     }
 
-    if (cartItems.length === 0) {
+    if (!auctionData && cartItems.length === 0) {
       setError("Your cart is empty");
       return;
     }
@@ -88,19 +96,32 @@ export default function Checkout() {
     setError("");
 
     try {
-      // Format items for backend
-      const orderItems = cartItems.map((item) => ({
-        partId: item.id,
-        quantity: item.quantity,
-        price: item.product.price,
-      }));
+      let orderResponse;
 
-      // Create order
-      const orderResponse = await api.orders.create({
-        userId: user.id,
-        items: orderItems,
-        total_amount: orderTotal,
-      });
+      if (auctionData) {
+        // Handle auction order - create order with auction details
+        orderResponse = await api.orders.create({
+          userId: user.id,
+          items: [],
+          total_amount: orderTotal,
+          isAuction: true,
+          auctionId: auctionData.auctionId,
+        });
+      } else {
+        // Format items for regular order
+        const orderItems = cartItems.map((item) => ({
+          partId: item.id,
+          quantity: item.quantity,
+          price: item.product.price,
+        }));
+
+        // Create regular order
+        orderResponse = await api.orders.create({
+          userId: user.id,
+          items: orderItems,
+          total_amount: orderTotal,
+        });
+      }
 
       // Create payment record
       if (orderResponse && (orderResponse as any).order) {
@@ -122,11 +143,17 @@ export default function Checkout() {
           // Continue even if payment fails - order is created
         }
 
-        // Clear cart after successful order
-        cartManager.clearCart();
+        // Clear cart after successful order (only for regular orders)
+        if (!auctionData) {
+          cartManager.clearCart();
+        }
 
         // Redirect to orders page
-        alert("Order placed successfully!");
+        alert(
+          auctionData
+            ? "Auction payment processed successfully!"
+            : "Order placed successfully!"
+        );
         navigate("/orders");
       } else {
         throw new Error("Failed to create order");
@@ -144,8 +171,10 @@ export default function Checkout() {
   };
 
   // Calculate order total
-  const subtotal = cartManager.getTotal(cartItems);
-  const shipping = cartItems.length > 0 ? 200 : 0;
+  const subtotal = auctionData
+    ? auctionData.amount
+    : cartManager.getTotal(cartItems);
+  const shipping = auctionData || cartItems.length > 0 ? 200 : 0;
   const orderTotal = subtotal + shipping;
 
   return (
@@ -427,7 +456,39 @@ export default function Checkout() {
                 </h2>
 
                 {/* Items */}
-                {cartItems.length === 0 ? (
+                {auctionData ? (
+                  <div className="mb-6 space-y-3 pb-6 border-b border-gray-200">
+                    <div className="flex items-start gap-3">
+                      {auctionData.productImage && (
+                        <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
+                          <img
+                            src={api.products.getImage(
+                              auctionData.productImage
+                            )}
+                            alt={auctionData.productName}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <div className="flex justify-between items-start text-sm text-gray-700">
+                          <div>
+                            <span className="font-semibold">
+                              {auctionData.productName}
+                            </span>
+                            <span className="block text-xs text-purple-600 mt-1">
+                              Auction Win
+                            </span>
+                          </div>
+                          <span className="font-medium">
+                            PKR{" "}
+                            {Number(auctionData.amount || 0).toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : cartItems.length === 0 ? (
                   <div className="mb-6 text-center text-gray-500 py-8">
                     <p>No items in cart</p>
                   </div>

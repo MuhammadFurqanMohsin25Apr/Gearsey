@@ -28,7 +28,7 @@ export default function Signup() {
   // Redirect if already logged in (client-side check)
   useEffect(() => {
     if (session?.user) {
-      const role = session.user.role || "customer";
+      const role = session.user.userRole || "customer";
       if (role === "admin") {
         navigate("/admin", { replace: true });
       } else if (role === "seller") {
@@ -63,6 +63,11 @@ export default function Signup() {
     setLoading(true);
 
     try {
+      if (formData.role === "user"){
+        throw new Error("Invalid role selected");
+      }
+      console.log("Signing up with data:", formData);
+
       const { data, error: signUpError } = await authClient.signUp.email(
         {
           email: formData.email,
@@ -94,6 +99,8 @@ export default function Signup() {
         // Wait a moment for session to update, then redirect based on role
         setTimeout(() => {
           const userRole = formData.role || "customer";
+
+
           if (userRole === "admin") {
             navigate("/admin", { replace: true });
           } else if (userRole === "seller") {

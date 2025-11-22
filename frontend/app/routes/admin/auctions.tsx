@@ -7,12 +7,32 @@ import { Link } from "react-router";
 export default function AuctionManagement() {
   const [auctions, setAuctions] = useState<Auction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [bidCounts, setBidCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const loadAuctions = async () => {
       try {
         const response = (await api.auctions.getAll({ limit: 100 })) as any;
-        setAuctions(response.auctions || []);
+        const auctionsList = response.auctions || [];
+        setAuctions(auctionsList);
+
+        // Fetch bid counts for each auction
+        const counts: Record<string, number> = {};
+        await Promise.all(
+          auctionsList.map(async (auction: Auction) => {
+            try {
+              const bidsResponse = await api.bids.getByAuction(auction._id);
+              counts[auction._id] = bidsResponse.bids?.length || 0;
+            } catch (error) {
+              console.error(
+                `Failed to fetch bids for auction ${auction._id}:`,
+                error
+              );
+              counts[auction._id] = 0;
+            }
+          })
+        );
+        setBidCounts(counts);
       } catch (error) {
         console.error("Failed to load auctions:", error);
       } finally {
@@ -27,9 +47,23 @@ export default function AuctionManagement() {
     if (confirm("Are you sure you want to close this auction?")) {
       try {
         await api.auctions.close(auctionId, sellerId || "", true);
-        // Refresh auctions
+        // Refresh auctions and bid counts
         const response = (await api.auctions.getAll({ limit: 100 })) as any;
-        setAuctions(response.auctions || []);
+        const auctionsList = response.auctions || [];
+        setAuctions(auctionsList);
+
+        const counts: Record<string, number> = {};
+        await Promise.all(
+          auctionsList.map(async (auction: Auction) => {
+            try {
+              const bidsResponse = await api.bids.getByAuction(auction._id);
+              counts[auction._id] = bidsResponse.bids?.length || 0;
+            } catch (error) {
+              counts[auction._id] = 0;
+            }
+          })
+        );
+        setBidCounts(counts);
         alert("Auction closed successfully!");
       } catch (error) {
         console.error("Failed to close auction:", error);
@@ -42,9 +76,23 @@ export default function AuctionManagement() {
     if (confirm("Are you sure you want to cancel this auction?")) {
       try {
         await api.auctions.cancel(auctionId);
-        // Refresh auctions
+        // Refresh auctions and bid counts
         const response = (await api.auctions.getAll({ limit: 100 })) as any;
-        setAuctions(response.auctions || []);
+        const auctionsList = response.auctions || [];
+        setAuctions(auctionsList);
+
+        const counts: Record<string, number> = {};
+        await Promise.all(
+          auctionsList.map(async (auction: Auction) => {
+            try {
+              const bidsResponse = await api.bids.getByAuction(auction._id);
+              counts[auction._id] = bidsResponse.bids?.length || 0;
+            } catch (error) {
+              counts[auction._id] = 0;
+            }
+          })
+        );
+        setBidCounts(counts);
         alert("Auction cancelled successfully!");
       } catch (error) {
         console.error("Failed to cancel auction:", error);
@@ -54,7 +102,11 @@ export default function AuctionManagement() {
   };
 
   const handleDeleteAuction = async (auctionId: string) => {
-    if (confirm("Are you sure you want to delete this auction? This action cannot be undone.")) {
+    if (
+      confirm(
+        "Are you sure you want to delete this auction? This action cannot be undone."
+      )
+    ) {
       try {
         await api.auctions.delete(auctionId);
         setAuctions(auctions.filter((a) => a._id !== auctionId));
@@ -81,12 +133,11 @@ export default function AuctionManagement() {
 
   const activeAuctions = auctions.filter((a) => a.status === "Active");
   const completedAuctions = auctions.filter((a) => a.status === "Completed");
-  const totalBids = auctions.reduce((sum, a) => sum + (a.bidCount || 0), 0);
 
   return (
     <div className="flex-1 p-4 lg:p-6">
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
           <div className="flex items-center justify-between">
             <div>
@@ -127,20 +178,6 @@ export default function AuctionManagement() {
             </div>
             <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
               <TrendingUp className="w-6 h-6 text-purple-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-sm font-medium">Total Bids</p>
-              <p className="text-3xl font-bold text-red-600 mt-1">
-                {totalBids}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-              <Users className="w-6 h-6 text-red-600" />
             </div>
           </div>
         </div>
@@ -209,7 +246,7 @@ export default function AuctionManagement() {
                       PKR {auction.current_price.toLocaleString()}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
-                      {auction.bidCount || 0}
+                      {bidCounts[auction._id] || 0}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
                       {new Date(auction.end_time).toLocaleDateString()}

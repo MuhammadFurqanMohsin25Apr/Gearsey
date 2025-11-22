@@ -1,6 +1,7 @@
 import { Order } from "@/models/order.js";
 import { OrderItem, type IOrderItem } from "@/models/orderItem.js";
 import { Payment } from "@/models/payment.js";
+import { Listing } from "@/models/listing.js";
 import { type Request, type Response } from "express";
 
 type OrderBody = {
@@ -14,15 +15,29 @@ export async function getAllOrders(req: Request, res: Response) {
     const { limit } = req.query;
     const orders = await Order.find().limit(Number(limit) || 10);
 
-    // Fetch payment info for each order
+    // Fetch payment info and product name for each order
     const ordersWithPayments = await Promise.all(
       orders.map(async (order) => {
         const payment = await Payment.findOne({
           orderId: (order._id as any).toString(),
         });
+
+        // Fetch first item to get product name
+        const item = await OrderItem.findOne({
+          orderId: (order._id as any).toString(),
+        });
+        let productName = "Multiple Products";
+        if (item) {
+          const listing = await Listing.findById(item.partId);
+          if (listing) {
+            productName = listing.name;
+          }
+        }
+
         return {
           ...order.toObject(),
           payment: payment || null,
+          productName,
         };
       })
     );
@@ -106,32 +121,56 @@ export async function getUserOrderItems(req: Request, res: Response) {
 
 export async function createOrder(req: Request, res: Response) {
   try {
-    const { userId, total_amount, items }: OrderBody = req.body;
+    const { userId, total_amount, items, isAuction, auctionId } = req.body;
 
-    if (!userId || !total_amount || !items || items.length === 0) {
-      return res.status(400).json({
-        message: "Missing required fields: userId, total_amount, items",
+    // For auction orders, items can be empty
+    if (isAuction) {
+      if (!userId || !total_amount || !auctionId) {
+        return res.status(400).json({
+          message:
+            "Missing required fields for auction order: userId, total_amount, auctionId",
+        });
+      }
+
+      // Create auction order
+      const order = await Order.create({
+        userId,
+        total_amount,
+        delivery_status: "Pending",
+        isAuction: true,
+        auctionId,
       });
+
+      res
+        .status(201)
+        .json({ message: "Auction order created successfully", order });
+    } else {
+      // Regular order validation
+      if (!userId || !total_amount || !items || items.length === 0) {
+        return res.status(400).json({
+          message: "Missing required fields: userId, total_amount, items",
+        });
+      }
+
+      // Create the order first
+      const order = await Order.create({
+        userId,
+        total_amount,
+        delivery_status: "Pending",
+      });
+
+      // Add orderId to each item and create them
+      const itemsWithOrderId = items.map((item: any) => ({
+        ...item,
+        orderId: (order._id as any).toString(),
+      }));
+
+      const orderItems = await OrderItem.insertMany(itemsWithOrderId);
+
+      res
+        .status(201)
+        .json({ message: "Order created successfully", order, orderItems });
     }
-
-    // Create the order first
-    const order = await Order.create({
-      userId,
-      total_amount,
-      delivery_status: "Pending",
-    });
-
-    // Add orderId to each item and create them
-    const itemsWithOrderId = items.map((item) => ({
-      ...item,
-      orderId: (order._id as any).toString(),
-    }));
-
-    const orderItems = await OrderItem.insertMany(itemsWithOrderId);
-
-    res
-      .status(201)
-      .json({ message: "Order created successfully", order, orderItems });
   } catch (error) {
     console.error("Error creating order:", error as Error);
     res.status(400).json({
@@ -294,9 +333,14 @@ export async function getTopProductsByOrders(req: Request, res: Response) {
         $limit: Number(limit) || 5,
       },
       {
+        $addFields: {
+          productIdObj: { $toObjectId: "$_id" },
+        },
+      },
+      {
         $lookup: {
           from: "listings",
-          localField: "_id",
+          localField: "productIdObj",
           foreignField: "_id",
           as: "productDetails",
         },
@@ -328,6 +372,156 @@ export async function getTopProductsByOrders(req: Request, res: Response) {
     console.error("Error fetching top products:", error as Error);
     res.status(400).json({
       message: "Failed to fetch top products",
+      error: (error as Error).message,
+    });
+  }
+}
+
+export async function getSalesByCategory(req: Request, res: Response) {
+  try {
+    const { limit = 3 } = req.query;
+
+    const salesByCategory = await OrderItem.aggregate([
+      {
+        $addFields: {
+          productIdObj: { $toObjectId: "$partId" },
+        },
+      },
+      {
+        $lookup: {
+          from: "listings",
+          localField: "productIdObj",
+          foreignField: "_id",
+          as: "product",
+        },
+      },
+      {
+        $unwind: "$product",
+      },
+      {
+        $lookup: {
+          from: "categories",
+          localField: "product.categoryId",
+          foreignField: "_id",
+          as: "category",
+        },
+      },
+      {
+        $unwind: "$category",
+      },
+      {
+        $group: {
+          _id: "$category.name",
+          totalSales: { $sum: "$quantity" },
+        },
+      },
+      {
+        $sort: { totalSales: -1 },
+      },
+      {
+        $limit: Number(limit),
+      },
+      {
+        $project: {
+          _id: 0,
+          name: "$_id",
+          value: "$totalSales",
+        },
+      },
+    ]);
+
+    // Calculate total sales to compute percentage
+    const totalSales = salesByCategory.reduce(
+      (acc, curr) => acc + curr.value,
+      0
+    );
+
+    const salesWithPercentage = salesByCategory.map((category) => ({
+      ...category,
+      percentage:
+        totalSales > 0 ? Math.round((category.value / totalSales) * 100) : 0,
+    }));
+
+    res.status(200).json({
+      message: "Sales by category fetched successfully",
+      salesByCategory: salesWithPercentage,
+    });
+  } catch (error) {
+    console.error("Error fetching sales by category:", error as Error);
+    res.status(400).json({
+      message: "Failed to fetch sales by category",
+      error: (error as Error).message,
+    });
+  }
+}
+
+export async function getSellerStats(req: Request, res: Response) {
+  try {
+    const { sellerId } = req.params;
+
+    if (!sellerId) {
+      return res.status(400).json({ message: "Seller ID is required" });
+    }
+
+    // Get all listings by the seller
+    const sellerListings = await Listing.find({ sellerId });
+    const listingIds = sellerListings.map((listing) => listing._id.toString());
+
+    if (listingIds.length === 0) {
+      return res.status(200).json({
+        message: "Seller stats fetched successfully",
+        stats: {
+          totalRevenue: 0,
+          totalOrders: 0,
+          totalItemsSold: 0,
+        },
+      });
+    }
+
+    // Get all order items for the seller's products
+    const orderItems = await OrderItem.find({
+      partId: { $in: listingIds },
+    });
+
+    // Get unique order IDs to count total orders
+    const uniqueOrderIds = [...new Set(orderItems.map((item) => item.orderId))];
+
+    // Get all orders for these order items to calculate revenue
+    const orders = await Order.find({
+      _id: { $in: uniqueOrderIds },
+    });
+
+    // Get payments to ensure only completed/paid orders are counted
+    const orderIdsStr = uniqueOrderIds.map((id) => id.toString());
+    const payments = await Payment.find({
+      orderId: { $in: orderIdsStr },
+      status: { $in: ["Completed", "completed", "Paid", "paid"] },
+    });
+
+    const paidOrderIds = payments.map((p) => p.orderId);
+
+    // Calculate revenue from paid orders only
+    const totalRevenue = orders
+      .filter((order) => paidOrderIds.includes(order._id.toString()))
+      .reduce((sum, order) => sum + order.total_amount, 0);
+
+    // Calculate total items sold (quantity) from paid orders
+    const totalItemsSold = orderItems
+      .filter((item) => paidOrderIds.includes(item.orderId))
+      .reduce((sum, item) => sum + item.quantity, 0);
+
+    res.status(200).json({
+      message: "Seller stats fetched successfully",
+      stats: {
+        totalRevenue,
+        totalOrders: paidOrderIds.length,
+        totalItemsSold,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching seller stats:", error as Error);
+    res.status(400).json({
+      message: "Failed to fetch seller stats",
       error: (error as Error).message,
     });
   }

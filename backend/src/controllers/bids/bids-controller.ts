@@ -1,6 +1,7 @@
 import { Bid, type IBid } from "@/models/bid.js";
 import { Auction, type IAuction } from "@/models/auction.js";
 import { Listing } from "@/models/listing.js";
+import "@/models/user.js"; // Ensure User model is registered
 import { type Request, type Response } from "express";
 
 export async function placeBid(req: Request, res: Response) {
@@ -90,9 +91,11 @@ export async function getBidsByAuction(req: Request, res: Response) {
   try {
     const { auctionId } = req.params;
 
-    const bids: IBid[] = await Bid.find({ auctionId }).sort({
-      createdAt: -1,
-    });
+    const bids: IBid[] = await Bid.find({ auctionId })
+      .sort({
+        createdAt: -1,
+      })
+      .populate("userId", "name image");
 
     res.status(200).json({ bids, message: "Bids fetched successfully" });
   } catch (error) {

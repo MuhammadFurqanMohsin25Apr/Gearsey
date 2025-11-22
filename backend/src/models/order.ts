@@ -5,6 +5,8 @@ export interface IOrder extends Document {
   total_amount: number;
   delivery_status: "Pending" | "Dispatched" | "Delivered" | "Cancelled";
   platform_fee: number;
+  isAuction?: boolean;
+  auctionId?: string;
 }
 
 const orderSchema = new Schema<IOrder>(
@@ -17,6 +19,8 @@ const orderSchema = new Schema<IOrder>(
       default: "Pending",
     },
     platform_fee: { type: Number, required: true, default: 7 },
+    isAuction: { type: Boolean, default: false },
+    auctionId: { type: String, required: false },
   },
   { timestamps: true }
 );

@@ -32,6 +32,11 @@ export default function Dashboard() {
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [myListings, setMyListings] = useState<Listing[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [sellerStats, setSellerStats] = useState({
+    totalRevenue: 0,
+    totalOrders: 0,
+    totalItemsSold: 0,
+  });
   const userRole = user?.role || "buyer";
   const isBuyer = userRole === "buyer" || userRole === "customer";
   const isSeller = userRole === "seller";
@@ -70,6 +75,22 @@ export default function Dashboard() {
     }
 
     fetchSellerProducts();
+  }, [isSeller, user?.id, revalidator.state]);
+
+  // Fetch seller stats (revenue, orders, items sold)
+  useEffect(() => {
+    async function fetchSellerStats() {
+      if (isSeller && user?.id) {
+        try {
+          const response = await api.orders.getSellerStats(user.id);
+          setSellerStats(response.stats);
+        } catch (error) {
+          console.error("Failed to fetch seller stats:", error);
+        }
+      }
+    }
+
+    fetchSellerStats();
   }, [isSeller, user?.id, revalidator.state]);
 
   // If not authenticated or still loading, don't render the page
@@ -395,11 +416,11 @@ export default function Dashboard() {
                   Sold Items
                 </p>
                 <p className="text-4xl font-black text-gray-900 mb-1">
-                  {soldListings.length}
+                  {sellerStats.totalItemsSold}
                 </p>
                 <p className="text-xs text-purple-600 font-semibold flex items-center gap-1">
                   <Award className="w-3 h-3" />
-                  Completed sales
+                  Items from orders
                 </p>
               </div>
               <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-purple-200 rounded-2xl flex items-center justify-center shadow-md">
@@ -416,11 +437,11 @@ export default function Dashboard() {
                   Total Revenue
                 </p>
                 <p className="text-4xl font-black text-white mb-1">
-                  {formatPrice(0)}
+                  {formatPrice(sellerStats.totalRevenue)}
                 </p>
                 <p className="text-xs text-red-100 font-semibold flex items-center gap-1">
                   <Star className="w-3 h-3" />
-                  Last 30 days
+                  {sellerStats.totalOrders} completed orders
                 </p>
               </div>
               <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-md">

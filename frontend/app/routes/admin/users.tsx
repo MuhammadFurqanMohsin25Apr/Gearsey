@@ -21,7 +21,7 @@ export default function Users() {
             id: u.id,
             name: u.name || "Unknown",
             email: u.email,
-            role: u.role || "user",
+            userRole: u.userRole || "user",
             joinDate: u.createdAt
               ? new Date(u.createdAt).toISOString().split("T")[0]
               : "N/A",
@@ -146,7 +146,7 @@ export default function Users() {
                     </td>
                     <td className="px-4 py-2">
                       <span className="inline-flex px-3 py-1 text-xs rounded-full font-medium bg-blue-50 text-blue-700 border border-blue-100">
-                        {user.role || "User"}
+                        {user.userRole || "User"}
                       </span>
                     </td>
                     <td className="px-4 py-2 text-sm text-gray-600">

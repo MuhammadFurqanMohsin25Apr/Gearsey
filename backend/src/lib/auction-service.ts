@@ -2,6 +2,8 @@ import { Auction, type IAuction } from "@/models/auction.js";
 import { Notification } from "@/models/notification.js";
 import { Bid } from "@/models/bid.js";
 import { Listing } from "@/models/listing.js";
+import { Order } from "@/models/order.js";
+import { OrderItem } from "@/models/orderItem.js";
 
 export class AuctionService {
   /**
@@ -47,12 +49,30 @@ export class AuctionService {
         paymentDeadline,
       });
 
+      // Create order for winner
+      const order = await Order.create({
+        userId: updatedAuction.winnerId,
+        total_amount: updatedAuction.current_price,
+        delivery_status: "Pending",
+        platform_fee: 7,
+        isAuction: true,
+        auctionId: auctionId.toString(),
+      });
+
+      // Create order item
+      await OrderItem.create({
+        orderId: order._id.toString(),
+        partId: auction.partId,
+        quantity: 1,
+        price: updatedAuction.current_price,
+      });
+
       // Create notification for winner
       await Notification.create({
         userId: updatedAuction.winnerId,
         type: "auction_won",
         title: "You Won the Auction!",
-        message: `You have won the auction! The product has been added to your cart. You must pay within 3 days.`,
+        message: `You have won the auction! The product has been added to your orders. You must pay within 3 days.`,
         auctionId: auctionId.toString(),
         productId: auction.partId,
         isRead: false,
@@ -120,12 +140,30 @@ export class AuctionService {
         paymentDeadline,
       });
 
+      // Create order for winner
+      const order = await Order.create({
+        userId: updatedAuction.winnerId,
+        total_amount: updatedAuction.current_price,
+        delivery_status: "Pending",
+        platform_fee: 7,
+        isAuction: true,
+        auctionId: auctionId.toString(),
+      });
+
+      // Create order item
+      await OrderItem.create({
+        orderId: order._id.toString(),
+        partId: auction.partId,
+        quantity: 1,
+        price: updatedAuction.current_price,
+      });
+
       // Create notification for winner
       await Notification.create({
         userId: updatedAuction.winnerId,
         type: "auction_won",
         title: "You Won the Auction!",
-        message: `Congratulations! You have won the auction! The product has been added to your cart. You must pay within 3 days.`,
+        message: `Congratulations! You have won the auction! The product has been added to your orders. You must pay within 3 days.`,
         auctionId: auctionId.toString(),
         productId: auction.partId,
         isRead: false,

@@ -99,12 +99,12 @@ export default function Reviews() {
               onChange={(e) => setFilterRating(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
             >
-              <option>All Ratings</option>
-              <option>5 Stars</option>
-              <option>4 Stars</option>
-              <option>3 Stars</option>
-              <option>2 Stars</option>
-              <option>1 Star</option>
+              <option value="all">All Ratings</option>
+              <option value="5">5 Stars</option>
+              <option value="4">4 Stars</option>
+              <option value="3">3 Stars</option>
+              <option value="2">2 Stars</option>
+              <option value="1">1 Star</option>
             </select>
           </div>
         </div>

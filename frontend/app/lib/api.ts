@@ -235,6 +235,19 @@ export const api = {
 
     getTopProducts: (limit: number = 5) =>
       request(`/orders/top-products?limit=${limit}`),
+
+    getSalesByCategory: (limit: number = 3) =>
+      request(`/orders/sales-by-category?limit=${limit}`),
+
+    getSellerStats: (sellerId: string) =>
+      request<{
+        message: string;
+        stats: {
+          totalRevenue: number;
+          totalOrders: number;
+          totalItemsSold: number;
+        };
+      }>(`/orders/seller-stats/${sellerId}`),
   },
 
   // Reviews
@@ -260,6 +273,12 @@ export const api = {
       request(`/review/${reviewId}`, {
         method: "DELETE",
       }),
+  },
+
+  // Bids
+  bids: {
+    getByAuction: (auctionId: string) =>
+      request<{ bids: any[] }>(`/bids/auction/${auctionId}`),
   },
 
   // Payments

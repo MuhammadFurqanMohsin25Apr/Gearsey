@@ -1,4 +1,4 @@
-import { Bell, LogOut, Settings, Shield, User } from "lucide-react";
+import { LogOut, Settings, Shield, User } from "lucide-react";
 import React, { useState } from "react";
 import { useNavigate } from "react-router";
 import { SidebarTrigger } from "~/components/ui/sidebar";
@@ -23,11 +23,6 @@ export default function AdminNavbar() {
 
           {/* Right side actions */}
           <div className="flex items-center gap-4">
-            <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
-              <Bell className="w-5 h-5 text-gray-600" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
-
             {/* Settings Dropdown */}
             <div className="relative" ref={settingsRef}>
               <button
@@ -38,8 +33,8 @@ export default function AdminNavbar() {
               </button>
 
               {settingsOpen && (
-                <div className="absolute flex flex-col items-start justify-center right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                  <div className="w-full px-4 py-2 border-b border-gray-100">
+                <div className="absolute left-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                  <div className="px-4 py-2 border-b border-gray-100 text-left">
                     <p className="text-sm font-semibold text-gray-900">
                       {user?.name || "Admin"}
                     </p>
@@ -49,9 +44,9 @@ export default function AdminNavbar() {
                   <button
                     onClick={() => {
                       setSettingsOpen(false);
-                      navigate("/admin/admin-profile");
+                      navigate("/admin-profile");
                     }}
-                    className="px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
                   >
                     <User className="w-4 h-4" />
                     View Profile
@@ -62,7 +57,7 @@ export default function AdminNavbar() {
                       setSettingsOpen(false);
                       // Navigate to settings page when created
                     }}
-                    className="px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
                   >
                     <Settings className="w-4 h-4" />
                     Account Settings
@@ -73,7 +68,7 @@ export default function AdminNavbar() {
                       setSettingsOpen(false);
                       // Navigate to security page when created
                     }}
-                    className="px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
                   >
                     <Shield className="w-4 h-4" />
                     Security

@@ -14,7 +14,9 @@ export async function getTotalUsersCount(req: Request, res: Response) {
 
     // Count only buyers from the users collection
     const usersCollection = database.collection("user");
-    const totalUsers = await usersCollection.countDocuments({ role: "buyer" });
+    const totalUsers = await usersCollection.countDocuments({
+      userRole: "buyer",
+    });
     console.log("Total buyers count:", totalUsers);
     res.status(200).json({
       message: "Total buyers count fetched successfully",
@@ -41,7 +43,7 @@ export async function getAllBuyers(req: Request, res: Response) {
     // Fetch all buyers from the users collection
     const usersCollection = database.collection("user");
     const buyers = await usersCollection
-      .find({ role: "buyer" })
+      .find({ userRole: "buyer" })
       .project({
         _id: 1,
         name: 1,

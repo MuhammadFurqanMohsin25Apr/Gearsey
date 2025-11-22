@@ -63,6 +63,84 @@ export async function loader() {
   }
 }
 
+function FlashSaleCountdown() {
+  const [timeLeft, setTimeLeft] = useState({
+    days: "01",
+    hours: "03",
+    minutes: "00",
+    seconds: "00",
+  });
+
+  useEffect(() => {
+    // Calculate end time as 1 day and 3 hours from now
+    const endTime = new Date();
+    endTime.setHours(endTime.getHours() + 27); // 1 day (24 hours) + 3 hours = 27 hours
+
+    const calculateTimeLeft = () => {
+      const now = new Date();
+      const difference = endTime.getTime() - now.getTime();
+
+      if (difference > 0) {
+        const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((difference / 1000 / 60) % 60);
+        const seconds = Math.floor((difference / 1000) % 60);
+
+        setTimeLeft({
+          days: days.toString().padStart(2, "0"),
+          hours: hours.toString().padStart(2, "0"),
+          minutes: minutes.toString().padStart(2, "0"),
+          seconds: seconds.toString().padStart(2, "0"),
+        });
+      }
+    };
+
+    // Calculate immediately on mount
+    calculateTimeLeft();
+
+    // Update every second
+    const timer = setInterval(calculateTimeLeft, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <section className="bg-gradient-to-r from-red-600 via-red-700 to-red-600 text-white py-6">
+      <div className="container mx-auto px-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Flame className="w-10 h-10" />
+            <div>
+              <h3 className="text-2xl font-black">Attention! Flash Sales</h3>
+              <p className="text-red-100">
+                Get the latest news & amazing offers
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            {[
+              { label: "DAYS", value: timeLeft.days },
+              { label: "HOURS", value: timeLeft.hours },
+              { label: "MINS", value: timeLeft.minutes },
+              { label: "SECS", value: timeLeft.seconds },
+            ].map((item, i) => (
+              <div
+                key={i}
+                className="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-3 min-w-[70px] text-center border border-white/30"
+              >
+                <div className="text-2xl font-black">{item.value}</div>
+                <div className="text-xs font-semibold opacity-90">
+                  {item.label}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function Home({ loaderData }: Route.ComponentProps) {
   const { featuredProducts, categories, auctions } = loaderData;
   const [hasAnimated, setHasAnimated] = useState(false);
@@ -191,39 +269,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
       </section>
 
       {/* Flash Sale Banner */}
-      <section className="bg-gradient-to-r from-red-600 via-red-700 to-red-600 text-white py-6">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <Flame className="w-10 h-10" />
-              <div>
-                <h3 className="text-2xl font-black">Attention! Flash Sales</h3>
-                <p className="text-red-100">
-                  Get the latest news & amazing offers
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              {[
-                { label: "DAYS", value: "02" },
-                { label: "HOURS", value: "10" },
-                { label: "MINS", value: "24" },
-                { label: "SECS", value: "05" },
-              ].map((item, i) => (
-                <div
-                  key={i}
-                  className="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-3 min-w-[70px] text-center border border-white/30"
-                >
-                  <div className="text-2xl font-black">{item.value}</div>
-                  <div className="text-xs font-semibold opacity-90">
-                    {item.label}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+      <FlashSaleCountdown />
 
       {/* Features */}
       {/* Brand Trust Section */}

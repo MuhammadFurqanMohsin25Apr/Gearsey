@@ -1,7 +1,6 @@
 import { Link } from "react-router";
 import { useState, useEffect, useRef } from "react";
 import { useSession, signOut } from "~/lib/auth-client";
-import { cartManager } from "~/lib/cart";
 import {
   Search,
   Package,
@@ -12,6 +11,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { AddProductDialog } from "./AddProductDialog";
+import { cartManager } from "~/lib/cart";
 
 export function Header() {
   const { data: session, isPending } = useSession();
@@ -20,9 +20,22 @@ export function Header() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [cartItemCount, setCartItemCount] = useState(0);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
   const settingsRef = useRef<HTMLDivElement>(null);
+
+  // Initialize cart count and listen for updates
+  useEffect(() => {
+    // Set initial cart count
+    setCartCount(cartManager.getUniqueItemCount());
+
+    // Listen for cart updates
+    const handleCartUpdate = () => {
+      setCartCount(cartManager.getUniqueItemCount());
+    };
+
+    window.addEventListener("cartUpdated", handleCartUpdate);
+    return () => window.removeEventListener("cartUpdated", handleCartUpdate);
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -37,28 +50,6 @@ export function Header() {
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  // Update cart item count
-  useEffect(() => {
-    const updateCartCount = () => {
-      const count = cartManager.getUniqueItemCount();
-      setCartItemCount(count);
-    };
-
-    // Initial load
-    updateCartCount();
-
-    // Listen for storage changes from other tabs
-    window.addEventListener("storage", updateCartCount);
-
-    // Also listen for a custom event we'll dispatch when cart changes
-    window.addEventListener("cartUpdated", updateCartCount);
-
-    return () => {
-      window.removeEventListener("storage", updateCartCount);
-      window.removeEventListener("cartUpdated", updateCartCount);
-    };
   }, []);
 
   // Apply blur effect to body when modal is open
@@ -85,7 +76,6 @@ export function Header() {
   };
 
   const handleLogout = async () => {
-    cartManager.clearCart();
     await signOut();
     window.location.href = "/";
   };
@@ -93,104 +83,100 @@ export function Header() {
   return (
     <header className="bg-white shadow-md sticky top-0 z-50 border-b border-gray-200">
       {/* Main Header */}
-      <div className="container mx-auto px-2 sm:px-4">
-        <div className="flex items-center justify-between h-14 sm:h-16 gap-2 sm:gap-4">
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link
-            to="/"
-            className="flex items-center space-x-2 sm:space-x-3 group flex-shrink-0"
-          >
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-red-600 to-red-700 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-red-600/50 transition-all duration-300">
-              <span className="text-lg sm:text-2xl font-black text-white">
-                G
-              </span>
+          <Link to="/" className="flex items-center space-x-3 group">
+            <div className="w-12 h-12 bg-gradient-to-br from-red-600 to-red-700 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-red-600/50 transition-all duration-300">
+              <span className="text-2xl font-black text-white">G</span>
             </div>
-            <div className="flex flex-col hidden sm:block">
-              <span className="text-lg sm:text-2xl font-black text-gray-900 tracking-tight group-hover:text-red-600 transition-colors">
+            <div className="flex flex-col">
+              <span className="text-2xl font-black text-gray-900 tracking-tight group-hover:text-red-600 transition-colors">
                 Gearsey
               </span>
-              <span className="text-[10px] text-gray-600 font-semibold">
+              <span className="text-xs text-gray-600 font-semibold -mt-1">
                 AUTO PARTS
               </span>
             </div>
           </Link>
 
-          {/* Search Bar - Hidden on mobile, visible on sm+ */}
-          <div className="hidden sm:flex flex-1 lg:flex-none lg:w-[30rem] lg:ml-2 lg:mr-2 min-w-0">
+          {/* Search Bar */}
+          <div className="hidden md:flex flex-1 max-w-2xl mx-8">
             <div className="relative w-full">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search..."
-                className="w-full px-2 pr-12 sm:px-6 sm:pr-14 py-2 sm:py-3.5 bg-gray-50 border-2 border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-xs sm:text-sm font-medium"
+                placeholder="Search for auto parts, brands, models..."
+                className="w-full px-6 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-sm font-medium"
               />
               <button
                 onClick={handleSearch}
-                className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 p-1.5 sm:px-6 sm:py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-md shadow-md hover:shadow-lg transition-all duration-300 text-xs sm:text-sm flex items-center gap-1 sm:gap-2 min-h-[28px]"
+                className="absolute right-2 top-1/2 -translate-y-1/2 px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-md shadow-md hover:shadow-lg transition-all duration-300 text-sm flex items-center gap-2"
               >
-                <Search className="w-4 h-4 sm:w-4 sm:h-4 flex-shrink-0" />
-                <span className="hidden sm:inline">SEARCH</span>
+                <Search className="w-4 h-4" /> SEARCH
               </button>
             </div>
           </div>
 
-          {/* Navigation - Hidden on mobile */}
+          {/* Navigation */}
           <nav className="hidden lg:flex items-center space-x-1">
             <Link
               to="/products"
-              className="px-3 lg:px-4 py-2 hover:bg-red-50 rounded-lg transition-all duration-300 font-bold text-xs lg:text-sm text-gray-700 hover:text-red-600"
+              className="px-4 py-2 hover:bg-red-50 rounded-lg transition-all duration-300 font-bold text-sm text-gray-700 hover:text-red-600"
             >
               PRODUCTS
             </Link>
             <Link
               to="/auctions"
-              className="px-3 lg:px-4 py-2 hover:bg-red-50 rounded-lg transition-all duration-300 font-bold text-xs lg:text-sm text-gray-700 hover:text-red-600"
+              className="px-4 py-2 hover:bg-red-50 rounded-lg transition-all duration-300 font-bold text-sm text-gray-700 hover:text-red-600"
             >
               AUCTIONS
             </Link>
           </nav>
 
-          <div className="flex items-center space-x-1 sm:space-x-3 flex-shrink-0">
-            {/* Mobile Search Button */}
-            <button
-              onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className="sm:hidden p-2 hover:bg-red-50 rounded-lg transition-all duration-300 group"
-            >
-              <Search className="w-5 h-5 text-gray-700 group-hover:text-red-600 transition-colors" />
-            </button>
-
-            {/* Cart visible for all users except admin */}
-            {user?.role !== "admin" && (
+          <div className="flex items-center space-x-3">
+            {/* Cart visible for customer, seller, and admin */}
+            {user && (
               <Link
                 to="/cart"
-                className="relative p-2 sm:p-3 hover:bg-red-50 rounded-lg transition-all duration-300 group"
+                className="relative p-3 hover:bg-red-50 rounded-lg transition-all duration-300 group"
               >
-                <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700 group-hover:text-red-600 transition-colors" />
-                {cartItemCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white text-xs font-black rounded-full flex items-center justify-center">
-                    {cartItemCount}
-                  </span>
-                )}
+                <svg
+                  className="w-6 h-6 text-gray-700 group-hover:text-red-600 transition-colors"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                  />
+                </svg>
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white text-xs font-black rounded-full flex items-center justify-center">
+                  {cartCount}
+                </span>
               </Link>
             )}
 
             {user ? (
-              <div className="hidden sm:flex items-center space-x-1 sm:space-x-2">
+              <div className="hidden md:flex items-center space-x-2">
                 {/* Seller Dashboard - Manage Products */}
-                {user.role === "seller" && (
+                {user.userRole === "seller" && (
                   <Link
                     to="/dashboard"
-                    className="px-2 sm:px-5 py-1.5 sm:py-2.5 bg-gray-100 hover:bg-red-50 rounded-lg transition-all duration-300 font-bold text-xs sm:text-sm text-gray-700 hover:text-red-600"
+                    className="px-5 py-2.5 bg-gray-100 hover:bg-red-50 rounded-lg transition-all duration-300 font-bold text-sm text-gray-700 hover:text-red-600"
                   >
                     DASHBOARD
                   </Link>
                 )}
                 {/* Admin Dashboard - Statistics & Management */}
-                {user.role === "admin" && (
+                {user.userRole === "admin" && (
                   <Link
                     to="/admin"
-                    className="px-2 sm:px-5 py-1.5 sm:py-2.5 bg-gray-100 hover:bg-red-50 rounded-lg transition-all duration-300 font-bold text-xs sm:text-sm text-gray-700 hover:text-red-600"
+                    className="px-5 py-2.5 bg-gray-100 hover:bg-red-50 rounded-lg transition-all duration-300 font-bold text-sm text-gray-700 hover:text-red-600"
                   >
                     ADMIN
                   </Link>
@@ -199,10 +185,10 @@ export function Header() {
                 <div className="relative" ref={settingsRef}>
                   <button
                     onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                    className="p-2 sm:p-3 hover:bg-red-50 rounded-lg transition-all duration-300 group"
+                    className="p-3 hover:bg-red-50 rounded-lg transition-all duration-300 group"
                   >
                     <svg
-                      className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700 group-hover:text-red-600 transition-colors"
+                      className="w-6 h-6 text-gray-700 group-hover:text-red-600 transition-colors"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -222,22 +208,23 @@ export function Header() {
                     </svg>
                   </button>
                   {isSettingsOpen && (
-                    <div className="absolute right-0 mt-2 w-48 sm:w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50 max-h-[70vh] overflow-y-auto">
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50 max-h-96 overflow-y-auto">
                       <div className="px-4 py-2 border-b border-gray-200 text-left">
                         <p className="text-xs text-gray-500 font-semibold">
                           Signed in as
                         </p>
-                        <p className="text-xs sm:text-sm font-bold text-gray-900 truncate">
+                        <p className="text-sm font-bold text-gray-900 truncate">
                           {user.email}
                         </p>
                       </div>
 
-                      {/* Show menu items for customer/buyer/non-admin users */}
-                      {user.role !== "seller" && user.role !== "admin" && (
-                        <div className="flex flex-col items-start justify-center">
+                      {/* customer-specific menu items */}
+                      {(user.userRole === "customer" ||
+                        user.userRole === "buyer") && (
+                        <>
                           <Link
                             to="/orders"
-                            className=" text-left px-4 py-2 text-xs sm:text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                            className="w-full text-left px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
                             onClick={() => setIsSettingsOpen(false)}
                           >
                             <svg
@@ -253,11 +240,11 @@ export function Header() {
                                 d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
                               />
                             </svg>
-                            My Orders
+                            My Orders and Auctions
                           </Link>
                           <Link
                             to="/profile"
-                            className="text-left px-4 py-2 text-xs sm:text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                            className="w-full text-left px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
                             onClick={() => setIsSettingsOpen(false)}
                           >
                             <svg
@@ -277,7 +264,7 @@ export function Header() {
                           </Link>
                           <Link
                             to="/help"
-                            className="text-left px-4 py-2 text-xs sm:text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                            className="w-full text-left px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
                             onClick={() => setIsSettingsOpen(false)}
                           >
                             <svg
@@ -296,15 +283,15 @@ export function Header() {
                             Help & Support
                           </Link>
                           <div className="border-t border-gray-200 my-1"></div>
-                        </div>
+                        </>
                       )}
 
                       {/* Seller-specific menu items */}
-                      {user.role === "seller" && (
-                        <div className="flex flex-col items-start justify-center">
+                      {user.userRole === "seller" && (
+                        <>
                           <Link
                             to="/manage-products"
-                            className="text-left px-4 py-2 text-xs sm:text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                            className="w-full text-left px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
                             onClick={() => setIsSettingsOpen(false)}
                           >
                             <svg
@@ -323,28 +310,8 @@ export function Header() {
                             Manage Products
                           </Link>
                           <Link
-                            to="/orders"
-                            className="text-left px-4 py-2 text-xs sm:text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
-                            onClick={() => setIsSettingsOpen(false)}
-                          >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
-                              />
-                            </svg>
-                            My Orders
-                          </Link>
-                          <Link
                             to="/profile"
-                            className="text-left px-4 py-2 text-xs sm:text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                            className="w-full text-left px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
                             onClick={() => setIsSettingsOpen(false)}
                           >
                             <svg
@@ -364,7 +331,7 @@ export function Header() {
                           </Link>
                           <Link
                             to="/help"
-                            className="text-left px-4 py-2 text-xs sm:text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                            className="w-full text-left px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
                             onClick={() => setIsSettingsOpen(false)}
                           >
                             <svg
@@ -383,12 +350,59 @@ export function Header() {
                             Help & Support
                           </Link>
                           <div className="border-t border-gray-200 my-1"></div>
-                        </div>
+                        </>
+                      )}
+
+                      {/* Admin-specific menu items */}
+                      {user.userRole === "admin" && (
+                        <>
+                          <Link
+                            to="/admin/profile"
+                            className="w-full text-left px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                            onClick={() => setIsSettingsOpen(false)}
+                          >
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                              />
+                            </svg>
+                            Profile
+                          </Link>
+                          <Link
+                            to="/help"
+                            className="w-full text-left px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                            onClick={() => setIsSettingsOpen(false)}
+                          >
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                              />
+                            </svg>
+                            Help & Support
+                          </Link>
+                          <div className="border-t border-gray-200 my-1"></div>
+                        </>
                       )}
 
                       <button
                         onClick={handleLogout}
-                        className="w-full text-left px-4 py-2 text-xs sm:text-sm font-bold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+                        className="w-full text-left px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
                       >
                         <svg
                           className="w-4 h-4"
@@ -410,16 +424,16 @@ export function Header() {
                 </div>
               </div>
             ) : (
-              <div className="hidden sm:flex items-center space-x-1 sm:space-x-2">
+              <div className="hidden md:flex items-center space-x-2">
                 <Link
                   to="/login"
-                  className="px-2 sm:px-5 py-1.5 sm:py-2.5 bg-gray-100 hover:bg-red-50 rounded-lg transition-all duration-300 font-bold text-xs sm:text-sm text-gray-700 hover:text-red-600"
+                  className="px-5 py-2.5 bg-gray-100 hover:bg-red-50 rounded-lg transition-all duration-300 font-bold text-sm text-gray-700 hover:text-red-600"
                 >
                   LOGIN
                 </Link>
                 <Link
                   to="/signup"
-                  className="px-2 sm:px-5 py-1.5 sm:py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-300 font-bold text-xs sm:text-sm shadow-md"
+                  className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-300 font-bold text-sm shadow-md"
                 >
                   SIGN UP
                 </Link>
@@ -457,27 +471,27 @@ export function Header() {
         </div>
 
         {isMenuOpen && (
-          <div className="lg:hidden pb-3 space-y-1 border-t border-gray-200 pt-3 px-2">
+          <div className="lg:hidden pb-3 space-y-1 border-t border-gray-200 pt-3">
             <Link
               to="/products"
-              className="block px-4 py-2 hover:bg-gray-100 rounded-lg transition-all text-xs sm:text-sm font-bold text-gray-700"
+              className="block px-4 py-2 hover:bg-gray-100 rounded-lg transition-all text-sm font-bold text-gray-700"
               onClick={() => setIsMenuOpen(false)}
             >
               PRODUCTS
             </Link>
             <Link
               to="/auctions"
-              className="block px-4 py-2 hover:bg-gray-100 rounded-lg transition-all text-xs sm:text-sm font-bold text-gray-700"
+              className="block px-4 py-2 hover:bg-gray-100 rounded-lg transition-all text-sm font-bold text-gray-700"
               onClick={() => setIsMenuOpen(false)}
             >
               AUCTIONS
             </Link>
 
             {/* Only Seller can list products */}
-            {user?.role === "seller" && (
+            {user?.userRole === "seller" && (
               <Link
                 to="/manage-products"
-                className="block px-4 py-2 hover:bg-gray-100 rounded-lg transition-all text-xs sm:text-sm font-bold text-gray-700"
+                className="block px-4 py-2 hover:bg-gray-100 rounded-lg transition-all text-sm font-bold text-gray-700"
                 onClick={() => setIsMenuOpen(false)}
               >
                 SELL PRODUCTS
@@ -485,29 +499,29 @@ export function Header() {
             )}
 
             {user ? (
-              <div className="flex flex-col items-start justify-center">
-                {user.role === "customer" && (
+              <>
+                {(user.userRole === "customer" || user.userRole === "user") && (
                   <Link
-                    to="/dashboard"
-                    className="block px-4 py-2 hover:bg-gray-100 rounded-lg transition-all text-xs sm:text-sm font-bold text-gray-700"
+                    to="/orders"
+                    className="block px-4 py-2 hover:bg-gray-100 rounded-lg transition-all text-sm font-bold text-gray-700"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    MY ORDERS
+                    MY ORDERS AND AUCTIONS
                   </Link>
                 )}
-                {user.role === "seller" && (
+                {user.userRole === "seller" && (
                   <Link
                     to="/dashboard"
-                    className="block px-4 py-2 hover:bg-red-50 rounded-lg transition-all duration-300 text-xs sm:text-sm font-bold text-gray-700 hover:text-red-600"
+                    className="block px-4 py-2 hover:bg-red-50 rounded-lg transition-all duration-300 text-sm font-bold text-gray-700 hover:text-red-600"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     DASHBOARD
                   </Link>
                 )}
-                {user.role === "admin" && (
+                {user.userRole === "admin" && (
                   <Link
                     to="/admin"
-                    className="block px-4 py-2 hover:bg-gray-100 rounded-lg transition-all text-xs sm:text-sm font-bold text-gray-700"
+                    className="block px-4 py-2 hover:bg-gray-100 rounded-lg transition-all text-sm font-bold text-gray-700"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     ADMIN DASHBOARD
@@ -515,23 +529,23 @@ export function Header() {
                 )}
                 <button
                   onClick={handleLogout}
-                  className="block w-full text-left px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-xs sm:text-sm font-bold text-white"
+                  className="block w-full text-left px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-bold text-white"
                 >
                   SIGN OUT
                 </button>
-              </div>
+              </>
             ) : (
               <>
                 <Link
                   to="/login"
-                  className="block px-4 py-2 hover:bg-red-50 rounded-lg transition-all duration-300 text-xs sm:text-sm font-bold text-gray-700 hover:text-red-600"
+                  className="block px-4 py-2 hover:bg-red-50 rounded-lg transition-all duration-300 text-sm font-bold text-gray-700 hover:text-red-600"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   LOGIN
                 </Link>
                 <Link
                   to="/signup"
-                  className="block px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-all duration-300 font-bold text-xs sm:text-sm text-white"
+                  className="block px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-all duration-300 font-bold text-sm text-white"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   SIGN UP
@@ -541,28 +555,6 @@ export function Header() {
           </div>
         )}
       </div>
-
-      {/* Mobile Search Bar - Appears when icon is clicked */}
-      {isSearchOpen && (
-        <div className="sm:hidden border-t border-gray-200 bg-gray-50 px-2 py-3">
-          <div className="relative w-full">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch(e as any)}
-              placeholder="Search parts..."
-              className="w-full px-3 pr-10 py-2 bg-white border-2 border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-xs font-medium"
-            />
-            <button
-              onClick={handleSearch}
-              className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-md shadow-md hover:shadow-lg transition-all duration-300 flex items-center gap-1 min-h-[28px]"
-            >
-              <Search className="w-4 h-4 flex-shrink-0" />
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Add Product Dialog */}
       <AddProductDialog

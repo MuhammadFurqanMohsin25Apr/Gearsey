@@ -13,104 +13,6 @@ import { Link } from "react-router";
 import { api } from "../../lib/api";
 import { authClient } from "../../lib/auth-client";
 
-const mockReviews = [
-  {
-    id: 1,
-    productId: "1",
-    productName: "Honda Civic Brake Pads",
-    userName: "Ahmed Khan",
-    rating: 5,
-    comment: "Excellent quality! Exactly as described.",
-    date: "2024-01-15",
-  },
-  {
-    id: 2,
-    productId: "2",
-    productName: "Toyota Corolla Headlights",
-    userName: "Fatima Ali",
-    rating: 4,
-    comment: "Good product, delivery was fast.",
-    date: "2024-01-10",
-  },
-  {
-    id: 3,
-    productId: "3",
-    productName: "Suzuki Alto Engine Oil",
-    userName: "Ali Raza",
-    rating: 3,
-    comment: "Average quality, could be better.",
-    date: "2024-01-08",
-  },
-  {
-    id: 4,
-    productId: "1",
-    productName: "Honda Civic Brake Pads",
-    userName: "Sara Malik",
-    rating: 5,
-    comment: "Perfect fit and great performance!",
-    date: "2024-01-05",
-  },
-];
-
-const mockRecentOrders = [
-  {
-    id: "ORD001",
-    customer: "Ahmed Khan",
-    amount: 45000,
-    status: "completed",
-    date: "2024-11-10",
-  },
-  {
-    id: "ORD002",
-    customer: "Sara Ali",
-    amount: 28000,
-    status: "processing",
-    date: "2024-11-10",
-  },
-  {
-    id: "ORD003",
-    customer: "Ali Raza",
-    amount: 67000,
-    status: "in-transit",
-    date: "2024-11-09",
-  },
-];
-
-// Analytics data for charts
-const mockRevenueData = [
-  { month: "Jan", revenue: 320000, orders: 65 },
-  { month: "Feb", revenue: 380000, orders: 78 },
-  { month: "Mar", revenue: 420000, orders: 85 },
-  { month: "Apr", revenue: 460000, orders: 92 },
-  { month: "May", revenue: 510000, orders: 105 },
-  { month: "Jun", revenue: 480000, orders: 98 },
-];
-
-const mockCategoryData = [
-  { name: "Engine Parts", value: 35, color: "#ef4444" },
-  { name: "Body Parts", value: 25, color: "#f59e0b" },
-  { name: "Electrical", value: 20, color: "#3b82f6" },
-  { name: "Interior", value: 12, color: "#8b5cf6" },
-  { name: "Others", value: 8, color: "#6b7280" },
-];
-
-const mockUserGrowthData = [
-  { month: "Jan", users: 4200 },
-  { month: "Feb", users: 4500 },
-  { month: "Mar", users: 4800 },
-  { month: "Apr", users: 5100 },
-  { month: "May", users: 5400 },
-  { month: "Jun", users: 5632 },
-];
-
-const mockTopProducts = [
-  { name: "Brake Pads", sales: 245, revenue: 3675000 },
-  { name: "Oil Filters", sales: 198, revenue: 693000 },
-  { name: "Headlights", sales: 156, revenue: 4368000 },
-  { name: "Air Filters", sales: 142, revenue: 710000 },
-  { name: "Spark Plugs", sales: 128, revenue: 256000 },
-];
-
 export const loader = async () => {};
 
 export default function AdminDashboard() {
@@ -125,11 +27,11 @@ export default function AdminDashboard() {
     pendingApprovals: 0,
   });
   const [products, setProducts] = useState([]);
-  const [orders, setOrders] = useState(mockRecentOrders);
-  const [revenueChartData, setRevenueData] = useState(mockRevenueData);
-  const [userChartData, setUserGrowthData] = useState(mockUserGrowthData);
-  const [categoryChartData, setCategoryData] = useState(mockCategoryData);
-  const [topProducts, setTopProducts] = useState(mockTopProducts);
+  const [orders, setOrders] = useState([]);
+  const [revenueChartData, setRevenueData] = useState([]);
+  const [userChartData, setUserGrowthData] = useState([]);
+  const [categoryChartData, setCategoryData] = useState([]);
+  const [topProducts, setTopProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Fetch data from backend
@@ -143,10 +45,12 @@ export default function AdminDashboard() {
           ordersData,
           productsData,
           auctionsData,
+          allUsersData,
           buyersData,
           sellersData,
           pendingOrdersData,
           topProductsData,
+          salesByCategoryData,
         ] = (await Promise.all([
           api.orders.getAll().catch((err) => {
             console.error("Orders API error:", err);
@@ -163,26 +67,38 @@ export default function AdminDashboard() {
           authClient.admin
             .listUsers({
               query: {
-                filterField: "role",
-                filterValue: "buyer",
-                filterOperator: "eq",
+                limit: 10000,
               },
             })
             .catch((err) => {
-              console.error("Buyers list error:", err);
-              return { data: { users: [] } };
+              console.error("All users list error:", err);
+              return { users: [] };
             }),
           authClient.admin
             .listUsers({
               query: {
-                filterField: "role",
-                filterValue: "seller",
+                filterField: "userRole",
+                filterValue: "customer",
                 filterOperator: "eq",
+                limit: 10000,
               },
             })
             .catch((err) => {
-              console.error("Sellers list error:", err);
-              return { data: { users: [] } };
+              console.error("Buyers list error:", err);
+              return { users: [] };
+            }),
+          authClient.admin
+            .listUsers({
+              query: {
+                filterField: "userRole",
+                filterValue: "seller",
+                filterOperator: "eq",
+                limit: 10000,
+              },
+            })
+            .catch((err) => {
+              console.error("Customers list error:", err);
+              return { users: [] };
             }),
           api.orders.getAll().catch((err) => {
             console.error("Pending Orders API error:", err);
@@ -192,15 +108,45 @@ export default function AdminDashboard() {
             console.error("Top Products API error:", err);
             return { topProducts: [] };
           }),
-        ])) as [any, any, any, any, any, any, any];
+          api.orders.getSalesByCategory(3).catch((err) => {
+            console.error("Sales by Category API error:", err);
+            return { salesByCategory: [] };
+          }),
+        ])) as [any, any, any, any, any, any, any, any, any];
 
         console.log("API Responses:", {
           ordersData,
           productsData,
           auctionsData,
+          allUsersData,
           buyersData,
           sellersData,
+          salesByCategoryData,
         });
+
+        console.log("Better Auth Users Data Structure:", {
+          allUsersStructure: allUsersData,
+          buyersStructure: buyersData,
+          sellersStructure: sellersData,
+        });
+
+        // Log if any Better Auth calls failed
+        if (!allUsersData?.users || allUsersData.users.length === 0) {
+          console.warn(
+            "⚠️ No users returned from Better Auth - Check if admin plugin is enabled and user is authenticated as admin"
+          );
+        }
+
+        // Create user map from all users
+        const userMap = new Map();
+        if (allUsersData?.data.users) {
+          allUsersData.data.users.forEach((u: any) => {
+            userMap.set(u.id, u.name || u.email || "Unknown User");
+          });
+          console.log("User map created with", userMap.size, "users");
+        } else {
+          console.warn("No users found in allUsersData:", allUsersData);
+        }
 
         // Process products
         if (productsData.products && Array.isArray(productsData.products)) {
@@ -208,8 +154,8 @@ export default function AdminDashboard() {
             .slice(0, 3)
             .map((p: any) => ({
               id: p._id,
-              name: p.title,
-              seller: p.sellerId,
+              name: p.name || p.title || "Unknown Product",
+              seller: userMap.get(p.sellerId) || "Unknown Seller",
               price: p.price,
               status: "approved",
               date: p.createdAt
@@ -233,6 +179,8 @@ export default function AdminDashboard() {
               revenue: product.totalRevenue || 0,
             })
           );
+          // Sort by sales in ascending order
+          formattedTopProducts.sort((a: any, b: any) => a.sales - b.sales);
           setTopProducts(formattedTopProducts);
         }
 
@@ -246,7 +194,8 @@ export default function AdminDashboard() {
             .slice(0, 3)
             .map((o: any) => ({
               id: o._id,
-              customer: o.userId,
+              customer: userMap.get(o.userId) || "Unknown Customer",
+              productName: o.productName || "Unknown Product",
               amount: o.total_amount,
               status: o.payment?.status?.toLowerCase() || "pending",
               date: o.createdAt
@@ -308,13 +257,13 @@ export default function AdminDashboard() {
         const userGrowthByMonth: { [key: string]: Set<string> } = {};
 
         // Use buyer and seller data to calculate user growth
-        const allUsers = [
-          ...(buyersData?.data?.users || []),
-          ...(sellersData?.data?.users || []),
+        const allUsersForGrowth = [
+          ...(buyersData?.data.users || []),
+          ...(sellersData?.data.users || []),
         ];
 
-        if (allUsers.length > 0) {
-          allUsers.forEach((user: any) => {
+        if (allUsersForGrowth.length > 0) {
+          allUsersForGrowth.forEach((user: any) => {
             if (!user.createdAt) return;
             const date = new Date(user.createdAt);
             if (isNaN(date.getTime())) return;
@@ -355,30 +304,23 @@ export default function AdminDashboard() {
         // Always update with calculated data from database
         setUserGrowthData(newUserGrowthData);
 
-        // Calculate category distribution from products
-        if (productsData.products && Array.isArray(productsData.products)) {
-          const categoryStats: { [key: string]: number } = {};
-          productsData.products.forEach((p: any) => {
-            const category = p.categoryId?.name || "Other";
-            categoryStats[category] = (categoryStats[category] || 0) + 1;
-          });
-
-          const colors = [
-            "#ef4444",
-            "#f59e0b",
-            "#3b82f6",
-            "#8b5cf6",
-            "#6b7280",
-          ];
-          const newCategoryData = Object.entries(categoryStats)
-            .map(([name, value], i) => ({
-              name,
-              value: value as number,
+        // Process sales by category
+        if (
+          salesByCategoryData.salesByCategory &&
+          Array.isArray(salesByCategoryData.salesByCategory)
+        ) {
+          const colors = ["#ef4444", "#f59e0b", "#3b82f6"];
+          const newCategoryData = salesByCategoryData.salesByCategory.map(
+            (category: any, i: number) => ({
+              name: category.name || "Unknown",
+              value: category.percentage || 0,
               color: colors[i % colors.length],
-            }))
-            .slice(0, 5);
-
+            })
+          );
           setCategoryData(newCategoryData);
+        } else {
+          // Fallback or empty
+          setCategoryData([]);
         }
 
         // Count active auctions
@@ -387,8 +329,19 @@ export default function AdminDashboard() {
               .length
           : 0;
 
-        const buyerCount = buyersData?.data?.users?.length || 0;
-        const sellerCount = sellersData?.data?.users?.length || 0;
+        // Better Auth returns { users, total, limit, offset } directly
+        const allUsers = allUsersData?.data.users || [];
+        const buyers = buyersData?.data.users || [];
+        const sellers = sellersData?.data.users || [];
+
+        console.log("User counts from Better Auth:", {
+          allUsersCount: allUsers.length,
+          buyersCount: buyers.length,
+          sellersCount: sellers.length,
+        });
+
+        const buyerCount = buyers.length;
+        const sellerCount = sellers.length;
         const totalProductsCount = productsData.products?.length || 0;
         const totalOrdersCount = ordersData.orders?.length || 0;
         const pendingApprovalsCount = Array.isArray(pendingOrdersData.orders)
@@ -967,7 +920,7 @@ export default function AdminDashboard() {
                       {order.customer}
                     </p>
                     <p className="text-sm text-gray-500">
-                      {order.id} • {order.date}
+                      {order.productName} • {order.date}
                     </p>
                   </div>
                   <div className="text-right">

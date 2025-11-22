@@ -11,7 +11,6 @@ import { useState, useEffect } from "react";
 import { useSession } from "~/lib/auth-client";
 import { cartManager } from "~/lib/cart";
 import { Flame, CheckCircle, Star, Package } from "lucide-react";
-import { ReviewDialog } from "~/components/ReviewDialog";
 import { ReviewsList } from "~/components/ReviewsList";
 
 export function meta() {
@@ -113,7 +112,6 @@ export default function ProductDetail() {
   // Review state
   const [reviews, setReviews] = useState<any[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
-  const [showReviewDialog, setShowReviewDialog] = useState(false);
 
   // Check if the current user is the seller of this product
   const isOwner =
@@ -232,16 +230,6 @@ export default function ProductDetail() {
 
     // Reset quantity
     setQuantity(1);
-  };
-
-  const handleReviewSubmitted = async () => {
-    // Reload reviews after submission
-    try {
-      const response = (await api.reviews.getByProduct(product._id)) as any;
-      setReviews(response.reviews || []);
-    } catch (error) {
-      console.error("Failed to reload reviews:", error);
-    }
   };
 
   return (
@@ -527,7 +515,7 @@ export default function ProductDetail() {
 
         {/* Reviews Section */}
         <div className="mt-12 bg-white rounded-lg shadow-md p-8">
-          <div className="flex justify-between items-center mb-6">
+          <div className="mb-6">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">
                 Customer Reviews
@@ -536,42 +524,11 @@ export default function ProductDetail() {
                 {reviews.length} review{reviews.length !== 1 ? "s" : ""}
               </p>
             </div>
-
-            {/* Only logged in users can write reviews */}
-            {user && (
-              <button
-                onClick={() => setShowReviewDialog(true)}
-                className="px-6 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-lg hover:from-red-700 hover:to-red-800 transition-all duration-300"
-              >
-                Write a Review
-              </button>
-            )}
           </div>
-
-          {/* Message for non-logged in users */}
-          {!user && (
-            <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-lg p-4 mb-6 border-2 border-red-200">
-              <p className="text-red-800 font-medium">
-                <Link to="/login" className="underline hover:text-red-900">
-                  Sign in
-                </Link>{" "}
-                to write a review
-              </p>
-            </div>
-          )}
 
           {/* Reviews List */}
           <ReviewsList reviews={reviews} isLoading={reviewsLoading} />
         </div>
-
-        {/* Review Dialog */}
-        <ReviewDialog
-          productId={product._id}
-          productName={product.title}
-          isOpen={showReviewDialog}
-          onClose={() => setShowReviewDialog(false)}
-          onReviewSubmitted={handleReviewSubmitted}
-        />
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (

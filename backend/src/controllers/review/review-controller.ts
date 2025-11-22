@@ -32,13 +32,9 @@ export async function getProductReviews(req: Request, res: Response) {
     }
 
     // Get the most recent reviews for the product
-    const reviews = await Review.find({ partId: productId }).limit(
-      limit ? Number(limit) : 10
-    ).sort({ createdAt: -1 });
-
-    if (reviews.length === 0) {
-      throw new Error("No reviews found for this product");
-    }
+    const reviews = await Review.find({ partId: productId })
+      .limit(limit ? Number(limit) : 10)
+      .sort({ createdAt: -1 });
 
     res.status(200).json({
       message: "Product reviews fetched successfully",
@@ -63,9 +59,9 @@ export async function getUserReviews(req: Request, res: Response) {
       });
     }
 
-    const reviews = await Review.find({ userId }).limit(
-      limit ? Number(limit) : 10
-    ).sort({ createdAt: -1 });
+    const reviews = await Review.find({ userId })
+      .limit(limit ? Number(limit) : 10)
+      .sort({ createdAt: -1 });
 
     res.status(200).json({
       message: "User reviews fetched successfully",
@@ -84,7 +80,9 @@ export async function createReview(req: Request, res: Response) {
     const { userId, rating, comment, partId } = req.body;
 
     if (!userId || !rating || !partId) {
-      throw new Error("Part ID, User ID and Rating are required. Some are missing.");
+      throw new Error(
+        "Part ID, User ID and Rating are required. Some are missing."
+      );
     }
 
     const newReview = new Review({

@@ -22,7 +22,7 @@ export default function Login() {
     // Only check after session has loaded
     if (!isPending && session?.user) {
       // Redirect based on user role
-      const role = session.user.role || "customer";
+      const role = session.user.userRole || "customer";
       if (role === "admin") {
         navigate("/admin", { replace: true });
       } else if (role === "seller") {
@@ -32,7 +32,7 @@ export default function Login() {
         navigate("/products", { replace: true });
       }
     }
-  }, [session?.user?.id, session?.user?.role, isPending, navigate]);
+  }, [session?.user?.id, session?.user?.userRole, isPending, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,7 +62,7 @@ export default function Login() {
         setError(signInError.message || "Login failed");
       } else if (data?.user) {
         // Redirect based on user role after successful login
-        const userRole = data.user.role || "customer";
+        const userRole = data.user.userRole || "customer";
         if (userRole === "admin") {
           navigate("/admin", { replace: true });
         } else if (userRole === "seller") {
@@ -155,7 +155,7 @@ export default function Login() {
                   type="checkbox"
                   className="scale-50 w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500 cursor-pointer accent-red-600"
                 />
-                <span className="ml-2 text-gray-600 text-xs">Remember me</span>
+                <span className="text-gray-600 text-xs">Remember me</span>
               </label>
               <Link
                 to="/forgot-password"
