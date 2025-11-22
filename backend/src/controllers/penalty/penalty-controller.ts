@@ -129,7 +129,9 @@ export async function getTotalPenalties(req: Request, res: Response) {
   try {
     const { userId } = req.params;
 
-    const totalPenalties = await PenaltyService.getTotalPendingPenalties(userId);
+    const totalPenalties = await PenaltyService.getTotalPendingPenalties(
+      userId
+    );
 
     res.status(200).json({
       totalPenalties,

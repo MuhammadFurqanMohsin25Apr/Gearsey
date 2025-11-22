@@ -29,4 +29,4 @@ setInterval(async () => {
   }
 }, 60 * 1000); // Every minute
 
-export { };
+export {};

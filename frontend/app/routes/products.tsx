@@ -234,16 +234,16 @@ export default function Products() {
               </div>
 
               {/* Condition Filter */}
-              <div className="mb-4 sm:mb-6 border-t-2 border-gray-100 pt-4 sm:pt-6">
+              <div className="mb-4 border-t-2 border-gray-100 pt-4">
                 <h3 className="font-bold text-sm sm:text-base text-gray-900 mb-2 sm:mb-4 flex items-center gap-2">
                   <div className="w-1 h-4 sm:h-5 bg-blue-600 rounded-full flex-shrink-0"></div>
                   Condition
                 </h3>
-                <div className="space-y-1.5 sm:space-y-2">
+                <div className="space-y-0.5">
                   {["all", "New", "Used", "Refurbished"].map((condition) => (
                     <label
                       key={condition}
-                      className="flex items-center group cursor-pointer p-1.5 sm:p-2 rounded-lg hover:bg-gray-50 transition-all"
+                      className="flex items-center group cursor-pointer rounded-lg hover:bg-gray-50 transition-all"
                     >
                       <input
                         type="radio"
@@ -251,61 +251,13 @@ export default function Products() {
                         value={condition}
                         checked={selectedCondition === condition}
                         onChange={(e) => setSelectedCondition(e.target.value)}
-                        className="w-4 h-4 text-red-600 focus:ring-red-500 cursor-pointer"
+                        className="scale-50 text-red-600 focus:ring-red-500 cursor-pointer accent-red-600"
                       />
-                      <span className="ml-2 sm:ml-3 text-xs sm:text-base text-gray-700 font-semibold group-hover:text-gray-900">
+                      <span className="ml-1 text-base text-gray-700 font-semibold group-hover:text-gray-900">
                         {condition === "all" ? "All Conditions" : condition}
                       </span>
                     </label>
                   ))}
-                </div>
-              </div>
-
-              {/* Type Filter */}
-              <div className="border-t-2 border-gray-100 pt-4 sm:pt-6">
-                <h3 className="font-bold text-sm sm:text-base text-gray-900 mb-2 sm:mb-4 flex items-center gap-2">
-                  <div className="w-1 h-4 sm:h-5 bg-purple-600 rounded-full flex-shrink-0"></div>
-                  Listing Type
-                </h3>
-                <div className="space-y-1.5 sm:space-y-2">
-                  <label className="flex items-center group cursor-pointer p-1.5 sm:p-2 rounded-lg hover:bg-gray-50 transition-all">
-                    <input
-                      type="checkbox"
-                      className="w-4 h-4 text-red-600 focus:ring-red-500 rounded cursor-pointer"
-                    />
-                    <span className="ml-2 sm:ml-3 text-xs sm:text-base text-gray-700 font-semibold group-hover:text-gray-900">
-                      Fixed Price
-                    </span>
-                  </label>
-                  <label className="flex items-center group cursor-pointer p-1.5 sm:p-2 rounded-lg hover:bg-gray-50 transition-all">
-                    <input
-                      type="checkbox"
-                      className="w-4 h-4 text-red-600 focus:ring-red-500 rounded cursor-pointer"
-                    />
-                    <span className="ml-2 sm:ml-3 text-xs sm:text-base text-gray-700 font-semibold group-hover:text-gray-900">
-                      Auction
-                    </span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Price Range (Future Enhancement) */}
-              <div className="border-t-2 border-gray-100 pt-4 sm:pt-6 mt-4 sm:mt-6">
-                <h3 className="font-bold text-sm sm:text-base text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
-                  <div className="w-1 h-4 sm:h-5 bg-green-600 rounded-full flex-shrink-0"></div>
-                  Price Range
-                </h3>
-                <div className="space-y-2 sm:space-y-3">
-                  <input
-                    type="range"
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red-600"
-                    min="0"
-                    max="100000"
-                  />
-                  <div className="flex justify-between text-xs sm:text-sm font-semibold text-gray-600">
-                    <span>PKR 0</span>
-                    <span>PKR 100K+</span>
-                  </div>
                 </div>
               </div>
             </div>
@@ -329,18 +281,6 @@ export default function Products() {
                   <option value="price-low">Price: Low to High</option>
                   <option value="price-high">Price: High to Low</option>
                 </select>
-              </div>
-
-              <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-                <span className="text-xs sm:text-sm text-gray-600 font-medium">
-                  View:
-                </span>
-                <button className="p-1.5 sm:p-2.5 border-2 border-red-500 bg-red-50 rounded-lg hover:bg-red-100 transition-all flex-shrink-0">
-                  <LayoutGrid className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
-                </button>
-                <button className="p-1.5 sm:p-2.5 border-2 border-gray-200 bg-white rounded-lg hover:bg-gray-50 transition-all flex-shrink-0">
-                  <Grid3x3 className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
-                </button>
               </div>
             </div>
 

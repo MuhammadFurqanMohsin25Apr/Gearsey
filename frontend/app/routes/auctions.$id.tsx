@@ -231,7 +231,11 @@ export default function AuctionDetail() {
       return;
     }
 
-    if (!confirm("Are you sure you want to close this auction? The highest bidder will win.")) {
+    if (
+      !confirm(
+        "Are you sure you want to close this auction? The highest bidder will win."
+      )
+    ) {
       return;
     }
 
@@ -429,14 +433,18 @@ export default function AuctionDetail() {
                 <form onSubmit={handlePlaceBid} className="mb-6">
                   {isUserSeller ? (
                     <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg text-center mb-4">
-                      <p className="text-blue-900 font-bold mb-3">You are the seller</p>
+                      <p className="text-blue-900 font-bold mb-3">
+                        You are the seller
+                      </p>
                       <button
                         type="button"
                         onClick={handleCloseAuction}
                         disabled={isClosingAuction || isAuctionClosed}
                         className="w-full px-4 py-3 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600 disabled:from-gray-300 disabled:to-gray-400 text-white font-bold rounded-lg transition-all"
                       >
-                        {isClosingAuction ? "Closing Auction..." : "Close Auction"}
+                        {isClosingAuction
+                          ? "Closing Auction..."
+                          : "Close Auction"}
                       </button>
                     </div>
                   ) : (

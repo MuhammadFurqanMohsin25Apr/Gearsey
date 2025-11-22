@@ -51,7 +51,7 @@ export function AddProductDialog({
     if (isAuction) {
       const endTime = new Date();
       endTime.setDate(endTime.getDate() + 7);
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         auctionEndTime: endTime.toISOString().slice(0, 16),
       }));
@@ -477,7 +477,8 @@ export function AddProductDialog({
                           className="w-full px-4 py-3 border-2 border-amber-300 bg-white rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-sm text-gray-900 font-medium hover:border-amber-400"
                         />
                         <p className="text-xs text-gray-600 mt-2 font-medium">
-                          Buyers can bid until this time. You can also close the auction manually before this time.
+                          Buyers can bid until this time. You can also close the
+                          auction manually before this time.
                         </p>
                       </div>
                     )}

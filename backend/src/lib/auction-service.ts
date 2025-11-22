@@ -54,9 +54,10 @@ export class AuctionService {
       });
 
       // Notify other bidders
-      const allBids = await Bid.find({ auctionId, userId: { $ne: updatedAuction.winnerId } }).distinct(
-        "userId"
-      );
+      const allBids = await Bid.find({
+        auctionId,
+        userId: { $ne: updatedAuction.winnerId },
+      }).distinct("userId");
 
       for (const userId of allBids) {
         await Notification.create({
@@ -126,9 +127,10 @@ export class AuctionService {
       });
 
       // Notify other bidders
-      const allBids = await Bid.find({ auctionId, userId: { $ne: updatedAuction.winnerId } }).distinct(
-        "userId"
-      );
+      const allBids = await Bid.find({
+        auctionId,
+        userId: { $ne: updatedAuction.winnerId },
+      }).distinct("userId");
 
       for (const userId of allBids) {
         await Notification.create({

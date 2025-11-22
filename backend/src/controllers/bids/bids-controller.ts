@@ -122,9 +122,9 @@ export async function getUserBidCountByAuction(req: Request, res: Response) {
 
     const bidCount = await Bid.countDocuments({ auctionId, userId });
 
-    res.status(200).json({ 
-      bidCount, 
-      message: "Bid count fetched successfully" 
+    res.status(200).json({
+      bidCount,
+      message: "Bid count fetched successfully",
     });
   } catch (error) {
     console.error("Error fetching bid count:", error);
