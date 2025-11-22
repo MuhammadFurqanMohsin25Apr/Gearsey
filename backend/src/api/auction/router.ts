@@ -1,15 +1,21 @@
-import { cancelAuction, closeAuction, deleteAuction, getAuctions, updateAuction } from '@/controllers/auction/auction-controller.js';
+import { 
+  cancelAuction, 
+  closeAuction, 
+  deleteAuction, 
+  getAuctions, 
+  updateAuction,
+  getAuctionById
+} from '@/controllers/auction/auction-controller.js';
 import express from 'express';
 
 const router = express.Router();
 
-// router.use('bids', bidsRouter);
-
 router.get('/', getAuctions);
-router.put('/', updateAuction);
+router.get('/:auctionId', getAuctionById);
+router.put('/:auctionId', updateAuction);
 router.put('/close', closeAuction);
 router.put('/cancel', cancelAuction);
-router.delete('/', deleteAuction);
+router.delete('/:auctionId', deleteAuction);
 
 
 export default router;

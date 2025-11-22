@@ -162,6 +162,7 @@ export default function AdminDashboard() {
   const [revenueChartData, setRevenueData] = useState(mockRevenueData);
   const [userChartData, setUserGrowthData] = useState(mockUserGrowthData);
   const [categoryChartData, setCategoryData] = useState(mockCategoryData);
+  const [topProducts, setTopProducts] = useState(mockTopProducts);
   const [loading, setLoading] = useState(true);
 
   // Fetch data from backend
@@ -240,6 +241,50 @@ export default function AdminDashboard() {
               reviews: 0,
             }));
           setProducts(formattedProducts);
+
+          // Calculate top products by counting occurrences in orders
+          const productSalesMap: {
+            [key: string]: {
+              name: string;
+              sales: number;
+              revenue: number;
+            };
+          } = {};
+
+          if (ordersData.orders && Array.isArray(ordersData.orders)) {
+            ordersData.orders.forEach((order: any) => {
+              if (order.items && Array.isArray(order.items)) {
+                order.items.forEach((item: any) => {
+                  const productId = item.productId || item.id;
+                  const product = productsData.products.find(
+                    (p: any) => p._id === productId
+                  );
+
+                  if (product) {
+                    if (!productSalesMap[productId]) {
+                      productSalesMap[productId] = {
+                        name: product.name || product.title,
+                        sales: 0,
+                        revenue: 0,
+                      };
+                    }
+                    productSalesMap[productId].sales += item.quantity || 1;
+                    productSalesMap[productId].revenue +=
+                      (item.price || product.price) * (item.quantity || 1);
+                  }
+                });
+              }
+            });
+          }
+
+          // Convert to array and sort by sales
+          const topProductsList = Object.values(productSalesMap)
+            .sort((a, b) => b.sales - a.sales)
+            .slice(0, 5);
+
+          if (topProductsList.length > 0) {
+            setTopProducts(topProductsList);
+          }
         }
 
         // Process orders
@@ -912,36 +957,40 @@ export default function AdminDashboard() {
               Top Selling Products
             </h4>
             <div className="space-y-4">
-              {mockTopProducts.map((product: any, index: any) => (
-                <div key={index} className="flex items-center gap-4">
-                  <div className="shrink-0 w-8 h-8 bg-linear-to-r from-red-600 to-red-700 text-white rounded-lg flex items-center justify-center font-bold text-sm">
-                    #{index + 1}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900 truncate">
-                      {product.name}
-                    </p>
-                    <div className="flex items-center gap-3 mt-1">
-                      <span className="text-xs text-gray-500">
-                        {product.sales} sales
-                      </span>
-                      <span className="text-xs font-bold text-gray-900">
-                        PKR {(product.revenue / 1000).toFixed(0)}K
-                      </span>
+              {topProducts.length > 0 ? (
+                topProducts.map((product: any, index: any) => (
+                  <div key={index} className="flex items-center gap-4">
+                    <div className="shrink-0 w-8 h-8 bg-linear-to-r from-red-600 to-red-700 text-white rounded-lg flex items-center justify-center font-bold text-sm">
+                      #{index + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900 truncate">
+                        {product.name}
+                      </p>
+                      <div className="flex items-center gap-3 mt-1">
+                        <span className="text-xs text-gray-500">
+                          {product.sales} sales
+                        </span>
+                        <span className="text-xs font-bold text-gray-900">
+                          PKR {(product.revenue / 1000).toFixed(0)}K
+                        </span>
+                      </div>
+                    </div>
+                    <div className="shrink-0">
+                      <div className="w-16 h-1 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-linear-to-r from-red-500 to-red-600"
+                          style={{
+                            width: `${(product.sales / topProducts[0].sales) * 100}%`,
+                          }}
+                        ></div>
+                      </div>
                     </div>
                   </div>
-                  <div className="shrink-0">
-                    <div className="w-16 h-1 bg-gray-200 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-linear-to-r from-red-500 to-red-600"
-                        style={{
-                          width: `${(product.sales / mockTopProducts[0].sales) * 100}%`,
-                        }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-gray-500 text-sm">No sales data available</p>
+              )}
             </div>
           </div>
         </div>

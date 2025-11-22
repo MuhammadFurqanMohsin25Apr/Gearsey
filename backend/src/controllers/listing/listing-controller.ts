@@ -11,7 +11,7 @@ import { randomBytes } from "crypto";
 // Returns all products, with optional category, sellerId filter and limit
 export async function getProducts(req: Request, res: Response) {
   try {
-    const { limit, category, sellerId, query } = req.query;
+    const { limit, category, sellerId, query, is_auction } = req.query;
     const filter: Record<string, unknown> = {};
 
     if (sellerId) {
@@ -30,6 +30,11 @@ export async function getProducts(req: Request, res: Response) {
         return res.status(404).json({ message: "Category not found" });
       }
       filter.categoryId = categoryDoc._id;
+    }
+
+    // Filter by auction status if provided
+    if (is_auction !== undefined) {
+      filter.is_auction = is_auction === "true";
     }
 
     const products = await Listing.find(filter)
@@ -158,26 +163,31 @@ export async function createProduct(req: Request, res: Response) {
     // If this is an auction product, create an Auction record
     if (is_auction === true || is_auction === "true") {
       const startPrice = Number(price);
-      
-      // Use provided times or default to 7 days from now
-      let startTime = new Date();
-      let endTime = new Date(startTime.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-      // Override with user-provided times if available
-      if (auctionStartTime) {
-        startTime = new Date(auctionStartTime);
-      }
+      // Start time is always the current time (listing creation time)
+      const startTime = new Date();
+
+      // End time - use provided time or default to 7 days from now
+      let endTime = new Date(startTime.getTime() + 7 * 24 * 60 * 60 * 1000);
       if (auctionEndTime) {
         endTime = new Date(auctionEndTime);
       }
 
+      // Validate end time is in the future
+      if (endTime <= startTime) {
+        throw new Error("Auction end time must be in the future");
+      }
+
       await Auction.create({
         partId: product._id.toString(),
+        sellerId: sellerId,
         start_price: startPrice,
         current_price: startPrice,
         start_time: startTime,
         end_time: endTime,
         status: "Active",
+        winnerId: null,
+        totalBids: 0,
       });
     }
 
@@ -316,7 +326,7 @@ export async function updateProduct(req: Request, res: Response) {
       if (isNowAuction && !existingAuction) {
         // Create a new auction if converting to auction
         const startPrice = updatedProduct.price;
-        
+
         // Use provided times or default to 7 days from now
         let startTime = new Date();
         let endTime = new Date(startTime.getTime() + 7 * 24 * 60 * 60 * 1000);

@@ -142,6 +142,18 @@ export default function ProductDetail() {
     setQuantity(1);
   };
 
+  const handleBuyNow = () => {
+    // Check if user is logged in
+    if (!session) {
+      // Not authenticated - redirect to login
+      navigate("/login");
+      return;
+    }
+
+    // Redirect to checkout
+    navigate("/checkout");
+  };
+
   const handleReviewSubmitted = async () => {
     // Reload reviews after submission
     try {
@@ -357,12 +369,12 @@ export default function ProductDetail() {
                         >
                           Add to Cart
                         </button>
-                        <Link
-                          to="/checkout"
+                        <button
+                          onClick={handleBuyNow}
                           className="flex-1 px-6 py-4 bg-green-600 text-white text-center font-bold rounded-lg hover:bg-green-700 transition-colors"
                         >
                           Buy Now
-                        </Link>
+                        </button>
                       </div>
                     </div>
                   )}

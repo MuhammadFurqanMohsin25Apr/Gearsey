@@ -43,7 +43,20 @@ export function AddProductDialog({
     category: "",
     condition: "New",
     price: "",
+    auctionEndTime: "",
   });
+
+  // Set default auction end time to 7 days from now
+  useEffect(() => {
+    if (isAuction) {
+      const endTime = new Date();
+      endTime.setDate(endTime.getDate() + 7);
+      setFormData(prev => ({
+        ...prev,
+        auctionEndTime: endTime.toISOString().slice(0, 16),
+      }));
+    }
+  }, [isAuction]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -108,6 +121,10 @@ export function AddProductDialog({
     formDataToSend.append("is_auction", isAuction.toString());
     formDataToSend.append("sellerId", session.user.id);
 
+    if (isAuction && formData.auctionEndTime) {
+      formDataToSend.append("auctionEndTime", formData.auctionEndTime);
+    }
+
     images.forEach((image) => {
       formDataToSend.append("images", image);
     });
@@ -135,6 +152,7 @@ export function AddProductDialog({
       category: "",
       condition: "New",
       price: "",
+      auctionEndTime: "",
     });
     setIsAuction(false);
     setImages([]);
@@ -438,6 +456,31 @@ export function AddProductDialog({
                         </p>
                       )}
                     </div>
+
+                    {/* Auction End Time Input */}
+                    {isAuction && (
+                      <div className="bg-gradient-to-br from-amber-100 to-orange-100 rounded-xl p-4 border-2 border-amber-300">
+                        <label className="block text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                          <Gavel className="w-4 h-4 text-amber-600" />
+                          Auction End Time
+                        </label>
+                        <p className="text-xs text-gray-700 mb-3 font-medium">
+                          Auction will start immediately upon listing.
+                        </p>
+                        <input
+                          type="datetime-local"
+                          name="auctionEndTime"
+                          value={formData.auctionEndTime}
+                          onChange={handleInputChange}
+                          required
+                          min={new Date().toISOString().slice(0, 16)}
+                          className="w-full px-4 py-3 border-2 border-amber-300 bg-white rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-sm text-gray-900 font-medium hover:border-amber-400"
+                        />
+                        <p className="text-xs text-gray-600 mt-2 font-medium">
+                          Buyers can bid until this time. You can also close the auction manually before this time.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

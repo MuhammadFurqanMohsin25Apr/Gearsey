@@ -44,7 +44,7 @@ export interface Listing {
 
 export interface Auction {
   _id: string;
-  partId: string;
+  partId: string | Listing;
   start_price: number;
   current_price: number;
   start_time: string;

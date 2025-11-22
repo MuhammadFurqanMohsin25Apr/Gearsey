@@ -220,24 +220,24 @@ export default function Signup() {
               </div>
 
               {/* Terms */}
-              <label className="flex items-start cursor-pointer">
+              <label className="flex items-center cursor-pointer gap-3">
                 <input
                   type="checkbox"
                   required
-                  className="w-3.5 h-3.5 text-red-600 border-gray-300 rounded focus:ring-red-500 mt-0.5"
+                  className="scale-50 w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500 accent-red-600 flex-shrink-0"
                 />
-                <span className="ml-2 text-xs text-gray-600">
+                <span className="text-xs sm:text-sm text-gray-700">
                   I agree to the{" "}
                   <Link
                     to="/terms"
-                    className="text-red-600 hover:underline font-semibold"
+                    className="text-red-600 hover:text-red-700 hover:underline font-semibold inline"
                   >
                     Terms
                   </Link>{" "}
                   and{" "}
                   <Link
                     to="/privacy"
-                    className="text-red-600 hover:underline font-semibold"
+                    className="text-red-600 hover:text-red-700 hover:underline font-semibold inline"
                   >
                     Privacy Policy
                   </Link>

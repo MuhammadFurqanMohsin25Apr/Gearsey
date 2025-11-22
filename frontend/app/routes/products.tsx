@@ -99,6 +99,9 @@ export default function Products() {
   // Filter and sort products
   let filteredProducts = [...products];
 
+  // Filter out auction products - only show regular products
+  filteredProducts = filteredProducts.filter((p) => !p.is_auction);
+
   // Filter by condition
   if (selectedCondition !== "all") {
     filteredProducts = filteredProducts.filter(
@@ -126,58 +129,58 @@ export default function Products() {
     <div className="bg-gradient-to-br from-gray-50 via-white to-gray-50 min-h-screen">
       {/* Hero Banner */}
       <div className="bg-gradient-to-r from-red-600 via-red-500 to-orange-500 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-4xl md:text-5xl font-black mb-3 flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-6 sm:py-12">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-2xl sm:text-3xl md:text-5xl font-black mb-2 sm:mb-3 flex items-center gap-2 sm:gap-3 flex-wrap">
                 {searchQuery ? (
                   <>
-                    <Sparkles className="w-10 h-10" />
-                    Search Results
+                    <Sparkles className="w-6 h-6 sm:w-10 sm:h-10 flex-shrink-0" />
+                    <span className="break-words">Search Results</span>
                   </>
                 ) : currentCategory ? (
                   <>
-                    <Package className="w-10 h-10" />
-                    {currentCategory} Parts
+                    <Package className="w-6 h-6 sm:w-10 sm:h-10 flex-shrink-0" />
+                    <span className="break-words">{currentCategory} Parts</span>
                   </>
                 ) : (
                   <>
-                    <TrendingUp className="w-10 h-10" />
-                    Premium Auto Parts
+                    <TrendingUp className="w-6 h-6 sm:w-10 sm:h-10 flex-shrink-0" />
+                    <span className="break-words">Premium Auto Parts</span>
                   </>
                 )}
               </h1>
               {searchQuery && (
-                <p className="text-xl text-red-100 mb-2">
+                <p className="text-base sm:text-xl text-red-100 mb-1.5 sm:mb-2 break-words">
                   Results for "
                   <span className="font-bold text-white">{searchQuery}</span>"
                 </p>
               )}
-              <p className="text-red-100 text-lg flex items-center gap-2">
-                <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+              <p className="text-red-100 text-sm sm:text-lg flex items-center gap-2">
+                <span className="w-2 h-2 bg-white rounded-full animate-pulse flex-shrink-0"></span>
                 {filteredProducts.length}{" "}
                 {filteredProducts.length === 1 ? "product" : "products"}{" "}
                 available
               </p>
             </div>
-            <div className="hidden md:block">
-              <div className="w-32 h-32 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-                <Package className="w-20 h-20 text-white/80" />
+            <div className="hidden sm:block flex-shrink-0">
+              <div className="w-20 h-20 sm:w-32 sm:h-32 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                <Package className="w-10 h-10 sm:w-20 sm:h-20 text-white/80" />
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
+      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <div className="flex flex-col lg:flex-row gap-4 sm:gap-8">
           {/* Mobile Filter Toggle */}
           <div className="lg:hidden">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl font-bold text-gray-900 flex items-center justify-center gap-2 hover:border-red-500 transition-all shadow-sm"
+              className="w-full px-4 py-2 sm:py-3 bg-white border-2 border-gray-200 rounded-lg sm:rounded-xl font-bold text-sm sm:text-base text-gray-900 flex items-center justify-center gap-2 hover:border-red-500 transition-all shadow-sm"
             >
-              <SlidersHorizontal className="w-5 h-5" />
+              <SlidersHorizontal className="w-4 h-4 sm:w-5 sm:h-5" />
               {showFilters ? "Hide Filters" : "Show Filters"}
             </button>
           </div>
@@ -186,23 +189,25 @@ export default function Products() {
           <aside
             className={`lg:w-72 flex-shrink-0 ${showFilters ? "block" : "hidden lg:block"}`}
           >
-            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sticky top-24">
-              <div className="flex items-center gap-2 mb-6 pb-4 border-b-2 border-gray-100">
-                <Filter className="w-5 h-5 text-red-600" />
-                <h2 className="text-xl font-black text-gray-900">Filters</h2>
+            <div className="bg-white rounded-lg sm:rounded-2xl shadow-xl border border-gray-100 p-4 sm:p-6 sticky top-24">
+              <div className="flex items-center gap-2 mb-4 sm:mb-6 pb-3 sm:pb-4 border-b-2 border-gray-100">
+                <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-red-600 flex-shrink-0" />
+                <h2 className="text-lg sm:text-xl font-black text-gray-900">
+                  Filters
+                </h2>
               </div>
 
               {/* Categories */}
-              <div className="mb-6">
-                <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <div className="w-1 h-5 bg-red-600 rounded-full"></div>
+              <div className="mb-4 sm:mb-6">
+                <h3 className="font-bold text-sm sm:text-base text-gray-900 mb-2 sm:mb-4 flex items-center gap-2">
+                  <div className="w-1 h-4 sm:h-5 bg-red-600 rounded-full flex-shrink-0"></div>
                   Categories
                 </h3>
-                <ul className="space-y-2">
+                <ul className="space-y-1.5 sm:space-y-2">
                   <li>
                     <Link
                       to="/products"
-                      className={`block px-4 py-2.5 rounded-xl font-semibold transition-all ${
+                      className={`block px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-base transition-all ${
                         !currentCategory
                           ? "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md shadow-red-500/30"
                           : "text-gray-700 hover:bg-gray-50 border border-gray-200"
@@ -215,7 +220,7 @@ export default function Products() {
                     <li key={cat._id}>
                       <Link
                         to={`/products?category=${encodeURIComponent(cat.name)}`}
-                        className={`block px-4 py-2.5 rounded-xl font-semibold transition-all ${
+                        className={`block px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-base transition-all truncate ${
                           currentCategory === cat.name
                             ? "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md shadow-red-500/30"
                             : "text-gray-700 hover:bg-gray-50 border border-gray-200"
@@ -229,16 +234,16 @@ export default function Products() {
               </div>
 
               {/* Condition Filter */}
-              <div className="mb-6 border-t-2 border-gray-100 pt-6">
-                <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <div className="w-1 h-5 bg-blue-600 rounded-full"></div>
+              <div className="mb-4 sm:mb-6 border-t-2 border-gray-100 pt-4 sm:pt-6">
+                <h3 className="font-bold text-sm sm:text-base text-gray-900 mb-2 sm:mb-4 flex items-center gap-2">
+                  <div className="w-1 h-4 sm:h-5 bg-blue-600 rounded-full flex-shrink-0"></div>
                   Condition
                 </h3>
-                <div className="space-y-2">
+                <div className="space-y-1.5 sm:space-y-2">
                   {["all", "New", "Used", "Refurbished"].map((condition) => (
                     <label
                       key={condition}
-                      className="flex items-center group cursor-pointer p-2 rounded-lg hover:bg-gray-50 transition-all"
+                      className="flex items-center group cursor-pointer p-1.5 sm:p-2 rounded-lg hover:bg-gray-50 transition-all"
                     >
                       <input
                         type="radio"
@@ -248,7 +253,7 @@ export default function Products() {
                         onChange={(e) => setSelectedCondition(e.target.value)}
                         className="w-4 h-4 text-red-600 focus:ring-red-500 cursor-pointer"
                       />
-                      <span className="ml-3 text-gray-700 font-semibold group-hover:text-gray-900">
+                      <span className="ml-2 sm:ml-3 text-xs sm:text-base text-gray-700 font-semibold group-hover:text-gray-900">
                         {condition === "all" ? "All Conditions" : condition}
                       </span>
                     </label>
@@ -257,27 +262,27 @@ export default function Products() {
               </div>
 
               {/* Type Filter */}
-              <div className="border-t-2 border-gray-100 pt-6">
-                <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <div className="w-1 h-5 bg-purple-600 rounded-full"></div>
+              <div className="border-t-2 border-gray-100 pt-4 sm:pt-6">
+                <h3 className="font-bold text-sm sm:text-base text-gray-900 mb-2 sm:mb-4 flex items-center gap-2">
+                  <div className="w-1 h-4 sm:h-5 bg-purple-600 rounded-full flex-shrink-0"></div>
                   Listing Type
                 </h3>
-                <div className="space-y-2">
-                  <label className="flex items-center group cursor-pointer p-2 rounded-lg hover:bg-gray-50 transition-all">
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="flex items-center group cursor-pointer p-1.5 sm:p-2 rounded-lg hover:bg-gray-50 transition-all">
                     <input
                       type="checkbox"
                       className="w-4 h-4 text-red-600 focus:ring-red-500 rounded cursor-pointer"
                     />
-                    <span className="ml-3 text-gray-700 font-semibold group-hover:text-gray-900">
+                    <span className="ml-2 sm:ml-3 text-xs sm:text-base text-gray-700 font-semibold group-hover:text-gray-900">
                       Fixed Price
                     </span>
                   </label>
-                  <label className="flex items-center group cursor-pointer p-2 rounded-lg hover:bg-gray-50 transition-all">
+                  <label className="flex items-center group cursor-pointer p-1.5 sm:p-2 rounded-lg hover:bg-gray-50 transition-all">
                     <input
                       type="checkbox"
                       className="w-4 h-4 text-red-600 focus:ring-red-500 rounded cursor-pointer"
                     />
-                    <span className="ml-3 text-gray-700 font-semibold group-hover:text-gray-900">
+                    <span className="ml-2 sm:ml-3 text-xs sm:text-base text-gray-700 font-semibold group-hover:text-gray-900">
                       Auction
                     </span>
                   </label>
@@ -285,19 +290,19 @@ export default function Products() {
               </div>
 
               {/* Price Range (Future Enhancement) */}
-              <div className="border-t-2 border-gray-100 pt-6 mt-6">
-                <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <div className="w-1 h-5 bg-green-600 rounded-full"></div>
+              <div className="border-t-2 border-gray-100 pt-4 sm:pt-6 mt-4 sm:mt-6">
+                <h3 className="font-bold text-sm sm:text-base text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
+                  <div className="w-1 h-4 sm:h-5 bg-green-600 rounded-full flex-shrink-0"></div>
                   Price Range
                 </h3>
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   <input
                     type="range"
                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red-600"
                     min="0"
                     max="100000"
                   />
-                  <div className="flex justify-between text-sm font-semibold text-gray-600">
+                  <div className="flex justify-between text-xs sm:text-sm font-semibold text-gray-600">
                     <span>PKR 0</span>
                     <span>PKR 100K+</span>
                   </div>
@@ -307,18 +312,18 @@ export default function Products() {
           </aside>
 
           {/* Main Content */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             {/* Sort Bar */}
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-5 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div className="flex items-center gap-3 flex-wrap">
-                <div className="flex items-center gap-2">
-                  <SlidersHorizontal className="w-5 h-5 text-gray-600" />
-                  <span className="text-gray-900 font-bold">Sort by:</span>
-                </div>
+            <div className="bg-white rounded-lg sm:rounded-2xl shadow-lg border border-gray-100 p-3 sm:p-5 mb-4 sm:mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap w-full sm:w-auto">
+                <SlidersHorizontal className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 flex-shrink-0" />
+                <span className="text-xs sm:text-base text-gray-900 font-bold">
+                  Sort:
+                </span>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="border-2 border-gray-200 rounded-xl px-4 py-2.5 font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-gray-50 hover:bg-white transition-all cursor-pointer"
+                  className="border-2 border-gray-200 rounded-lg sm:rounded-xl px-2 sm:px-4 py-1.5 sm:py-2.5 font-semibold text-xs sm:text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-gray-50 hover:bg-white transition-all cursor-pointer"
                 >
                   <option value="newest">Newest First</option>
                   <option value="price-low">Price: Low to High</option>
@@ -326,13 +331,15 @@ export default function Products() {
                 </select>
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600 font-medium">View:</span>
-                <button className="p-2.5 border-2 border-red-500 bg-red-50 rounded-lg hover:bg-red-100 transition-all">
-                  <LayoutGrid className="w-5 h-5 text-red-600" />
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                <span className="text-xs sm:text-sm text-gray-600 font-medium">
+                  View:
+                </span>
+                <button className="p-1.5 sm:p-2.5 border-2 border-red-500 bg-red-50 rounded-lg hover:bg-red-100 transition-all flex-shrink-0">
+                  <LayoutGrid className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
                 </button>
-                <button className="p-2.5 border-2 border-gray-200 bg-white rounded-lg hover:bg-gray-50 transition-all">
-                  <Grid3x3 className="w-5 h-5 text-gray-600" />
+                <button className="p-1.5 sm:p-2.5 border-2 border-gray-200 bg-white rounded-lg hover:bg-gray-50 transition-all flex-shrink-0">
+                  <Grid3x3 className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
                 </button>
               </div>
             </div>
@@ -340,7 +347,7 @@ export default function Products() {
             {/* Products Grid */}
             {filteredProducts.length > 0 ? (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-6">
                   {filteredProducts.map((product) => (
                     <ProductCard key={product._id} product={product} />
                   ))}
@@ -348,32 +355,32 @@ export default function Products() {
 
                 {/* Load More */}
                 {filteredProducts.length >= 24 && (
-                  <div className="mt-10 text-center">
-                    <button className="px-8 py-4 bg-gradient-to-r from-red-600 to-red-500 text-white font-black rounded-xl hover:from-red-700 hover:to-red-600 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center gap-2 mx-auto">
-                      <TrendingUp className="w-5 h-5" />
+                  <div className="mt-6 sm:mt-10 text-center">
+                    <button className="px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-red-600 to-red-500 text-white font-black text-sm sm:text-base rounded-lg sm:rounded-xl hover:from-red-700 hover:to-red-600 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2 mx-auto">
+                      <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
                       Load More Products
                     </button>
                   </div>
                 )}
               </>
             ) : (
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-16 text-center">
+              <div className="bg-white rounded-lg sm:rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-16 text-center">
                 <div className="max-w-md mx-auto">
-                  <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Package className="w-12 h-12 text-gray-400" />
+                  <div className="w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+                    <Package className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400" />
                   </div>
-                  <h3 className="text-2xl font-black text-gray-900 mb-3">
+                  <h3 className="text-lg sm:text-2xl font-black text-gray-900 mb-2 sm:mb-3">
                     No Products Found
                   </h3>
-                  <p className="text-gray-600 mb-6 text-lg">
+                  <p className="text-xs sm:text-lg text-gray-600 mb-4 sm:mb-6">
                     We couldn't find any products matching your criteria. Try
                     adjusting your filters or search terms.
                   </p>
                   <Link
                     to="/products"
-                    className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-red-600 to-red-500 text-white font-bold rounded-xl hover:from-red-700 hover:to-red-600 transition-all shadow-lg"
+                    className="inline-flex items-center gap-2 px-6 sm:px-8 py-2 sm:py-4 bg-gradient-to-r from-red-600 to-red-500 text-white font-bold text-xs sm:text-base rounded-lg sm:rounded-xl hover:from-red-700 hover:to-red-600 transition-all shadow-lg"
                   >
-                    <Sparkles className="w-5 h-5" />
+                    <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
                     Browse All Products
                   </Link>
                 </div>

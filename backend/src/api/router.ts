@@ -7,6 +7,8 @@ import categoryRouter from "@/api/category/router.js";
 import reviewRouter from "@/api/review/router.js";
 import usersRouter from "@/api/users/router.js";
 import bidsRouter from "@/api/bids/router.js";
+import notificationRouter from "@/api/notification/router.js";
+import penaltyRouter from "@/api/penalty/router.js";
 
 const router = express.Router();
 
@@ -18,6 +20,8 @@ router.use("/bids", bidsRouter);
 router.use("/category", categoryRouter);
 router.use("/review", reviewRouter);
 router.use("/users", usersRouter);
+router.use("/notifications", notificationRouter);
+router.use("/penalties", penaltyRouter);
 
 router.get("/health", (req: Request, res: Response) => {
   res
@@ -32,6 +36,8 @@ router.get("/health", (req: Request, res: Response) => {
         "/category": "OK",
         "/review": "OK",
         "/users": "OK",
+        "/notifications": "OK",
+        "/penalties": "OK",
       },
     })
     .status(200);

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import type { Route } from "./+types/home";
 import { api } from "~/lib/api";
 import { ProductCard } from "~/components/ProductCard";
+import { AuctionCard } from "~/components/AuctionCard";
 import { useSession } from "~/lib/auth-client";
 import type {
   CategoriesResponse,
@@ -36,9 +37,15 @@ export function meta({}: Route.MetaArgs) {
 export async function loader() {
   try {
     const [featuredProducts, categories, activeAuctions] = await Promise.all([
-      api.products.getAll({ limit: 8 }) as Promise<ProductsResponse>,
+      api.products.getAll({
+        limit: 8,
+        is_auction: false,
+      }) as Promise<ProductsResponse>,
       api.categories.getAll(10) as Promise<CategoriesResponse>,
-      api.auctions.getAll({ limit: 4 }) as Promise<AuctionsResponse>,
+      api.auctions.getAll({
+        limit: 4,
+        status: "Active",
+      }) as Promise<AuctionsResponse>,
     ]);
 
     return {
@@ -372,16 +379,15 @@ export default function Home({ loaderData }: Route.ComponentProps) {
               <Link
                 key={category._id}
                 to={`/products?category=${encodeURIComponent(category.name)}`}
-                className={`group bg-gradient-to-br from-gray-50 to-white p-6 rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 text-center border border-gray-200 hover:border-red-300 ${hasAnimated ? "animate-slide-up" : "opacity-0"}`}
+                className={`flex justify-start item-start gap-2 bg-gradient-to-br from-gray-50 to-white p-4 rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 border border-gray-200 hover:border-red-300 ${hasAnimated ? "animate-slide-up" : "opacity-0"}`}
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
-                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg">
-                  <Wrench className="w-8 h-8 text-white" />
+                <div className="w-10 h-10 p-2 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <Wrench className="w-6 h-6 text-white" />
                 </div>
-                <h3 className="font-bold text-gray-900 group-hover:text-red-600 transition-colors mb-1">
+                <h3 className="text-sm font-bold text-gray-900 transition-colors">
                   {category.name}
                 </h3>
-                <p className="text-xs text-gray-500">Shop Now →</p>
               </Link>
             ))}
           </div>
@@ -681,66 +687,14 @@ export default function Home({ loaderData }: Route.ComponentProps) {
                 </svg>
               </Link>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {auctions.slice(0, 4).map((auction, index) => (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {auctions.slice(0, 3).map((auction, index) => (
                 <div
                   key={auction._id}
-                  className={`group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-200 hover:border-red-300 ${hasAnimated ? "animate-slide-up" : "opacity-0"}`}
-                  style={{ animationDelay: `${index * 0.15}s` }}
+                  className={hasAnimated ? "animate-scale-in" : "opacity-0"}
+                  style={{ animationDelay: `${index * 0.1}s` }}
                 >
-                  <div className="bg-gradient-to-br from-red-500 to-red-600 p-4 text-white">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-sm text-white text-xs font-bold rounded-full">
-                        {auction.status}
-                      </span>
-                      <Gavel className="w-6 h-6" />
-                    </div>
-                    <h3 className="font-bold text-lg">
-                      Auction #{auction._id.slice(-6)}
-                    </h3>
-                  </div>
-                  <div className="p-5">
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-baseline">
-                        <span className="text-sm text-gray-600">
-                          Current Bid
-                        </span>
-                        <span className="text-2xl font-black text-red-600">
-                          PKR {auction.current_price.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-600">Starting Price</span>
-                        <span className="font-semibold text-gray-900">
-                          PKR {auction.start_price.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="pt-2 border-t border-gray-200">
-                        <div className="flex items-center gap-1 text-xs text-gray-500 mb-3">
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                            />
-                          </svg>
-                          Ends in 2 days
-                        </div>
-                      </div>
-                    </div>
-                    <Link
-                      to={`/auctions/${auction._id}`}
-                      className="mt-4 block w-full text-center px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold rounded-lg transition-all shadow-md hover:shadow-lg transform"
-                    >
-                      Place Bid Now
-                    </Link>
-                  </div>
+                  <AuctionCard auction={auction as any} />
                 </div>
               ))}
             </div>

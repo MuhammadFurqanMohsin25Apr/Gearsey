@@ -150,28 +150,30 @@ export default function Checkout() {
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Checkout</h1>
+      <div className="max-w-5xl mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-8">
+          Checkout
+        </h1>
 
         {error && (
-          <div className="mb-6 bg-red-50 border-l-4 border-red-600 text-red-700 px-4 py-3 rounded">
+          <div className="mb-4 sm:mb-6 bg-red-50 border-l-4 border-red-600 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded text-sm sm:text-base">
             <p className="font-medium">{error}</p>
           </div>
         )}
 
         <form onSubmit={handlePlaceOrder}>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
             {/* Checkout Form */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-4 sm:space-y-6">
               {/* Shipping Information */}
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">
+              <div className="bg-white rounded-lg sm:rounded-lg shadow-md p-4 sm:p-6">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">
                   Shipping Information
                 </h2>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-3 sm:space-y-4">
+                  <div className="grid grid-cols-2 gap-2 sm:gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                         First Name
                       </label>
                       <input
@@ -179,12 +181,12 @@ export default function Checkout() {
                         name="firstName"
                         value={shippingData.firstName}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                        className="w-full px-2 sm:px-4 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 text-sm"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                         Last Name
                       </label>
                       <input
@@ -192,14 +194,14 @@ export default function Checkout() {
                         name="lastName"
                         value={shippingData.lastName}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                        className="w-full px-2 sm:px-4 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 text-sm"
                         required
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                       Email Address
                     </label>
                     <input
@@ -207,13 +209,13 @@ export default function Checkout() {
                       name="email"
                       value={shippingData.email}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                      className="w-full px-2 sm:px-4 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 text-sm"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                       Phone Number
                     </label>
                     <input
@@ -221,13 +223,13 @@ export default function Checkout() {
                       name="phone"
                       value={shippingData.phone}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                      className="w-full px-2 sm:px-4 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 text-sm"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                       Street Address
                     </label>
                     <input
@@ -235,14 +237,14 @@ export default function Checkout() {
                       name="address"
                       value={shippingData.address}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                      className="w-full px-2 sm:px-4 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 text-sm"
                       required
                     />
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                         City
                       </label>
                       <input
@@ -250,19 +252,19 @@ export default function Checkout() {
                         name="city"
                         value={shippingData.city}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                        className="w-full px-2 sm:px-4 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 text-sm"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                         Province
                       </label>
                       <select
                         name="province"
                         value={shippingData.province}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                        className="w-full px-2 sm:px-4 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 text-sm"
                       >
                         <option value="">Select Province</option>
                         <option>Punjab</option>
@@ -273,7 +275,7 @@ export default function Checkout() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                         Postal Code
                       </label>
                       <input
@@ -281,7 +283,7 @@ export default function Checkout() {
                         name="postalCode"
                         value={shippingData.postalCode}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                        className="w-full px-2 sm:px-4 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 text-sm"
                         required
                       />
                     </div>
@@ -290,44 +292,44 @@ export default function Checkout() {
               </div>
 
               {/* Payment Method */}
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">
+              <div className="bg-white rounded-lg sm:rounded-lg shadow-md p-4 sm:p-6">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">
                   Payment Method
                 </h2>
-                <div className="space-y-3">
-                  <label className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500">
+                <div className="space-y-2 sm:space-y-3">
+                  <label className="flex items-center p-3 sm:p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500">
                     <input
                       type="radio"
                       name="payment"
                       value="credit_card"
                       checked={paymentMethod === "credit_card"}
                       onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="mr-3"
+                      className="mr-2 sm:mr-3"
                     />
-                    <div className="flex-1 flex items-center justify-between">
-                      <span className="font-medium text-gray-900">
+                    <div className="flex-1 flex items-center justify-between min-w-0">
+                      <span className="font-medium text-sm sm:text-base text-gray-900">
                         Credit Card
                       </span>
-                      <span className="text-sm text-gray-600">
+                      <span className="text-xs sm:text-sm text-gray-600 ml-2">
                         Visa, Mastercard
                       </span>
                     </div>
                   </label>
 
-                  <label className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500">
+                  <label className="flex items-center p-3 sm:p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500">
                     <input
                       type="radio"
                       name="payment"
                       value="debit_card"
                       checked={paymentMethod === "debit_card"}
                       onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="mr-3"
+                      className="mr-2 sm:mr-3"
                     />
-                    <div className="flex-1 flex items-center justify-between">
-                      <span className="font-medium text-gray-900">
+                    <div className="flex-1 flex items-center justify-between min-w-0">
+                      <span className="font-medium text-sm sm:text-base text-gray-900">
                         Debit Card
                       </span>
-                      <span className="text-sm text-gray-600">
+                      <span className="text-xs sm:text-sm text-gray-600 ml-2">
                         Visa, Mastercard
                       </span>
                     </div>
@@ -382,9 +384,7 @@ export default function Checkout() {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {paymentMethod === "credit_card"
-                              ? "Card Expiry Date"
-                              : "Card Expiry Date"}
+                            Expiry Date
                           </label>
                           <input
                             type="text"
@@ -399,9 +399,7 @@ export default function Checkout() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {paymentMethod === "credit_card"
-                              ? "Card CVV"
-                              : "Card CVV"}
+                            CVV
                           </label>
                           <input
                             type="text"

@@ -1,4 +1,4 @@
-import { Form, Link, useLoaderData } from "react-router";
+import { Form, Link, useLoaderData, useNavigate } from "react-router";
 import { api } from "~/lib/api";
 import type { Auction } from "~/types";
 import { formatPrice, formatDateTime, getTimeRemaining } from "~/lib/utils";
@@ -119,9 +119,13 @@ export default function AuctionDetail() {
   const [isActive, setIsActive] = useState(false);
   const [currentAuction, setCurrentAuction] = useState(auction);
   const [forceShowForm, setForceShowForm] = useState(false);
+  const [isClosingAuction, setIsClosingAuction] = useState(false);
   const { data: session } = useSession();
+  const navigate = useNavigate();
 
   const minimumBid = currentAuction.current_price + 100;
+  const isUserSeller = session?.user?.id === currentAuction.sellerId;
+  const isAuctionClosed = currentAuction.status === "Closed";
 
   // Update bidAmount when auction current_price changes
   useEffect(() => {
@@ -135,13 +139,13 @@ export default function AuctionDetail() {
       const startTime = new Date(currentAuction.start_time);
       const endTime = new Date(currentAuction.end_time);
       const timeRemaining = getTimeRemaining(currentAuction.end_time);
-      
-      const active = 
-        currentAuction.status === "Active" && 
-        now >= startTime && 
-        now < endTime && 
+
+      const active =
+        currentAuction.status === "Active" &&
+        now >= startTime &&
+        now < endTime &&
         timeRemaining.total > 0;
-      
+
       console.log("Current Time:", now);
       console.log("Auction Start:", startTime);
       console.log("Auction End:", endTime);
@@ -161,9 +165,15 @@ export default function AuctionDetail() {
     setBidError(null);
     setBidSuccess(false);
 
-    // Client-side validation
+    // Check if user is logged in
     if (!session?.user) {
-      setBidError("You must be logged in to place a bid");
+      navigate("/login");
+      return;
+    }
+
+    // Prevent seller from bidding
+    if (isUserSeller) {
+      setBidError("Seller cannot bid on their own auction");
       return;
     }
 
@@ -175,11 +185,11 @@ export default function AuctionDetail() {
     setBidLoading(true);
 
     try {
-      const result = await api.bids.placeBid({
+      const result = (await api.bids.placeBid({
         auctionId: currentAuction._id,
         userId: session.user.id,
         bid_amount: bidAmount,
-      }) as any;
+      })) as any;
 
       // Check if result is empty or missing data
       if (!result || !result.updatedAuction) {
@@ -192,26 +202,65 @@ export default function AuctionDetail() {
       setCurrentAuction(result.updatedAuction);
       setBidSuccess(true);
       setBidError(null);
-      
+
       // Clear success message after 3 seconds
       setTimeout(() => {
         setBidSuccess(false);
       }, 3000);
     } catch (error: any) {
       let errorMessage = "Failed to place bid";
-      
+
       if (error?.data?.message) {
         errorMessage = error.data.message;
       } else if (error?.message) {
         errorMessage = error.message;
-      } else if (typeof error === 'string') {
+      } else if (typeof error === "string") {
         errorMessage = error;
       }
-      
+
       setBidError(errorMessage);
       setBidSuccess(false);
     } finally {
       setBidLoading(false);
+    }
+  };
+
+  const handleCloseAuction = async () => {
+    if (!isUserSeller) {
+      alert("Only the seller can close this auction");
+      return;
+    }
+
+    if (!confirm("Are you sure you want to close this auction? The highest bidder will win.")) {
+      return;
+    }
+
+    setIsClosingAuction(true);
+
+    try {
+      const response = await fetch("http://localhost:3000/api/auction/close", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          auctionId: currentAuction._id,
+          sellerId: session?.user?.id,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        alert(error.message || "Failed to close auction");
+        return;
+      }
+
+      const data = await response.json();
+      setCurrentAuction(data.closedAuction);
+      alert("Auction closed successfully! Winner has been notified.");
+    } catch (error) {
+      console.error("Error closing auction:", error);
+      alert("Failed to close auction. Please try again.");
+    } finally {
+      setIsClosingAuction(false);
     }
   };
 
@@ -378,50 +427,66 @@ export default function AuctionDetail() {
               {/* Bidding Form */}
               {(isActive || forceShowForm) && (
                 <form onSubmit={handlePlaceBid} className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Your Bid Amount
-                  </label>
-                  <div className="relative mb-2">
-                    <span className="absolute left-3 top-3 text-gray-500">
-                      PKR
-                    </span>
-                    <input
-                      type="number"
-                      value={bidAmount}
-                      onChange={(e) => setBidAmount(Number(e.target.value))}
-                      min={minimumBid}
-                      step="100"
-                      disabled={bidLoading}
-                      className="w-full pl-14 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-lg font-semibold text-gray-900 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                    />
-                  </div>
-                  <p className="text-xs text-gray-600 mb-4">
-                    Minimum bid: {formatPrice(minimumBid)}
-                  </p>
-
-                  {/* Error Message */}
-                  {bidError && (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                      <p className="text-sm text-red-800">{bidError}</p>
+                  {isUserSeller ? (
+                    <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg text-center mb-4">
+                      <p className="text-blue-900 font-bold mb-3">You are the seller</p>
+                      <button
+                        type="button"
+                        onClick={handleCloseAuction}
+                        disabled={isClosingAuction || isAuctionClosed}
+                        className="w-full px-4 py-3 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600 disabled:from-gray-300 disabled:to-gray-400 text-white font-bold rounded-lg transition-all"
+                      >
+                        {isClosingAuction ? "Closing Auction..." : "Close Auction"}
+                      </button>
                     </div>
-                  )}
-
-                  {/* Success Message */}
-                  {bidSuccess && (
-                    <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <p className="text-sm text-green-800 font-medium">
-                        ✓ Bid placed successfully! Refreshing...
+                  ) : (
+                    <>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Your Bid Amount
+                      </label>
+                      <div className="relative mb-2">
+                        <span className="absolute left-3 top-3 text-gray-500">
+                          PKR
+                        </span>
+                        <input
+                          type="number"
+                          value={bidAmount}
+                          onChange={(e) => setBidAmount(Number(e.target.value))}
+                          min={minimumBid}
+                          step="100"
+                          disabled={bidLoading}
+                          className="w-full pl-14 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-lg font-semibold text-gray-900 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        />
+                      </div>
+                      <p className="text-xs text-gray-600 mb-4">
+                        Minimum bid: {formatPrice(minimumBid)}
                       </p>
-                    </div>
-                  )}
 
-                  <button
-                    type="submit"
-                    disabled={bidLoading}
-                    className="w-full px-6 py-4 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition-colors text-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
-                  >
-                    {bidLoading ? "Placing Bid..." : "Place Bid"}
-                  </button>
+                      {/* Error Message */}
+                      {bidError && (
+                        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                          <p className="text-sm text-red-800">{bidError}</p>
+                        </div>
+                      )}
+
+                      {/* Success Message */}
+                      {bidSuccess && (
+                        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                          <p className="text-sm text-green-800 font-medium">
+                            ✓ Bid placed successfully! Refreshing...
+                          </p>
+                        </div>
+                      )}
+
+                      <button
+                        type="submit"
+                        disabled={bidLoading}
+                        className="w-full px-6 py-4 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition-colors text-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      >
+                        {bidLoading ? "Placing Bid..." : "Place Bid"}
+                      </button>
+                    </>
+                  )}
                 </form>
               )}
 
@@ -478,8 +543,8 @@ export default function AuctionDetail() {
                     {currentAuction.status === "Closed"
                       ? "This auction has ended"
                       : new Date() < new Date(currentAuction.start_time)
-                      ? `Auction starts at ${formatDateTime(currentAuction.start_time)}`
-                      : "This auction is no longer active"}
+                        ? `Auction starts at ${formatDateTime(currentAuction.start_time)}`
+                        : "This auction is no longer active"}
                   </p>
                   <button
                     type="button"

@@ -87,6 +87,7 @@ export const api = {
       category?: string;
       sellerId?: string;
       query?: string;
+      is_auction?: boolean;
     }) => request("/products", { params }),
 
     create: async (formData: FormData) => {
@@ -148,6 +149,7 @@ export const api = {
       limit?: number;
       start_time?: string;
       end_time?: string;
+      status?: string;
     }) => request("/auction", { params }),
 
     update: (auctionId: string, data: Partial<any>) =>
@@ -187,11 +189,9 @@ export const api = {
         body: JSON.stringify(data),
       }),
 
-    getByAuction: (auctionId: string) =>
-      request(`/bids/auction/${auctionId}`),
+    getByAuction: (auctionId: string) => request(`/bids/auction/${auctionId}`),
 
-    getByUser: (userId: string) =>
-      request(`/bids/user/${userId}`),
+    getByUser: (userId: string) => request(`/bids/user/${userId}`),
   },
 
   // Orders
