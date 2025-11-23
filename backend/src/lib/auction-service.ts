@@ -51,23 +51,34 @@ export class AuctionService {
         paymentDeadline,
       });
 
-      // Create order for winner
-      const order = await Order.create({
-        userId: updatedAuction.winnerId,
-        total_amount: updatedAuction.current_price,
-        delivery_status: "Pending",
-        platform_fee: 7,
-        isAuction: true,
+      // Check if order already exists for this auction
+      const existingOrder = await Order.findOne({
         auctionId: auctionId.toString(),
+        userId: updatedAuction.winnerId,
       });
 
-      // Create order item
-      await OrderItem.create({
-        orderId: order._id.toString(),
-        partId: auction.partId,
-        quantity: 1,
-        price: updatedAuction.current_price,
-      });
+      if (existingOrder) {
+        console.log(`Order already exists for auction ${auctionId}`);
+        // Skip order creation but continue with notifications
+      } else {
+        // Create order for winner
+        const order = await Order.create({
+          userId: updatedAuction.winnerId,
+          total_amount: updatedAuction.current_price,
+          delivery_status: "Pending",
+          platform_fee: 7,
+          isAuction: true,
+          auctionId: auctionId.toString(),
+        });
+
+        // Create order item
+        await OrderItem.create({
+          orderId: order._id.toString(),
+          partId: auction.partId,
+          quantity: 1,
+          price: updatedAuction.current_price,
+        });
+      }
 
       // Create notification for winner
       await Notification.create({
@@ -142,23 +153,34 @@ export class AuctionService {
         paymentDeadline,
       });
 
-      // Create order for winner
-      const order = await Order.create({
-        userId: updatedAuction.winnerId,
-        total_amount: updatedAuction.current_price,
-        delivery_status: "Pending",
-        platform_fee: 7,
-        isAuction: true,
+      // Check if order already exists for this auction
+      const existingOrder = await Order.findOne({
         auctionId: auctionId.toString(),
+        userId: updatedAuction.winnerId,
       });
 
-      // Create order item
-      await OrderItem.create({
-        orderId: order._id.toString(),
-        partId: auction.partId,
-        quantity: 1,
-        price: updatedAuction.current_price,
-      });
+      if (existingOrder) {
+        console.log(`Order already exists for auction ${auctionId}`);
+        // Skip order creation but continue with notifications
+      } else {
+        // Create order for winner
+        const order = await Order.create({
+          userId: updatedAuction.winnerId,
+          total_amount: updatedAuction.current_price,
+          delivery_status: "Pending",
+          platform_fee: 7,
+          isAuction: true,
+          auctionId: auctionId.toString(),
+        });
+
+        // Create order item
+        await OrderItem.create({
+          orderId: order._id.toString(),
+          partId: auction.partId,
+          quantity: 1,
+          price: updatedAuction.current_price,
+        });
+      }
 
       // Create notification for winner
       await Notification.create({

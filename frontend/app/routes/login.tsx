@@ -155,7 +155,7 @@ export default function Login() {
                   type="checkbox"
                   className=" w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500 cursor-pointer accent-red-600"
                 />
-                <span className="text-gray-600 text-xs">Remember me</span>
+                <span className="pl-2 text-gray-600 text-xs">Remember me</span>
               </label>
               <Link
                 to="/forgot-password"

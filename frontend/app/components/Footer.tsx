@@ -75,55 +75,6 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Categories */}
-          <div>
-            <h4 className="text-sm sm:text-base font-black mb-3 sm:mb-4 text-white">
-              CATEGORIES
-            </h4>
-            <ul className="space-y-1.5 sm:space-y-2">
-              <li>
-                <Link
-                  to="/products?category=Engine"
-                  className="text-gray-400 hover:text-red-500 transition-colors text-xs sm:text-sm font-medium"
-                >
-                  Engine Parts
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/products?category=Wheels"
-                  className="text-gray-400 hover:text-red-500 transition-colors text-xs sm:text-sm font-medium"
-                >
-                  Wheels & Tires
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/products?category=Brakes"
-                  className="text-gray-400 hover:text-red-500 transition-colors text-xs sm:text-sm font-medium"
-                >
-                  Brake System
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/products?category=Suspension"
-                  className="text-gray-400 hover:text-red-500 transition-colors text-xs sm:text-sm font-medium"
-                >
-                  Suspension
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/products?category=Electrical"
-                  className="text-gray-400 hover:text-red-500 transition-colors text-xs sm:text-sm font-medium"
-                >
-                  Electrical
-                </Link>
-              </li>
-            </ul>
-          </div>
-
           {/* Contact & Support */}
           <div>
             <h4 className="text-sm sm:text-base font-black mb-3 sm:mb-4 text-white">

@@ -130,6 +130,8 @@ export default function AuctionDetail() {
   const [isClosingAuction, setIsClosingAuction] = useState(false);
   const [bidHistory, setBidHistory] = useState<Bid[]>([]);
   const [loadingBidHistory, setLoadingBidHistory] = useState(true);
+  const [hasPayment, setHasPayment] = useState(false);
+  const [checkingPayment, setCheckingPayment] = useState(true);
   const { data: session } = useSession();
   const navigate = useNavigate();
 
@@ -162,10 +164,61 @@ export default function AuctionDetail() {
   const minimumBid = currentAuction.current_price + 100;
   const isUserSeller = session?.user?.id === currentAuction.sellerId;
   const isAuctionClosed = currentAuction.status === "Closed";
-  const isUserWinner =
-    isAuctionClosed &&
-    session?.user?.id === currentAuction.winnerId &&
-    bidHistory.length > 0;
+
+  // Check if current user is the winner
+  const winnerId =
+    typeof currentAuction.winnerId === "object"
+      ? currentAuction.winnerId?._id
+      : currentAuction.winnerId;
+
+  const isUserWinner = isAuctionClosed && session?.user?.id === winnerId;
+
+  // Check if payment exists for this auction
+  useEffect(() => {
+    const checkPayment = async () => {
+      if (!isUserWinner || !session?.user?.id) {
+        setCheckingPayment(false);
+        return;
+      }
+
+      try {
+        setCheckingPayment(true);
+        // First get the order for this auction
+        const ordersResponse = (await api.orders.getByUser(
+          session.user.id
+        )) as any;
+        const auctionOrder = ordersResponse.orders?.find(
+          (order: any) => order.auctionId === currentAuction._id
+        );
+
+        if (auctionOrder) {
+          // Check if payment exists for this order
+          const paymentResponse = (await api.payments.getByOrderId(
+            auctionOrder._id
+          )) as any;
+          setHasPayment(paymentResponse.found === true);
+        }
+      } catch (error) {
+        console.error("Failed to check payment:", error);
+        setHasPayment(false);
+      } finally {
+        setCheckingPayment(false);
+      }
+    };
+
+    checkPayment();
+  }, [isUserWinner, session?.user?.id, currentAuction._id]);
+
+  // Debug log
+  console.log("Auction Winner Check:", {
+    isAuctionClosed,
+    currentUserId: session?.user?.id,
+    winnerId,
+    isUserWinner,
+    bidHistoryLength: bidHistory.length,
+    hasPayment,
+    checkingPayment,
+  });
 
   // Update bidAmount when auction current_price changes
   useEffect(() => {
@@ -349,50 +402,70 @@ export default function AuctionDetail() {
         </nav>
 
         {/* Winner Highlight Banner */}
-        {isAuctionClosed && currentAuction.winnerId && bidHistory.length > 0 && (
-          <div className="bg-gradient-to-r from-yellow-50 via-amber-50 to-yellow-50 border-2 border-yellow-400 rounded-xl shadow-lg p-6 mb-6">
-            <div className="flex items-center justify-center gap-4 flex-wrap">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center shadow-md">
-                  <svg
-                    className="w-7 h-7 text-white"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-2xl font-black text-gray-900">
-                      🎉 Auction Winner!
-                    </h2>
+        {isAuctionClosed &&
+          currentAuction.winnerId &&
+          bidHistory.length > 0 && (
+            <div className="bg-gradient-to-r from-yellow-50 via-amber-50 to-yellow-50 border-2 border-yellow-400 rounded-xl shadow-lg p-6 mb-6">
+              <div className="flex items-center justify-center gap-4 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center shadow-md">
+                    <svg
+                      className="w-7 h-7 text-white"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
                   </div>
-                  <p className="text-gray-700 font-semibold mt-1">
-                    {(() => {
-                      const winningBid = bidHistory.find(
-                        (bid) => bid.userId === currentAuction.winnerId ||
-                          (typeof bid.userId === "object" && bid.userId._id === currentAuction.winnerId)
-                      );
-                      const winnerName = winningBid && typeof winningBid.userId === "object"
-                        ? winningBid.userId.name
-                        : "Winner";
-                      return (
-                        <>
-                          <span className="text-amber-700 font-bold">{winnerName}</span>
-                          {" "}won this auction with a bid of{" "}
-                          <span className="text-green-700 font-bold">
-                            {formatPrice(currentAuction.current_price)}
-                          </span>
-                        </>
-                      );
-                    })()}
-                  </p>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-2xl font-black text-gray-900">
+                        🎉 Auction Winner!
+                      </h2>
+                    </div>
+                    <p className="text-gray-700 font-semibold mt-1">
+                      {(() => {
+                        // Find the winning bid
+                        const winningBid = bidHistory.find(
+                          (bid) =>
+                            (typeof bid.userId === "object" &&
+                              bid.userId._id === winnerId) ||
+                            (typeof bid.userId === "string" &&
+                              bid.userId === winnerId)
+                        );
+
+                        // Get winner name from bid history or winnerId object
+                        let winnerName = "Winner";
+                        if (
+                          winningBid &&
+                          typeof winningBid.userId === "object"
+                        ) {
+                          winnerName = winningBid.userId.name;
+                        } else if (
+                          typeof currentAuction.winnerId === "object" &&
+                          currentAuction.winnerId?.name
+                        ) {
+                          winnerName = currentAuction.winnerId.name;
+                        }
+
+                        return (
+                          <>
+                            <span className="text-amber-700 font-bold text-lg">
+                              {winnerName}
+                            </span>{" "}
+                            won this auction with a bid of{" "}
+                            <span className="text-green-700 font-bold text-lg">
+                              {formatPrice(currentAuction.current_price)}
+                            </span>
+                          </>
+                        );
+                      })()}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
@@ -574,73 +647,75 @@ export default function AuctionDetail() {
               {/* Bidding Form */}
               {(isActive || forceShowForm) &&
                 currentAuction.status === "Active" && (
-                <form onSubmit={handlePlaceBid} className="mb-6">
-                  {isUserSeller ? (
-                    <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg text-center mb-4">
-                      <p className="text-blue-900 font-bold mb-3">
-                        You are the seller
-                      </p>
-                      <button
-                        type="button"
-                        onClick={handleCloseAuction}
-                        disabled={isClosingAuction || isAuctionClosed}
-                        className="w-full px-4 py-3 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600 disabled:from-gray-300 disabled:to-gray-400 text-white font-bold rounded-lg transition-all"
-                      >
-                        {isClosingAuction
-                          ? "Closing Auction..."
-                          : "Close Auction"}
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Your Bid Amount
-                      </label>
-                      <div className="relative mb-2">
-                        <span className="absolute left-3 top-3 text-gray-500">
-                          PKR
-                        </span>
-                        <input
-                          type="number"
-                          value={bidAmount}
-                          onChange={(e) => setBidAmount(Number(e.target.value))}
-                          min={minimumBid}
-                          step="100"
-                          disabled={bidLoading}
-                          className="w-full pl-14 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-lg font-semibold text-gray-900 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                        />
+                  <form onSubmit={handlePlaceBid} className="mb-6">
+                    {isUserSeller ? (
+                      <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg text-center mb-4">
+                        <p className="text-blue-900 font-bold mb-3">
+                          You are the seller
+                        </p>
+                        <button
+                          type="button"
+                          onClick={handleCloseAuction}
+                          disabled={isClosingAuction || isAuctionClosed}
+                          className="w-full px-4 py-3 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600 disabled:from-gray-300 disabled:to-gray-400 text-white font-bold rounded-lg transition-all"
+                        >
+                          {isClosingAuction
+                            ? "Closing Auction..."
+                            : "Close Auction"}
+                        </button>
                       </div>
-                      <p className="text-xs text-gray-600 mb-4">
-                        Minimum bid: {formatPrice(minimumBid)}
-                      </p>
-
-                      {/* Error Message */}
-                      {bidError && (
-                        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                          <p className="text-sm text-red-800">{bidError}</p>
+                    ) : (
+                      <>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Your Bid Amount
+                        </label>
+                        <div className="relative mb-2">
+                          <span className="absolute left-3 top-3 text-gray-500">
+                            PKR
+                          </span>
+                          <input
+                            type="number"
+                            value={bidAmount}
+                            onChange={(e) =>
+                              setBidAmount(Number(e.target.value))
+                            }
+                            min={minimumBid}
+                            step="100"
+                            disabled={bidLoading}
+                            className="w-full pl-14 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-lg font-semibold text-gray-900 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                          />
                         </div>
-                      )}
+                        <p className="text-xs text-gray-600 mb-4">
+                          Minimum bid: {formatPrice(minimumBid)}
+                        </p>
 
-                      {/* Success Message */}
-                      {bidSuccess && (
-                        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                          <p className="text-sm text-green-800 font-medium">
-                            ✓ Bid placed successfully! Refreshing...
-                          </p>
-                        </div>
-                      )}
+                        {/* Error Message */}
+                        {bidError && (
+                          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <p className="text-sm text-red-800">{bidError}</p>
+                          </div>
+                        )}
 
-                      <button
-                        type="submit"
-                        disabled={bidLoading}
-                        className="w-full px-6 py-4 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition-colors text-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
-                      >
-                        {bidLoading ? "Placing Bid..." : "Place Bid"}
-                      </button>
-                    </>
-                  )}
-                </form>
-              )}
+                        {/* Success Message */}
+                        {bidSuccess && (
+                          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                            <p className="text-sm text-green-800 font-medium">
+                              ✓ Bid placed successfully! Refreshing...
+                            </p>
+                          </div>
+                        )}
+
+                        <button
+                          type="submit"
+                          disabled={bidLoading}
+                          className="w-full px-6 py-4 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition-colors text-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
+                        >
+                          {bidLoading ? "Placing Bid..." : "Place Bid"}
+                        </button>
+                      </>
+                    )}
+                  </form>
+                )}
 
               {/* Auction Details */}
               <div className="space-y-2 text-sm mb-6">
@@ -661,41 +736,113 @@ export default function AuctionDetail() {
               {/* Winner Checkout Section */}
               {isUserWinner && (
                 <div className="mt-6 p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg">
-                  <div className="text-center mb-4">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-green-600 rounded-full mb-3">
-                      <svg
-                        className="w-8 h-8 text-white"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
+                  {checkingPayment ? (
+                    <div className="text-center py-4">
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+                      <p className="text-sm text-gray-600 mt-2">
+                        Checking payment status...
+                      </p>
                     </div>
-                    <h3 className="text-xl font-bold text-green-900 mb-2">
-                      Congratulations! You Won!
-                    </h3>
-                    <p className="text-sm text-green-800 mb-1">
-                      You are the highest bidder with{" "}
-                      <span className="font-bold">
-                        {formatPrice(currentAuction.current_price)}
-                      </span>
-                    </p>
-                    <p className="text-xs text-green-700">
-                      This item has been added to your orders
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => navigate("/orders")}
-                    className="w-full px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold rounded-lg transition-all transform hover:scale-105 shadow-lg"
-                  >
-                    View My Orders
-                  </button>
+                  ) : hasPayment ? (
+                    <div className="text-center">
+                      <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-3">
+                        <svg
+                          className="w-8 h-8 text-white"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                      </div>
+                      <h3 className="text-xl font-bold text-green-900 mb-2">
+                        Payment Completed!
+                      </h3>
+                      <p className="text-sm text-green-800 mb-4">
+                        Your payment for this auction has been processed.
+                      </p>
+                      <button
+                        onClick={() => navigate("/orders")}
+                        className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all"
+                      >
+                        View My Orders
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="text-center mb-4">
+                        <div className="inline-flex items-center justify-center w-16 h-16 bg-green-600 rounded-full mb-3">
+                          <svg
+                            className="w-8 h-8 text-white"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        </div>
+                        <h3 className="text-xl font-bold text-green-900 mb-2">
+                          🎉 Congratulations! You Won!
+                        </h3>
+                        <p className="text-sm text-green-800 mb-1">
+                          You are the highest bidder with{" "}
+                          <span className="font-bold">
+                            {formatPrice(currentAuction.current_price)}
+                          </span>
+                        </p>
+                        <p className="text-xs text-green-700 mb-3">
+                          Complete your payment to secure this item
+                        </p>
+                      </div>
+                      <div className="space-y-3">
+                        <button
+                          onClick={() =>
+                            navigate("/checkout", {
+                              state: {
+                                auctionData: {
+                                  auctionId: currentAuction._id,
+                                  product: product,
+                                  amount: currentAuction.current_price,
+                                },
+                              },
+                            })
+                          }
+                          className="w-full px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold rounded-lg transition-all transform hover:scale-105 shadow-lg flex items-center justify-center gap-2"
+                        >
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                            />
+                          </svg>
+                          Proceed to Checkout
+                        </button>
+                        <button
+                          onClick={() => navigate("/orders")}
+                          className="w-full px-6 py-3 bg-white hover:bg-gray-50 text-green-700 font-semibold rounded-lg transition-all border-2 border-green-300"
+                        >
+                          View My Orders
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 

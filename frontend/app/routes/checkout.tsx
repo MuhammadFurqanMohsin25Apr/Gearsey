@@ -174,7 +174,7 @@ export default function Checkout() {
   const subtotal = auctionData
     ? auctionData.amount
     : cartManager.getTotal(cartItems);
-  const shipping = auctionData || cartItems.length > 0 ? 200 : 0;
+  const shipping = 0; // Free shipping
   const orderTotal = subtotal + shipping;
 
   return (
@@ -333,7 +333,7 @@ export default function Checkout() {
                       value="credit_card"
                       checked={paymentMethod === "credit_card"}
                       onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="scale-50 mr-2 sm:mr-3"
+                      className="mr-2 sm:mr-3"
                     />
                     <div className="flex-1 flex items-center justify-between min-w-0">
                       <span className="font-medium text-sm sm:text-base text-gray-900">
@@ -517,7 +517,7 @@ export default function Checkout() {
                   </div>
                   <div className="flex justify-between text-gray-700">
                     <span>Shipping</span>
-                    <span className="font-medium">{formatPrice(shipping)}</span>
+                    <span className="font-medium text-green-600">FREE</span>
                   </div>
                   <div className="border-t border-gray-200 pt-3 flex justify-between text-lg font-bold text-gray-900">
                     <span>Total</span>

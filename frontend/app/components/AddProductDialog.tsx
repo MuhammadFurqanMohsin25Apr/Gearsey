@@ -447,13 +447,32 @@ export function AddProductDialog({
                         </div>
                       </div>
                       {formData.price && (
-                        <p className="text-xs text-gray-600 mt-2 font-medium">
-                          ≈ $
-                          {Math.round(
-                            parseFloat(formData.price) / 280
-                          ).toLocaleString()}{" "}
-                          USD
-                        </p>
+                        <div className="mt-2 space-y-1">
+                          <p className="text-xs text-gray-600 font-medium">
+                            ≈ $
+                            {Math.round(
+                              parseFloat(formData.price) / 280
+                            ).toLocaleString()}{" "}
+                            USD
+                          </p>
+                          <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-lg p-3 border border-red-200">
+                            <p className="text-xs text-gray-600 font-medium mb-1">
+                              Final Price (with 7% platform fee):
+                            </p>
+                            <p className="text-lg font-black text-red-600">
+                              PKR{" "}
+                              {Math.round(
+                                parseFloat(formData.price) * 1.07
+                              ).toLocaleString()}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Platform fee: PKR{" "}
+                              {Math.round(
+                                parseFloat(formData.price) * 0.07
+                              ).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
                       )}
                     </div>
 

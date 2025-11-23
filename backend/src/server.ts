@@ -11,6 +11,7 @@ import { fileURLToPath } from "url";
 import Limiter from "@/lib/rate-limiter.js";
 import SpeedLimiter from "@/lib/speed-limiter.js";
 import { createUser } from "./backend-test/user.js";
+import "@/jobs/scheduled-jobs.js";
 
 // Get __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url);

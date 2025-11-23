@@ -132,6 +132,20 @@ export async function createOrder(req: Request, res: Response) {
         });
       }
 
+      // Check if order already exists for this auction
+      const existingOrder = await Order.findOne({
+        auctionId,
+        userId,
+      });
+
+      if (existingOrder) {
+        // Return existing order instead of creating duplicate
+        return res.status(200).json({
+          message: "Order already exists for this auction",
+          order: existingOrder,
+        });
+      }
+
       // Create auction order
       const order = await Order.create({
         userId,
@@ -522,6 +536,36 @@ export async function getSellerStats(req: Request, res: Response) {
     console.error("Error fetching seller stats:", error as Error);
     res.status(400).json({
       message: "Failed to fetch seller stats",
+      error: (error as Error).message,
+    });
+  }
+}
+
+export async function getGrossRevenue(req: Request, res: Response) {
+  try {
+    // Fetch all order items
+    const orderItems = await OrderItem.find();
+
+    // Calculate the sum of all platform_fees from the listings
+    let grossRevenue = 0;
+
+    for (const item of orderItems) {
+      const listing = await Listing.findById(item.partId);
+      if (listing && listing.platform_fee) {
+        // Multiply platform fee by quantity of items ordered
+        grossRevenue += listing.platform_fee * item.quantity;
+      }
+    }
+
+    res.status(200).json({
+      message: "Gross revenue fetched successfully",
+      grossRevenue,
+      totalOrders: orderItems.length,
+    });
+  } catch (error) {
+    console.error("Error fetching gross revenue:", error as Error);
+    res.status(400).json({
+      message: "Failed to fetch gross revenue",
       error: (error as Error).message,
     });
   }

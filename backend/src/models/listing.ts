@@ -5,6 +5,7 @@ export interface IListing extends WithTimestamps<Document> {
   name: string;
   description: string;
   price: number;
+  platform_fee: number;
   imageIds: ObjectId[];
   sellerId: ObjectId;
   categoryId: ObjectId;
@@ -17,6 +18,7 @@ const ListingSchema = new Schema<IListing>({
   name: { type: String, required: true },
   description: { type: String, required: true },
   price: { type: Number, required: true },
+  platform_fee: { type: Number, required: true, default: 0 },
   imageIds: [{ type: Schema.Types.ObjectId, required: true, ref: 'Image' }],
   sellerId: { type: Schema.Types.ObjectId, required: true, ref: 'User' },
   categoryId: { type: Schema.Types.ObjectId, required: true, ref: 'Category' },

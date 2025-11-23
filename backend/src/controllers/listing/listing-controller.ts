@@ -48,7 +48,9 @@ export async function getProducts(req: Request, res: Response) {
       products.map(async (product) => {
         const productObj = product.toObject();
         if (productObj.is_auction) {
-          const auction = await Auction.findOne({ partId: productObj._id.toString() });
+          const auction = await Auction.findOne({
+            partId: productObj._id.toString(),
+          });
           if (auction) {
             return {
               ...productObj,
@@ -89,6 +91,7 @@ export async function createProduct(req: Request, res: Response) {
       title,
       description,
       price,
+      platform_fee,
       category,
       sellerId,
       condition,
@@ -168,11 +171,17 @@ export async function createProduct(req: Request, res: Response) {
       imageIds.push(imageDoc._id as ObjectId);
     }
 
+    // Calculate final price with 7% platform fee added
+    const basePrice = Number(price);
+    const platformFeeAmount = basePrice * 0.07;
+    const finalPrice = basePrice + platformFeeAmount;
+
     // Create the product listing
     const product = await Listing.create({
       name: title,
       description,
-      price: Number(price),
+      price: finalPrice,
+      platform_fee: platformFeeAmount,
       categoryId: category,
       imageIds,
       sellerId,
@@ -188,7 +197,7 @@ export async function createProduct(req: Request, res: Response) {
 
     // If this is an auction product, create an Auction record
     if (is_auction === true || is_auction === "true") {
-      const startPrice = Number(price);
+      const startPrice = finalPrice; // Use the final price with platform fee
 
       // Start time is always the current time (listing creation time)
       const startTime = new Date();
@@ -244,6 +253,7 @@ export async function updateProduct(req: Request, res: Response) {
       title,
       description,
       price,
+      platform_fee,
       category,
       condition,
       is_auction,
@@ -262,6 +272,8 @@ export async function updateProduct(req: Request, res: Response) {
     if (title) updateData.name = title;
     if (description) updateData.description = description;
     if (price) updateData.price = Number(price);
+    if (platform_fee !== undefined)
+      updateData.platform_fee = Number(platform_fee);
     if (condition) updateData.condition = condition;
     if (is_auction !== undefined)
       updateData.is_auction = is_auction === true || is_auction === "true";

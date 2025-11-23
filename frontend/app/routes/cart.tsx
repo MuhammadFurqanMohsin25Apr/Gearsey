@@ -63,7 +63,7 @@ export default function Cart() {
   };
 
   const subtotal = cartManager.getTotal(cartItems);
-  const shipping = cartItems.length > 0 ? 200 : 0;
+  const shipping = 0; // Free shipping
   const total = subtotal + shipping;
 
   return (
@@ -202,7 +202,7 @@ export default function Cart() {
                   </div>
                   <div className="flex justify-between text-gray-700">
                     <span>Shipping</span>
-                    <span className="font-medium">{formatPrice(shipping)}</span>
+                    <span className="font-medium text-green-600">FREE</span>
                   </div>
                   <div className="border-t border-gray-200 pt-3 flex justify-between text-lg font-bold text-gray-900">
                     <span>Total</span>

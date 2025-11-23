@@ -26,6 +26,7 @@ export default function AdminDashboard() {
     activeAuctions: 0,
     pendingApprovals: 0,
   });
+  const [grossRevenue, setGrossRevenue] = useState(0);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [revenueChartData, setRevenueData] = useState([]);
@@ -151,6 +152,11 @@ export default function AdminDashboard() {
         // Process products
         if (productsData.products && Array.isArray(productsData.products)) {
           const formattedProducts = productsData.products
+            .sort((a: any, b: any) => {
+              const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+              const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+              return dateB - dateA; // Descending order (newest first)
+            })
             .slice(0, 3)
             .map((p: any) => ({
               id: p._id,
@@ -179,8 +185,8 @@ export default function AdminDashboard() {
               revenue: product.totalRevenue || 0,
             })
           );
-          // Sort by sales in ascending order
-          formattedTopProducts.sort((a: any, b: any) => a.sales - b.sales);
+          // Sort by sales in descending order (highest first)
+          formattedTopProducts.sort((a: any, b: any) => b.sales - a.sales);
           setTopProducts(formattedTopProducts);
         }
 
@@ -191,6 +197,11 @@ export default function AdminDashboard() {
           ordersData.orders.length > 0
         ) {
           const formattedOrders = ordersData.orders
+            .sort((a: any, b: any) => {
+              const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+              const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+              return dateB - dateA; // Descending order (newest first)
+            })
             .slice(0, 3)
             .map((o: any) => ({
               id: o._id,
@@ -357,6 +368,9 @@ export default function AdminDashboard() {
             0
           ) || 0;
 
+        // Calculate gross revenue as 7% of total revenue
+        const calculatedGrossRevenue = totalRevenueAmount * 0.07;
+
         console.log("Dashboard Stats Fetched:", {
           totalProductsCount,
           totalOrdersCount,
@@ -365,7 +379,14 @@ export default function AdminDashboard() {
           activeAuctionsCount,
           pendingApprovalsCount,
           totalRevenueAmount,
+          calculatedGrossRevenue,
         });
+
+        // Set gross revenue (7% of total revenue)
+        setGrossRevenue(calculatedGrossRevenue);
+
+        // Set gross revenue (7% of total revenue)
+        setGrossRevenue(calculatedGrossRevenue);
 
         // Update stats with fallback to mock data
         setStats({
@@ -445,7 +466,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Stats Grid - Row 2 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow-sm p-3 border border-gray-100 hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between mb-2">
             <div className="w-8 h-8 bg-green-50 rounded flex items-center justify-center">
@@ -478,6 +499,22 @@ export default function AdminDashboard() {
           <p className="text-base font-bold text-gray-900">
             PKR {(stats.totalRevenue / 1000).toFixed(0)}K
           </p>
+        </div>
+
+        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg p-3 text-white">
+          <div className="flex items-center justify-between mb-2">
+            <div className="w-8 h-8 bg-white bg-opacity-20 rounded flex items-center justify-center">
+              <DollarSign className="w-4 h-4" />
+            </div>
+            <span className="text-2xl font-bold">
+              {stats.totalRevenue > 0
+                ? `${((stats.totalRevenue * 0.07) / 1000).toFixed(1)}K`
+                : "0"}
+            </span>
+          </div>
+          <h3 className="text-purple-100 text-xs font-medium mb-1">
+            Gross Revenue (7% Platform Fee)
+          </h3>
         </div>
       </div>
 

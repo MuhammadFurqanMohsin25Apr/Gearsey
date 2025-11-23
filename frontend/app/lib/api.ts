@@ -248,6 +248,13 @@ export const api = {
           totalItemsSold: number;
         };
       }>(`/orders/seller-stats/${sellerId}`),
+
+    getGrossRevenue: () =>
+      request<{
+        message: string;
+        grossRevenue: number;
+        totalOrders: number;
+      }>(`/orders/gross-revenue`),
   },
 
   // Reviews
@@ -287,6 +294,8 @@ export const api = {
       }),
 
     getById: (paymentId: string) => request(`/payment/details/${paymentId}`),
+
+    getByOrderId: (orderId: string) => request(`/payment/order/${orderId}`),
 
     create: (data: {
       orderId: string;

@@ -60,7 +60,13 @@ export interface Auction {
   start_time: string;
   end_time: string;
   status: "Active" | "Closed" | "Cancelled";
-  winnerId?: string;
+  winnerId?:
+    | string
+    | {
+        _id: string;
+        name: string;
+        email: string;
+      };
   bidCount?: number;
 }
 

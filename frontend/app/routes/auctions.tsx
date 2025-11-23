@@ -135,6 +135,20 @@ export default function Auctions() {
             </p>
           </div>
         )}
+
+        {/* Closed Auctions */}
+        {closedAuctions.length > 0 && (
+          <div className="mb-12">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+              Closed Auctions ({closedAuctions.length})
+            </h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {closedAuctions.map((auction: any) => (
+                <AuctionCard key={auction._id} auction={auction} />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

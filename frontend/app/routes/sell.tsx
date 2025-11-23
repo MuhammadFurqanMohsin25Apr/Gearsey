@@ -38,6 +38,7 @@ export default function Sell() {
     category: "",
     condition: "New",
     price: "",
+    platform_fee: "",
     auctionStartTime: "",
     auctionEndTime: "",
   });
@@ -107,6 +108,7 @@ export default function Sell() {
     formDataToSend.append("category", formData.category);
     formDataToSend.append("condition", formData.condition);
     formDataToSend.append("price", formData.price);
+    formDataToSend.append("platform_fee", formData.platform_fee);
     formDataToSend.append("is_auction", isAuction.toString());
     if (isAuction) {
       formDataToSend.append("auctionStartTime", formData.auctionStartTime);
@@ -266,7 +268,8 @@ export default function Sell() {
                       </span>
                     </label>
                     <p className="text-xs text-gray-600 mt-1 ml-6">
-                      Perfect for vintage, rare, or collectible parts. Let buyers bid on your item!
+                      Perfect for vintage, rare, or collectible parts. Let
+                      buyers bid on your item!
                     </p>
                   </div>
 
@@ -336,6 +339,54 @@ export default function Sell() {
                       />
                     </div>
                   </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">
+                      Platform Fee (PKR) *
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lg font-black text-gray-400">
+                        ₨
+                      </span>
+                      <input
+                        type="number"
+                        name="platform_fee"
+                        value={formData.platform_fee}
+                        onChange={handleInputChange}
+                        required
+                        min="0"
+                        step="10"
+                        placeholder="0"
+                        className="w-full pl-9 pr-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-sm text-gray-900 font-bold"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      This fee is for platform services and will not be visible to customers
+                    </p>
+                  </div>
+
+                  {formData.price && formData.platform_fee && (
+                    <div className="bg-green-50 border-2 border-green-300 rounded-lg p-3">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs font-bold text-gray-700">Price:</span>
+                        <span className="text-sm font-bold text-gray-900">₨ {Number(formData.price).toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs font-bold text-gray-700">Platform Fee:</span>
+                        <span className="text-sm font-bold text-gray-900">₨ {Number(formData.platform_fee).toLocaleString()}</span>
+                      </div>
+                      <div className="border-t-2 border-green-300 my-2"></div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-black text-gray-900">TOTAL PRICE:</span>
+                        <span className="text-lg font-black text-green-600">
+                          ₨ {(Number(formData.price) + Number(formData.platform_fee)).toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2 italic">
+                        Customers will see ₨ {Number(formData.price).toLocaleString()} (platform fee hidden)
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Product Images Section */}

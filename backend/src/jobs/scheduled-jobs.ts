@@ -1,7 +1,8 @@
 // Scheduled Job Example - Add to your server.ts or create a separate job file
 // This runs the penalty check every hour
 
-import { PenaltyService } from "./lib/penalty-service.js";
+import { PenaltyService } from "../lib/penalty-service.js";
+import { AuctionService } from "../lib/auction-service.js";
 
 // Run penalty check every hour (3600000 milliseconds)
 setInterval(async () => {

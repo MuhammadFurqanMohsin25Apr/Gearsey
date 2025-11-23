@@ -125,6 +125,31 @@ export async function listTransactions(req: Request, res: Response) {
   }
 }
 
+export async function getPaymentByOrderId(req: Request, res: Response) {
+  try {
+    const { orderId } = req.params;
+
+    if (!orderId) {
+      return res.status(400).json({ error: "Order ID is required" });
+    }
+
+    const payment = await Payment.findOne({ orderId });
+
+    if (!payment) {
+      return res.status(404).json({ error: "Payment not found", found: false });
+    }
+
+    res.status(200).json({
+      data: payment,
+      found: true,
+      message: "Payment fetched successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({ error: (error as Error).message });
+  }
+}
+
 export async function getAllPayments(req: Request, res: Response) {
   try {
     const { limit } = req.query;

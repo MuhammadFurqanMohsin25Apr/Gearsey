@@ -29,6 +29,10 @@ export async function getAuctions(req: Request, res: Response) {
           { path: "imageIds", select: "fileName mime size" },
         ],
       })
+      .populate({
+        path: "winnerId",
+        select: "name email",
+      })
       .exec();
 
     res.status(200).json({

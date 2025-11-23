@@ -17,7 +17,7 @@ export function meta() {
 }
 
 export default function ManageProducts() {
-  const { data: session } = useSession();
+  const { data: session, isPending } = useSession();
   const user = session?.user;
   const revalidator = useRevalidator();
   const [myListings, setMyListings] = useState<Listing[]>([]);
@@ -36,6 +36,32 @@ export default function ManageProducts() {
   const [cancellingAuctionId, setCancellingAuctionId] = useState<string | null>(
     null
   );
+
+  // Protect route - only sellers can access
+  useEffect(() => {
+    if (isPending) return; // Wait for session to load
+
+    console.log("Route protection check:", {
+      isPending,
+      hasSession: !!session?.session,
+      userRole: user?.userRole,
+      user,
+    });
+
+    if (!session?.session) {
+      // Not authenticated - redirect to login
+      console.log("Redirecting to login - no session");
+      window.location.href = "/login";
+      return;
+    }
+
+    if (user && user.userRole !== "seller") {
+      // Not a seller - redirect to home or dashboard
+      console.log("Redirecting to home - not a seller, role:", user.userRole);
+      window.location.href = "/";
+      return;
+    }
+  }, [session, isPending, user]);
 
   // Fetch seller's products
   useEffect(() => {
@@ -218,6 +244,11 @@ export default function ManageProducts() {
     }
     return l.status === "Active";
   });
+
+  // Don't render until auth check is complete
+  if (isPending || !session || user?.userRole !== "seller") {
+    return null;
+  }
 
   return (
     <div className="bg-gradient-to-br from-gray-50 via-white to-gray-100 min-h-screen">

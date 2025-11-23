@@ -10,7 +10,6 @@ interface Product {
   price: number;
   status: string;
   date: string;
-  reviews: number;
 }
 
 export default function Products() {
@@ -34,20 +33,26 @@ export default function Products() {
           productsData.products &&
           Array.isArray(productsData.products)
         ) {
-          const formattedProducts = productsData.products.map((p: any) => {
-            console.log("Product item:", p);
-            return {
-              id: p._id || p.id,
-              name: p.title || p.name || "Unnamed Product",
-              seller: p.sellerId || p.seller || "Unknown",
-              price: p.price || 0,
-              status: "approved",
-              date: p.createdAt
-                ? new Date(p.createdAt).toISOString().split("T")[0]
-                : "N/A",
-              reviews: 0,
-            };
-          });
+          const formattedProducts = productsData.products
+            .map((p: any) => {
+              console.log("Product item:", p);
+              return {
+                id: p._id || p.id,
+                name: p.title || p.name || "Unnamed Product",
+                seller: p.sellerId || p.seller || "Unknown",
+                price: p.price || 0,
+                status: "approved",
+                date: p.createdAt
+                  ? new Date(p.createdAt).toISOString().split("T")[0]
+                  : "N/A",
+                createdAt: p.createdAt,
+              };
+            })
+            .sort((a: any, b: any) => {
+              const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+              const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+              return dateB - dateA; // Descending order (newest first)
+            });
           console.log("Formatted Products:", formattedProducts);
           setProducts(formattedProducts);
         }
@@ -128,9 +133,6 @@ export default function Products() {
                   Status
                 </th>
                 <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Reviews
-                </th>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Date
                 </th>
                 <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -172,14 +174,6 @@ export default function Products() {
                       >
                         {product.status}
                       </span>
-                    </td>
-                    <td className="px-4 py-2">
-                      <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                        <span className="text-sm text-gray-600">
-                          {product.reviews}
-                        </span>
-                      </div>
                     </td>
                     <td className="px-4 py-2 text-sm text-gray-600">
                       {product.date}

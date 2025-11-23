@@ -699,7 +699,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
       )}
 
       {/* Live Auctions */}
-      {auctions.length > 0 && (
+      {auctions.filter(auction => auction.status === 'Active').length > 0 && (
         <section className="py-16 bg-white border-t border-gray-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div
@@ -734,15 +734,18 @@ export default function Home({ loaderData }: Route.ComponentProps) {
               </Link>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {auctions.slice(0, 2).map((auction, index) => (
-                <div
-                  key={auction._id}
-                  className={hasAnimated ? "animate-scale-in" : "opacity-0"}
-                  style={{ animationDelay: `${index * 0.1}s` }}
-                >
-                  <AuctionCard auction={auction as any} />
-                </div>
-              ))}
+              {auctions
+                .filter(auction => auction.status === 'Active')
+                .slice(0, 2)
+                .map((auction, index) => (
+                  <div
+                    key={auction._id}
+                    className={hasAnimated ? "animate-scale-in" : "opacity-0"}
+                    style={{ animationDelay: `${index * 0.1}s` }}
+                  >
+                    <AuctionCard auction={auction as any} />
+                  </div>
+                ))}
             </div>
           </div>
         </section>

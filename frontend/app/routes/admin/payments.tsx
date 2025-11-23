@@ -13,13 +13,20 @@ export default function Payments() {
     completedPayments: 0,
     pendingPayments: 0,
   });
+  const [grossRevenue, setGrossRevenue] = useState(0);
 
   // Fetch payments from backend
   useEffect(() => {
     const fetchPayments = async () => {
       try {
         setLoading(true);
-        const paymentsData: any = await api.payments.getAll({ limit: 1000 });
+        const [paymentsData, grossRevenueData]: [any, any] = await Promise.all([
+          api.payments.getAll({ limit: 1000 }),
+          api.orders.getGrossRevenue().catch((err) => {
+            console.error("Gross Revenue API error:", err);
+            return { grossRevenue: 0 };
+          }),
+        ]);
 
         // Handle different response formats
         let paymentsArray = [];
@@ -66,6 +73,9 @@ export default function Payments() {
             completedPayments: completedCount,
             pendingPayments: pendingCount,
           });
+
+          // Set gross revenue
+          setGrossRevenue(grossRevenueData?.grossRevenue || 0);
         } else {
           setPayments([]);
         }

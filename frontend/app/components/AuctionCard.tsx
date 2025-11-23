@@ -128,15 +128,32 @@ export function AuctionCard({ auction }: AuctionCardProps) {
           </div>
         </div>
 
-        {/* Time Remaining */}
-        {auction.status === "Active" && (
+        {/* Time Remaining or Winner */}
+        {auction.status === "Active" ? (
           <div className="flex items-center gap-1.5 mb-3 px-2 sm:px-3 py-1.5 sm:py-2 bg-red-50 rounded-lg">
             <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-red-600 flex-shrink-0" />
             <span className="text-xs font-semibold text-red-600">
               Ends in {timeText}
             </span>
           </div>
-        )}
+        ) : auction.status === "Closed" && auction.winnerId ? (
+          <div className="mb-3 px-2 sm:px-3 py-1.5 sm:py-2 bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-300 rounded-lg">
+            <div className="flex items-center gap-1.5">
+              <span className="text-lg">🏆</span>
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-amber-800">
+                  Winner:{" "}
+                  {typeof auction.winnerId === "object"
+                    ? auction.winnerId.name
+                    : "Anonymous"}
+                </span>
+                <span className="text-xs text-amber-700">
+                  Final Bid: {formatPrice(auction.current_price)}
+                </span>
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         {/* CTA Button */}
         <button className="w-full px-2 py-1 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white text-xs font-medium rounded-lg transition-all duration-300 shadow-md hover:shadow-lg sm:hover:shadow-xl flex items-center justify-center gap-1">

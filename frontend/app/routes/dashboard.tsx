@@ -462,98 +462,48 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Performance Chart Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Sales Chart */}
-          <div className="lg:col-span-2 bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
-            <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-              <div>
-                <h2 className="text-2xl font-black text-gray-900 flex items-center gap-2">
-                  Sales Performance
-                  <span className="text-xs font-semibold px-3 py-1 bg-green-100 text-green-700 rounded-full">
-                    +12.5%
-                  </span>
-                </h2>
-                <p className="text-sm text-gray-600 mt-1">
-                  Track your sales trends and performance
-                </p>
-              </div>
-              <select className="px-5 py-2.5 border-2 border-gray-300 rounded-xl font-bold text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-gradient-to-r from-white to-gray-50 hover:border-red-400 transition-all cursor-pointer shadow-sm">
-                <option value="7">Last 7 days</option>
-                <option value="14">Last 14 days</option>
-                <option value="30">Last 30 days</option>
-                <option value="60">Last 60 days</option>
-                <option value="90">Last 90 days</option>
-                <option value="180">Last 6 months</option>
-                <option value="365">Last year</option>
-                <option value="custom">Custom range</option>
-              </select>
-            </div>
-            <div className="h-64 flex items-end justify-between gap-3">
-              {[65, 45, 75, 55, 85, 70, 90].map((height, index) => (
-                <div
-                  key={index}
-                  className="flex-1 flex flex-col items-center gap-2"
-                >
-                  <div
-                    className="w-full bg-gradient-to-t from-red-500 to-red-400 rounded-t-lg hover:from-red-600 hover:to-red-500 transition-all cursor-pointer relative group"
-                    style={{ height: `${height}%` }}
-                  >
-                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-2 py-1 rounded text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                      {Math.floor(height * 100)} PKR
-                    </div>
-                  </div>
-                  <span className="text-xs font-semibold text-gray-600">
-                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][index]}
-                  </span>
+        {/* Quick Stats */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-8">
+          <h2 className="text-2xl font-black text-gray-900 mb-6">
+            Quick Stats
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                  <Star className="w-5 h-5 text-white" />
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Quick Stats */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
-            <h2 className="text-2xl font-black text-gray-900 mb-6">
-              Quick Stats
-            </h2>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                    <Star className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-600 font-semibold">
-                      Avg. Rating
+                <div>
+                  <p className="text-xs text-gray-600 font-semibold">
+                    Avg. Rating
+                  </p>
+                  <p className="text-xl font-black text-gray-900">
+                    {sellerRating.averageRating > 0
+                      ? sellerRating.averageRating.toFixed(1)
+                      : "N/A"}
+                  </p>
+                  {sellerRating.totalReviews > 0 && (
+                    <p className="text-xs text-gray-500">
+                      {sellerRating.totalReviews} review
+                      {sellerRating.totalReviews !== 1 ? "s" : ""}
                     </p>
-                    <p className="text-xl font-black text-gray-900">
-                      {sellerRating.averageRating > 0
-                        ? sellerRating.averageRating.toFixed(1)
-                        : "N/A"}
-                    </p>
-                    {sellerRating.totalReviews > 0 && (
-                      <p className="text-xs text-gray-500">
-                        {sellerRating.totalReviews} review
-                        {sellerRating.totalReviews !== 1 ? "s" : ""}
-                      </p>
-                    )}
-                  </div>
+                  )}
                 </div>
               </div>
+            </div>
 
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
-                    <ShoppingBag className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-600 font-semibold">
-                      Sold Items
-                    </p>
-                    <p className="text-xl font-black text-gray-900">
-                      {sellerStats.totalItemsSold}
-                    </p>
-                  </div>
+            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-xl">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                  <ShoppingBag className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-600 font-semibold">
+                    Sold Items
+                  </p>
+                  <p className="text-xl font-black text-gray-900">
+                    {sellerStats.totalItemsSold}
+                  </p>
                 </div>
               </div>
             </div>

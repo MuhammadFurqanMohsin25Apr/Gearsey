@@ -11,10 +11,12 @@ import {
   getTopProductsByOrders,
   getSalesByCategory,
   getSellerStats,
+  getGrossRevenue,
 } from "@/controllers/order/order-controller.js";
 
 const router = express.Router();
 
+router.get("/gross-revenue", getGrossRevenue);
 router.get("/top-products", getTopProductsByOrders);
 router.get("/sales-by-category", getSalesByCategory);
 router.get("/seller-stats/:sellerId", getSellerStats);
