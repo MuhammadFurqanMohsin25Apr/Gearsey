@@ -32,6 +32,7 @@ export default function Dashboard() {
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [myListings, setMyListings] = useState<Listing[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [sellerStats, setSellerStats] = useState({
     totalRevenue: 0,
     totalOrders: 0,
@@ -41,7 +42,7 @@ export default function Dashboard() {
     averageRating: 0,
     totalReviews: 0,
   });
-  const userRole = user?.role || "buyer";
+  const userRole = user?.userRole || "buyer";
   const isBuyer = userRole === "buyer" || userRole === "customer";
   const isSeller = userRole === "seller";
 
@@ -66,9 +67,11 @@ export default function Dashboard() {
       if (isSeller && user?.id) {
         setIsLoading(true);
         try {
+          console.log("Fetching products for seller:", user.id);
           const response = (await api.products.getAll({
             sellerId: user.id,
           })) as ProductsResponse;
+          console.log("Fetched products:", response.products);
           setMyListings(response.products || []);
         } catch (error) {
           console.error("Failed to fetch seller products:", error);
@@ -79,14 +82,16 @@ export default function Dashboard() {
     }
 
     fetchSellerProducts();
-  }, [isSeller, user?.id, revalidator.state]);
+  }, [isSeller, user?.id, refreshTrigger]);
 
   // Fetch seller stats (revenue, orders, items sold)
   useEffect(() => {
     async function fetchSellerStats() {
       if (isSeller && user?.id) {
         try {
+          console.log("Fetching seller stats for:", user.id);
           const response = await api.orders.getSellerStats(user.id);
+          console.log("Fetched seller stats:", response.stats);
           setSellerStats(response.stats);
         } catch (error) {
           console.error("Failed to fetch seller stats:", error);
@@ -95,14 +100,16 @@ export default function Dashboard() {
     }
 
     fetchSellerStats();
-  }, [isSeller, user?.id, revalidator.state]);
+  }, [isSeller, user?.id, refreshTrigger]);
 
   // Fetch seller rating
   useEffect(() => {
     async function fetchSellerRating() {
       if (isSeller && user?.id) {
         try {
-          const response = await api.reviews.getSellerRating(user.id) as any;
+          console.log("Fetching seller rating for:", user.id);
+          const response = (await api.reviews.getSellerRating(user.id)) as any;
+          console.log("Fetched seller rating:", response);
           setSellerRating({
             averageRating: response.averageRating || 0,
             totalReviews: response.totalReviews || 0,
@@ -114,62 +121,29 @@ export default function Dashboard() {
     }
 
     fetchSellerRating();
-  }, [isSeller, user?.id, revalidator.state]);
+  }, [isSeller, user?.id, refreshTrigger]);
 
-  // Calculate active and sold listings (must be before early return to follow React hooks rules)
-  const activeListings = useMemo(() => {
-    if (!isSeller) return [];
-    return myListings.filter((l: Listing) => {
-      if (l.is_auction && l.auction) {
-        return l.auction.status === "Active";
-      }
-      return l.status === "Active";
-    });
-  }, [isSeller, myListings]);
+  // Calculate active and sold listings
+  const activeListings = myListings.filter((l: Listing) => {
+    if (l.is_auction && l.auction) {
+      return l.auction.status === "Active";
+    }
+    return l.status === "Active";
+  });
 
   const soldListings = useMemo(() => {
-    if (!isSeller) return [];
     return myListings.filter((l: Listing) => {
       if (l.is_auction && l.auction) {
         return l.auction.status === "Closed";
       }
       return l.status === "Sold";
     });
-  }, [isSeller, myListings]);
+  }, [myListings]);
 
   // If not authenticated or still loading, don't render the page
   if (isPending || !session) {
     return null;
   }
-
-  // Mock buyer data - replace with actual API calls
-  const buyerOrders = [
-    {
-      id: "ORD001",
-      productName: "Honda Civic Brake Pads",
-      seller: "Auto Parts Pro",
-      price: 15000,
-      status: "Delivered",
-      date: "2024-11-10",
-      image: "/placeholder.png",
-    },
-    {
-      id: "ORD002",
-      productName: "Toyota Corolla Headlights",
-      seller: "Quality Parts",
-      price: 28000,
-      status: "In Transit",
-      date: "2024-11-12",
-      image: "/placeholder.png",
-    },
-  ];
-
-  const buyerStats = {
-    totalOrders: 12,
-    pendingOrders: 3,
-    completedOrders: 9,
-    savedItems: 15,
-  };
 
   // Render Buyer Dashboard
   if (isBuyer) {
@@ -411,11 +385,11 @@ export default function Dashboard() {
                   Total Listings
                 </p>
                 <p className="text-4xl font-black text-gray-900 mb-1">
-                  {myListings.length}
+                  {isLoading ? "..." : myListings.length}
                 </p>
                 <p className="text-xs text-green-600 font-semibold flex items-center gap-1">
                   <TrendingUp className="w-3 h-3" />
-                  All products
+                  Products & Auctions
                 </p>
               </div>
               <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center shadow-md">
@@ -432,11 +406,11 @@ export default function Dashboard() {
                   Active Listings
                 </p>
                 <p className="text-4xl font-black text-gray-900 mb-1">
-                  {activeListings.length}
+                  {isLoading ? "..." : activeListings.length}
                 </p>
                 <p className="text-xs text-green-600 font-semibold flex items-center gap-1">
                   <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                  Available now
+                  Active products & auctions
                 </p>
               </div>
               <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-green-200 rounded-2xl flex items-center justify-center shadow-md">
@@ -553,13 +527,14 @@ export default function Dashboard() {
                       Avg. Rating
                     </p>
                     <p className="text-xl font-black text-gray-900">
-                      {sellerRating.averageRating > 0 
+                      {sellerRating.averageRating > 0
                         ? sellerRating.averageRating.toFixed(1)
                         : "N/A"}
                     </p>
                     {sellerRating.totalReviews > 0 && (
                       <p className="text-xs text-gray-500">
-                        {sellerRating.totalReviews} review{sellerRating.totalReviews !== 1 ? 's' : ''}
+                        {sellerRating.totalReviews} review
+                        {sellerRating.totalReviews !== 1 ? "s" : ""}
                       </p>
                     )}
                   </div>
@@ -573,10 +548,10 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <p className="text-xs text-gray-600 font-semibold">
-                      Orders
+                      Sold Items
                     </p>
                     <p className="text-xl font-black text-gray-900">
-                      {soldListings.length}
+                      {sellerStats.totalItemsSold}
                     </p>
                   </div>
                 </div>
@@ -718,6 +693,7 @@ export default function Dashboard() {
         isOpen={isAddProductOpen}
         onClose={() => setIsAddProductOpen(false)}
         onSuccess={() => {
+          setRefreshTrigger((prev) => prev + 1);
           revalidator.revalidate();
         }}
       />

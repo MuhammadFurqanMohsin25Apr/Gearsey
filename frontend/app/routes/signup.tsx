@@ -20,7 +20,7 @@ export default function Signup() {
     name: "",
     phone: "",
     address: "",
-    role: "customer",
+    userRole: "customer",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -75,7 +75,7 @@ export default function Signup() {
           name: formData.name,
           address: formData.address,
           phone: formData.phone,
-          role: formData.role,
+          userRole: formData.role,
           rating: 0,
           total_reviews: 0,
         },

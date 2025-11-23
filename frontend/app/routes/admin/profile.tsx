@@ -2,6 +2,7 @@ import { useSession } from "~/lib/auth-client";
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { api } from "~/lib/api";
+import { Edit2, Save, X } from "lucide-react";
 
 export function meta() {
   return [
@@ -28,6 +29,17 @@ export default function AdminProfile() {
   const [adminData, setAdminData] = useState<AdminUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
+
+  // Form state
+  const [formData, setFormData] = useState({
+    name: session?.user?.name || "",
+    email: session?.user?.email || "",
+    phone: session?.user?.phone || "",
+    address: session?.user?.address || "",
+  });
 
   useEffect(() => {
     // Protect admin profile - only admins can access
@@ -41,6 +53,12 @@ export default function AdminProfile() {
       try {
         const response = await api.get("/api/auth/me");
         setAdminData(response.data);
+        setFormData({
+          name: response.data?.name || session?.user?.name || "",
+          email: response.data?.email || session?.user?.email || "",
+          phone: response.data?.phone || session?.user?.phone || "",
+          address: response.data?.address || session?.user?.address || "",
+        });
       } catch (err) {
         setError("Failed to load admin profile");
         console.error(err);
@@ -53,6 +71,54 @@ export default function AdminProfile() {
       fetchAdminData();
     }
   }, [session, isPending, navigate]);
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleSave = async () => {
+    setError("");
+    setSuccessMsg("");
+    setIsSaving(true);
+
+    try {
+      if (!session?.user?.id) {
+        throw new Error("User ID not found");
+      }
+
+      await api.users.updateProfile(session.user.id, {
+        name: formData.name,
+        phone: formData.phone,
+        address: formData.address,
+      });
+
+      setSuccessMsg("Admin profile updated successfully!");
+      setIsEditing(false);
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccessMsg(""), 3000);
+    } catch (err) {
+      console.error("Error updating profile:", err);
+      setError(err instanceof Error ? err.message : "Failed to update profile");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setFormData({
+      name: session?.user?.name || "",
+      email: session?.user?.email || "",
+      phone: session?.user?.phone || "",
+      address: session?.user?.address || "",
+    });
+  };
 
   if (isPending || isLoading) {
     return (
@@ -79,13 +145,47 @@ export default function AdminProfile() {
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">
-            Admin Profile
-          </h1>
+          <div className="flex items-center justify-between mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Admin Profile</h1>
+            {!isEditing ? (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold rounded-xl hover:from-blue-700 hover:to-blue-600 transition-all shadow-md flex items-center gap-2"
+              >
+                <Edit2 className="w-4 h-4" />
+                Edit Profile
+              </button>
+            ) : (
+              <div className="flex gap-2">
+                <button
+                  onClick={handleCancel}
+                  disabled={isSaving}
+                  className="px-4 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-xl transition-all flex items-center gap-2 disabled:opacity-50"
+                >
+                  <X className="w-4 h-4" />
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="px-4 py-2.5 bg-gradient-to-r from-green-600 to-green-500 text-white font-bold rounded-xl hover:from-green-700 hover:to-green-600 transition-all shadow-md flex items-center gap-2 disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  {isSaving ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            )}
+          </div>
 
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
               {error}
+            </div>
+          )}
+
+          {successMsg && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
+              {successMsg}
             </div>
           )}
 
@@ -97,9 +197,9 @@ export default function AdminProfile() {
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">
-                  {session.user?.name || "Admin User"}
+                  {formData.name || "Admin User"}
                 </h2>
-                <p className="text-gray-600">{session.user?.email}</p>
+                <p className="text-gray-600">{formData.email}</p>
                 <p className="text-sm text-gray-500 mt-1">
                   Role:{" "}
                   <span className="font-semibold text-gray-700 capitalize">
@@ -115,18 +215,67 @@ export default function AdminProfile() {
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Full Name
                 </label>
-                <div className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
-                  {session.user?.name || "Not provided"}
-                </div>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  disabled={!isEditing}
+                  className={`w-full px-4 py-3 border-2 rounded-xl font-semibold ${
+                    isEditing
+                      ? "border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                      : "border-gray-200 bg-gray-50"
+                  } transition-all`}
+                />
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Email Address
                 </label>
-                <div className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
-                  {session.user?.email}
-                </div>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  disabled={true}
+                  className="w-full px-4 py-3 border-2 rounded-xl font-semibold border-gray-200 bg-gray-50"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  disabled={!isEditing}
+                  className={`w-full px-4 py-3 border-2 rounded-xl font-semibold ${
+                    isEditing
+                      ? "border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                      : "border-gray-200 bg-gray-50"
+                  } transition-all`}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Address
+                </label>
+                <input
+                  type="text"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                  disabled={!isEditing}
+                  className={`w-full px-4 py-3 border-2 rounded-xl font-semibold ${
+                    isEditing
+                      ? "border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                      : "border-gray-200 bg-gray-50"
+                  } transition-all`}
+                />
               </div>
 
               <div>

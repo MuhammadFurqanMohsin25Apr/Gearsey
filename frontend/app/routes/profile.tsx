@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "~/lib/auth-client";
 import type { Route } from "./+types/profile";
 import {
@@ -15,6 +15,8 @@ import {
   Save,
   X,
 } from "lucide-react";
+import { api } from "~/lib/api";
+import type { Listing, ProductsResponse } from "~/types";
 
 export function meta() {
   return [
@@ -27,22 +29,103 @@ export default function Profile() {
   const { data: session } = useSession();
   const user = session?.user;
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   // Form state
   const [formData, setFormData] = useState({
-    name: user?.name || "",
-    email: user?.email || "",
-    phone: user?.phone || "",
-    address: user?.address || "",
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
   });
 
-  // Mock stats
-  const stats = {
-    totalSales: 156,
-    totalRevenue: 2450000,
-    rating: 4.8,
-    reviews: 89,
+  // Listings state
+  const [myListings, setMyListings] = useState<Listing[]>([]);
+  const [isLoadingListings, setIsLoadingListings] = useState(false);
+
+  // Stats state
+  const [stats, setStats] = useState({
+    totalSales: 0,
+    totalRevenue: 0,
+    totalProducts: 0,
+    activeListings: 0,
+    soldListings: 0,
+    rating: 0,
+    reviews: 0,
     memberSince: "January 2024",
+  });
+  const [loadingStats, setLoadingStats] = useState(false);
+
+  // Update form data when user session loads
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        address: user.address || "",
+      });
+
+      // Fetch seller stats if user is a seller
+      if (user.role === "seller" && user.id) {
+        fetchSellerStats(user.id);
+        fetchSellerListings(user.id);
+      }
+    }
+  }, [user]);
+
+  const fetchSellerListings = async (userId: string) => {
+    setIsLoadingListings(true);
+    try {
+      const response = (await api.products.getAll({
+        sellerId: userId,
+      })) as ProductsResponse;
+      const listings = response.products || [];
+      setMyListings(listings);
+
+      // Calculate total and active listings from the actual data
+      const activeListings = listings.filter((l: Listing) => {
+        if (l.is_auction && l.auction) {
+          return l.auction.status === "Active";
+        }
+        return l.status === "Active";
+      });
+
+      const soldListings = listings.filter((l: Listing) => {
+        if (l.is_auction && l.auction) {
+          return l.auction.status === "Closed";
+        }
+        return l.status === "Sold";
+      });
+
+      // Update stats with actual listing counts
+      setStats((prev) => ({
+        ...prev,
+        totalProducts: listings.length,
+        activeListings: activeListings.length,
+        soldListings: soldListings.length,
+      }));
+    } catch (error) {
+      console.error("Failed to fetch seller listings:", error);
+    } finally {
+      setIsLoadingListings(false);
+    }
+  };
+
+  const fetchSellerStats = async (userId: string) => {
+    setLoadingStats(true);
+    try {
+      const response = await api.users.getStats(userId);
+      if (response?.stats) {
+        setStats(response.stats);
+      }
+    } catch (err) {
+      console.error("Error fetching seller stats:", err);
+    } finally {
+      setLoadingStats(false);
+    }
   };
 
   const handleInputChange = (
@@ -54,14 +137,61 @@ export default function Profile() {
     });
   };
 
-  const handleSave = () => {
-    // TODO: API call to update profile
-    alert("Profile updated successfully!");
-    setIsEditing(false);
+  const handleSave = async () => {
+    setError("");
+    setSuccess("");
+    setIsSaving(true);
+
+    try {
+      if (!user?.id) {
+        throw new Error("User ID not found");
+      }
+
+      console.log("Saving profile with user ID:", user.id);
+      console.log("Update data:", {
+        name: formData.name,
+        phone: formData.phone,
+        address: formData.address,
+      });
+
+      const response = await api.users.updateProfile(user.id, {
+        name: formData.name,
+        phone: formData.phone,
+        address: formData.address,
+      });
+
+      console.log("Update response:", response);
+
+      if (response) {
+        setSuccess("Profile updated successfully!");
+        setIsEditing(false);
+
+        // Update local form data with the response
+        if (response.user) {
+          setFormData({
+            name: response.user.name || formData.name,
+            email: response.user.email || formData.email,
+            phone: response.user.phone || formData.phone,
+            address: response.user.address || formData.address,
+          });
+        }
+
+        // Clear success message after 3 seconds
+        setTimeout(() => setSuccess(""), 3000);
+      }
+    } catch (err: any) {
+      console.error("Error updating profile:", err);
+      const errorMessage =
+        err?.message || err?.data?.message || "Failed to update profile";
+      setError(errorMessage);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
     setIsEditing(false);
+    setError("");
     // Reset form data
     setFormData({
       name: user?.name || "",
@@ -145,6 +275,54 @@ export default function Profile() {
                       </div>
                       <div>
                         <p className="text-xs text-gray-600 font-semibold">
+                          Total Products
+                        </p>
+                        <p className="text-xl font-black text-gray-900">
+                          {stats.totalProducts}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                        <ShoppingBag className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-600 font-semibold">
+                          Active Listings
+                        </p>
+                        <p className="text-xl font-black text-gray-900">
+                          {stats.activeListings}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+                        <Award className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-600 font-semibold">
+                          Sold Products
+                        </p>
+                        <p className="text-xl font-black text-gray-900">
+                          {stats.soldListings}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-yellow-500 rounded-lg flex items-center justify-center">
+                        <ShoppingBag className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-600 font-semibold">
                           Total Sales
                         </p>
                         <p className="text-xl font-black text-gray-900">
@@ -154,9 +332,9 @@ export default function Profile() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-xl">
+                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-red-50 to-red-100 rounded-xl">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                      <div className="w-10 h-10 bg-red-500 rounded-lg flex items-center justify-center">
                         <ShoppingBag className="w-5 h-5 text-white" />
                       </div>
                       <div>
@@ -170,9 +348,9 @@ export default function Profile() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl">
+                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-indigo-50 to-indigo-100 rounded-xl">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+                      <div className="w-10 h-10 bg-indigo-500 rounded-lg flex items-center justify-center">
                         <Star className="w-5 h-5 text-white" />
                       </div>
                       <div>
@@ -192,6 +370,18 @@ export default function Profile() {
 
           {/* Right Column - Profile Information */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Error and Success Messages */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-red-700">
+                {error}
+              </div>
+            )}
+            {success && (
+              <div className="bg-green-50 border border-green-200 rounded-2xl p-4 text-green-700">
+                {success}
+              </div>
+            )}
+
             {/* Personal Information */}
             <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
               <div className="flex items-center justify-between mb-6">
@@ -210,17 +400,19 @@ export default function Profile() {
                   <div className="flex gap-2">
                     <button
                       onClick={handleCancel}
-                      className="px-4 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-xl transition-all flex items-center gap-2"
+                      disabled={isSaving}
+                      className="px-4 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-xl transition-all flex items-center gap-2 disabled:opacity-50"
                     >
                       <X className="w-4 h-4" />
                       Cancel
                     </button>
                     <button
                       onClick={handleSave}
-                      className="px-4 py-2.5 bg-gradient-to-r from-green-600 to-green-500 text-white font-bold rounded-xl hover:from-green-700 hover:to-green-600 transition-all shadow-md flex items-center gap-2"
+                      disabled={isSaving}
+                      className="px-4 py-2.5 bg-gradient-to-r from-green-600 to-green-500 text-white font-bold rounded-xl hover:from-green-700 hover:to-green-600 transition-all shadow-md flex items-center gap-2 disabled:opacity-50"
                     >
                       <Save className="w-4 h-4" />
-                      Save Changes
+                      {isSaving ? "Saving..." : "Save Changes"}
                     </button>
                   </div>
                 )}
@@ -256,12 +448,8 @@ export default function Profile() {
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    disabled={!isEditing}
-                    className={`w-full px-4 py-3 border-2 rounded-xl font-semibold ${
-                      isEditing
-                        ? "border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-200"
-                        : "border-gray-200 bg-gray-50"
-                    } transition-all`}
+                    disabled={true}
+                    className="w-full px-4 py-3 border-2 rounded-xl font-semibold border-gray-200 bg-gray-50"
                   />
                 </div>
 

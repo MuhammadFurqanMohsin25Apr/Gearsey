@@ -258,7 +258,8 @@ export const api = {
 
     getByUser: (userId: string) => request(`/review/user/${userId}`),
 
-    getSellerRating: (sellerId: string) => request(`/review/seller/${sellerId}/rating`),
+    getSellerRating: (sellerId: string) =>
+      request(`/review/seller/${sellerId}/rating`),
 
     create: (data: {
       userId: string;
@@ -314,6 +315,27 @@ export const api = {
   users: {
     getTotalCount: () => request<{ totalUsers: number }>("/users/count"),
     getAll: () => request<{ buyers: any[] }>("/users"),
+    getStats: (userId: string) =>
+      request<{
+        stats: {
+          totalSales: number;
+          totalRevenue: number;
+          totalProducts: number;
+          activeListings: number;
+          soldListings: number;
+          rating: number;
+          reviews: number;
+          memberSince: string;
+        };
+      }>("/users/" + userId + "/stats"),
+    updateProfile: (
+      userId: string,
+      data: { name?: string; phone?: string; address?: string }
+    ) =>
+      request("/users/" + userId, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
   },
 
   // Health check

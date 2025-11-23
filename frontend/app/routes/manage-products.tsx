@@ -33,7 +33,9 @@ export default function ManageProducts() {
     useState<Listing | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [closingAuctionId, setClosingAuctionId] = useState<string | null>(null);
-  const [cancellingAuctionId, setCancellingAuctionId] = useState<string | null>(null);
+  const [cancellingAuctionId, setCancellingAuctionId] = useState<string | null>(
+    null
+  );
 
   // Fetch seller's products
   useEffect(() => {
@@ -44,7 +46,14 @@ export default function ManageProducts() {
           const response = (await api.products.getAll({
             sellerId: user.id,
           })) as ProductsResponse;
-          setMyListings(response.products || []);
+          // Filter out sold products
+          const activeProducts = (response.products || []).filter((product) => {
+            if (product.is_auction && product.auction) {
+              return product.auction.status !== "Closed";
+            }
+            return product.status !== "Sold";
+          });
+          setMyListings(activeProducts);
         } catch (error) {
           console.error("Failed to fetch seller products:", error);
         } finally {
@@ -100,7 +109,10 @@ export default function ManageProducts() {
   };
 
   // Handle cancelling an auction
-  const handleCancelAuction = async (productId: string, productName: string) => {
+  const handleCancelAuction = async (
+    productId: string,
+    productName: string
+  ) => {
     if (!user?.id) {
       alert("You must be logged in to cancel an auction");
       return;
@@ -206,12 +218,6 @@ export default function ManageProducts() {
     }
     return l.status === "Active";
   });
-  const soldListings = myListings.filter((l: Listing) => {
-    if (l.is_auction && l.auction) {
-      return l.auction.status === "Closed";
-    }
-    return l.status === "Sold";
-  });
 
   return (
     <div className="bg-gradient-to-br from-gray-50 via-white to-gray-100 min-h-screen">
@@ -238,7 +244,7 @@ export default function ManageProducts() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
             <div className="flex items-center justify-between">
               <div>
@@ -268,22 +274,6 @@ export default function ManageProducts() {
               <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-green-200 rounded-2xl flex items-center justify-center">
                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse absolute"></span>
                 <Package className="w-8 h-8 text-green-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm font-semibold mb-1">
-                  Sold Products
-                </p>
-                <p className="text-4xl font-black text-gray-900">
-                  {soldListings.length}
-                </p>
-              </div>
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-purple-200 rounded-2xl flex items-center justify-center">
-                <Package className="w-8 h-8 text-purple-600" />
               </div>
             </div>
           </div>
@@ -613,7 +603,10 @@ export default function ManageProducts() {
                                   title="Close Auction"
                                   disabled={closingAuctionId === product._id}
                                   onClick={() =>
-                                    handleCloseAuction(product._id, product.name)
+                                    handleCloseAuction(
+                                      product._id,
+                                      product.name
+                                    )
                                   }
                                 >
                                   <X className="w-4 h-4" />
@@ -626,7 +619,10 @@ export default function ManageProducts() {
                                   title="Cancel Auction"
                                   disabled={cancellingAuctionId === product._id}
                                   onClick={() =>
-                                    handleCancelAuction(product._id, product.name)
+                                    handleCancelAuction(
+                                      product._id,
+                                      product.name
+                                    )
                                   }
                                 >
                                   <X className="w-4 h-4" />
