@@ -150,51 +150,27 @@ Gearsey/
    ```bash
    cd backend
    npm install
+   npm run dev
    ```
 
 3. **Install frontend dependencies**
    ```bash
    cd ../frontend
    npm install
+   npm run dev
    ```
 
-4. **Set up environment variables**
-   
-   Create `.env` file in the `backend/` directory:
-   ```env
-   # Database
-   MONGO_URI=mongodb://localhost:27017/gearsey
-   
-   # Authentication
-   BETTER_AUTH_SECRET=your-secret-key-here
-   BETTER_AUTH_URL=http://localhost:3000/api/auth
-   
-   # Server
-   PORT=3000
-   NODE_ENV=development
-   
-   # Payment (if using Stripe)
-   STRIPE_SECRET_KEY=sk_test_...
-   
-   # File Upload
-   MAX_FILE_SIZE=5242880
+4. **Credentials for Admin/Seller/Buyer**
    ```
+   Admin : gearsey@gmail.com
+   Password : 123456
 
-5. **Start MongoDB**
-   ```bash
-   # Using MongoDB service
-   mongod
-   
-   # Or using Docker
-   docker run -d -p 27017:27017 --name mongodb mongo:latest
+   Seller : seller3@gmail.com
+   Password : 123456
+
+   Buyer : buyer2@gmail.com
+   Password : 123456
    ```
-
-6. **Run database migrations (if applicable)**
-   ```bash
-   cd backend
-   npm run migrate
-   ```
-
 ---
 
 ## Configuration
