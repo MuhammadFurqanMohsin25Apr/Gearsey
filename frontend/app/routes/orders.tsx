@@ -30,6 +30,7 @@ export default function Orders() {
     name: string;
   } | null>(null);
   const [orderProducts, setOrderProducts] = useState<Record<string, any>>({});
+  const [orderItemsCount, setOrderItemsCount] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -51,9 +52,23 @@ export default function Orders() {
           );
           setOrders(regularOrders);
 
-          // Fetch product details for auction orders
+          // Fetch product details for auction orders and order items count
           const productsMap: Record<string, any> = {};
+          const itemsCountMap: Record<string, number> = {};
           for (const order of data.orders) {
+            // Fetch order items count for all orders
+            try {
+              const itemsResponse = await api.orders.getOrderItems(
+                user.id,
+                order._id
+              ) as any;
+              if (itemsResponse?.items) {
+                itemsCountMap[order._id] = itemsResponse.items.length;
+              }
+            } catch (err) {
+              console.error("Failed to fetch order items:", err);
+            }
+
             if (order.isAuction && order.auctionId) {
               try {
                 // Get auction details which includes the product
@@ -77,6 +92,7 @@ export default function Orders() {
             }
           }
           setOrderProducts(productsMap);
+          setOrderItemsCount(itemsCountMap);
         } else {
           setOrders([]);
         }
@@ -139,7 +155,7 @@ export default function Orders() {
           <p className="text-gray-600 mb-6">Please login to view your orders</p>
           <Link
             to="/login"
-            className="inline-block px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-lg hover:from-red-700 hover:to-red-800 transition-all duration-300"
+            className="inline-block px-6 py-3 bg-linear-to-r from-red-600 to-red-700 text-white font-semibold rounded-lg hover:from-red-700 hover:to-red-800 transition-all duration-300"
           >
             Login
           </Link>
@@ -153,8 +169,8 @@ export default function Orders() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">My Orders</h1>
-          <p className="text-gray-600">Track and manage your orders</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">My Orders and Auctions</h1>
+          <p className="text-gray-600">Track and manage your orders and auctions</p>
         </div>
 
         {/* Tabs */}
@@ -222,6 +238,9 @@ export default function Orders() {
                         {order._id?.substring(0, 8).toUpperCase() || "N/A"}
                       </h3>
                       <p className="text-sm text-gray-600">
+                        Order ID: {order._id || "N/A"}
+                      </p>
+                      <p className="text-sm text-gray-600">
                         Placed on{" "}
                         {order.createdAt
                           ? new Date(order.createdAt).toLocaleDateString(
@@ -250,84 +269,40 @@ export default function Orders() {
 
                 {/* Order Items */}
                 <div className="p-6">
-                  <p className="text-sm text-gray-600 mb-4">
-                    Payment Status:{" "}
-                    <span className="font-semibold">
-                      {order.payment?.status || "Pending"}
-                    </span>
-                  </p>
+                  <div className="flex items-center justify-between mb-4">
+                    <p className="text-sm text-gray-600">
+                      Payment Status:{" "}
+                      <span className="font-semibold">
+                        {order.payment?.status || "Pending"}
+                      </span>
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Items:{" "}
+                      <span className="font-semibold">
+                        {orderItemsCount[order._id] || "0"}
+                      </span>
+                    </p>
+                  </div>
 
                   {/* Order Items */}
                   <div className="space-y-4">
                     {orderProducts[order._id] ? (
-                      <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
-                        <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
-                          {orderProducts[order._id].image ? (
-                            <img
-                              src={api.products.getImage(
-                                orderProducts[order._id].image
-                              )}
-                              alt={orderProducts[order._id].name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <svg
-                              className="w-10 h-10 text-gray-400"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                              />
-                            </svg>
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-gray-900">
-                            {orderProducts[order._id].name}
-                          </h4>
-                          {order.isAuction && (
-                            <span className="inline-block mt-1 px-2 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded">
-                              Auction Win
-                            </span>
-                          )}
-                          <p className="text-sm text-gray-600 mt-1">
-                            Price: PKR{" "}
-                            {orderProducts[order._id].price?.toLocaleString()}
-                          </p>
-                        </div>
+                      <div className="pb-4 border-b border-gray-100">
+                        <h4 className="font-semibold text-gray-900">
+                          {orderProducts[order._id].name}
+                        </h4>
+                        {order.isAuction && (
+                          <span className="inline-block mt-1 px-2 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded">
+                            Auction Win
+                          </span>
+                        )}
+                        <p className="text-sm text-gray-600 mt-1">
+                          Price: PKR{" "}
+                          {orderProducts[order._id].price?.toLocaleString()}
+                        </p>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
-                        <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center shrink-0">
-                          <svg
-                            className="w-10 h-10 text-gray-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                            />
-                          </svg>
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-gray-900">
-                            Order Items
-                          </h4>
-                          <p className="text-sm text-gray-600">
-                            {order.total_amount
-                              ? `Total: PKR ${order.total_amount.toLocaleString()}`
-                              : "N/A"}
-                          </p>
-                        </div>
+                      <div className="pb-0">
                       </div>
                     )}
                   </div>
@@ -431,13 +406,16 @@ export default function Orders() {
                   className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow"
                 >
                   {/* Auction Header */}
-                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 px-6 py-4 border-b border-gray-200">
+                  <div className="bg-linear-to-r from-purple-50 to-pink-50 px-6 py-4 border-b border-gray-200">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900">
                           Auction #
                           {auction._id?.substring(0, 8).toUpperCase() || "N/A"}
                         </h3>
+                        <p className="text-sm text-gray-600">
+                          Auction ID: {auction._id || "N/A"}
+                        </p>
                         <p className="text-sm text-gray-600">
                           Won on{" "}
                           {auction.closedAt
@@ -465,43 +443,24 @@ export default function Orders() {
 
                   {/* Auction Product */}
                   <div className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-sm text-gray-600">
+                        Items:{" "}
+                        <span className="font-semibold">1</span>
+                      </p>
+                    </div>
                     <div className="space-y-4">
-                      <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
-                        <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
-                          {productImage ? (
-                            <img
-                              src={api.products.getImage(productImage)}
-                              alt={product?.name || "Auction Item"}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <svg
-                              className="w-10 h-10 text-gray-400"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                              />
-                            </svg>
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-gray-900">
-                            {product?.name || "Auction Item"}
-                          </h4>
-                          <span className="inline-block mt-1 px-2 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded">
-                            Auction Win
-                          </span>
-                          <p className="text-sm text-gray-600 mt-1">
-                            Winning Bid: PKR{" "}
-                            {auction.current_price?.toLocaleString() || "0"}
-                          </p>
-                        </div>
+                      <div className="pb-4 border-b border-gray-100">
+                        <h4 className="font-semibold text-gray-900">
+                          {product?.name || "Auction Item"}
+                        </h4>
+                        <span className="inline-block mt-1 px-2 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded">
+                          Auction Win
+                        </span>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Winning Bid: PKR{" "}
+                          {auction.current_price?.toLocaleString() || "0"}
+                        </p>
                       </div>
                     </div>
 
@@ -517,7 +476,7 @@ export default function Orders() {
                             productImage: productImage,
                           },
                         }}
-                        className="px-6 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-medium rounded-lg hover:from-green-700 hover:to-emerald-700 transition-colors"
+                        className="px-6 py-2 bg-linear-to-r from-green-600 to-emerald-600 text-white font-medium rounded-lg hover:from-green-700 hover:to-emerald-700 transition-colors"
                       >
                         Proceed to Checkout
                       </Link>
@@ -593,7 +552,7 @@ export default function Orders() {
             </p>
             <Link
               to={activeTab === "orders" ? "/products" : "/auctions"}
-              className="inline-block px-8 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-lg hover:from-red-700 hover:to-red-800 transition-all duration-300 shadow-lg"
+              className="inline-block px-8 py-3 bg-linear-to-r from-red-600 to-red-700 text-white font-semibold rounded-lg hover:from-red-700 hover:to-red-800 transition-all duration-300 shadow-lg"
             >
               {activeTab === "orders" ? "Browse Products" : "Browse Auctions"}
             </Link>

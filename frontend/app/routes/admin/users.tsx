@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Search, Filter, Users as UsersIcon } from "lucide-react";
+import { Search, Users as UsersIcon } from "lucide-react";
 import { authClient } from "~/lib/auth-client";
 
 export default function Users() {
@@ -86,13 +86,9 @@ export default function Users() {
                 placeholder="Search users..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full sm:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                className="w-full sm:w-84 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
               />
             </div>
-            <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2">
-              <Filter className="w-4 h-4" />
-              Filter
-            </button>
           </div>
         </div>
         <div className="overflow-x-auto">

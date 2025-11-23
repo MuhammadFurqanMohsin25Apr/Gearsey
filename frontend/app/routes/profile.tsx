@@ -32,12 +32,8 @@ export default function Profile() {
   const [formData, setFormData] = useState({
     name: user?.name || "",
     email: user?.email || "",
-    phone: "+92 300 1234567",
-    address: "Lahore, Punjab, Pakistan",
-    bio: "Passionate about selling quality automotive parts and electronics.",
-    shopName: "Premium Auto Parts",
-    businessAddress: "123 Main Street, Lahore",
-    taxId: "NTN-1234567",
+    phone: user?.phone || "",
+    address: user?.address || "",
   });
 
   // Mock stats
@@ -47,7 +43,6 @@ export default function Profile() {
     rating: 4.8,
     reviews: 89,
     memberSince: "January 2024",
-    successRate: 94,
   };
 
   const handleInputChange = (
@@ -71,12 +66,8 @@ export default function Profile() {
     setFormData({
       name: user?.name || "",
       email: user?.email || "",
-      phone: "+92 300 1234567",
-      address: "Lahore, Punjab, Pakistan",
-      bio: "Passionate about selling quality automotive parts and electronics.",
-      shopName: "Premium Auto Parts",
-      businessAddress: "123 Main Street, Lahore",
-      taxId: "NTN-1234567",
+      phone: user?.phone || "",
+      address: user?.address || "",
     });
   };
 
@@ -135,15 +126,6 @@ export default function Profile() {
                   </span>
                   <span className="text-gray-900 font-bold">
                     {stats.rating} ⭐
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600 text-sm font-semibold flex items-center gap-2">
-                    <Award className="w-4 h-4" />
-                    Success Rate
-                  </span>
-                  <span className="text-gray-900 font-bold">
-                    {stats.successRate}%
                   </span>
                 </div>
               </div>
@@ -320,91 +302,8 @@ export default function Profile() {
                     } transition-all`}
                   />
                 </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    Bio
-                  </label>
-                  <textarea
-                    name="bio"
-                    value={formData.bio}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                    rows={3}
-                    className={`w-full px-4 py-3 border-2 rounded-xl font-semibold ${
-                      isEditing
-                        ? "border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-200"
-                        : "border-gray-200 bg-gray-50"
-                    } transition-all`}
-                  />
-                </div>
               </div>
             </div>
-
-            {/* Business Information (for sellers) */}
-            {user?.role === "seller" && (
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
-                <h3 className="text-2xl font-black text-gray-900 mb-6">
-                  Business Information
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">
-                      Shop Name
-                    </label>
-                    <input
-                      type="text"
-                      name="shopName"
-                      value={formData.shopName}
-                      onChange={handleInputChange}
-                      disabled={!isEditing}
-                      className={`w-full px-4 py-3 border-2 rounded-xl font-semibold ${
-                        isEditing
-                          ? "border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-200"
-                          : "border-gray-200 bg-gray-50"
-                      } transition-all`}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">
-                      Tax ID / NTN
-                    </label>
-                    <input
-                      type="text"
-                      name="taxId"
-                      value={formData.taxId}
-                      onChange={handleInputChange}
-                      disabled={!isEditing}
-                      className={`w-full px-4 py-3 border-2 rounded-xl font-semibold ${
-                        isEditing
-                          ? "border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-200"
-                          : "border-gray-200 bg-gray-50"
-                      } transition-all`}
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-bold text-gray-700 mb-2">
-                      Business Address
-                    </label>
-                    <input
-                      type="text"
-                      name="businessAddress"
-                      value={formData.businessAddress}
-                      onChange={handleInputChange}
-                      disabled={!isEditing}
-                      className={`w-full px-4 py-3 border-2 rounded-xl font-semibold ${
-                        isEditing
-                          ? "border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-200"
-                          : "border-gray-200 bg-gray-50"
-                      } transition-all`}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Account Security */}
             <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
@@ -414,22 +313,6 @@ export default function Profile() {
               <div className="space-y-4">
                 <button className="w-full px-6 py-4 bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-900 font-bold rounded-xl transition-all text-left flex items-center justify-between">
                   <span>Change Password</span>
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </button>
-                <button className="w-full px-6 py-4 bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-900 font-bold rounded-xl transition-all text-left flex items-center justify-between">
-                  <span>Two-Factor Authentication</span>
                   <svg
                     className="w-5 h-5"
                     fill="none"
