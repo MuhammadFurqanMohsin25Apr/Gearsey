@@ -231,7 +231,7 @@ export default function Signup() {
                 <input
                   type="checkbox"
                   required
-                  className="scale-50 w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500 accent-red-600 flex-shrink-0"
+                  className=" w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500 accent-red-600 flex-shrink-0"
                 />
                 <span className="text-xs sm:text-sm text-gray-700">
                   I agree to the{" "}

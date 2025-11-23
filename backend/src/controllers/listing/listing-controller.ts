@@ -43,9 +43,35 @@ export async function getProducts(req: Request, res: Response) {
       .populate("imageIds", ["fileName", "mime", "size"])
       .exec();
 
+    // For auction products, fetch auction data and include it in the response
+    const productsWithAuctions = await Promise.all(
+      products.map(async (product) => {
+        const productObj = product.toObject();
+        if (productObj.is_auction) {
+          const auction = await Auction.findOne({ partId: productObj._id.toString() });
+          if (auction) {
+            return {
+              ...productObj,
+              auction: {
+                _id: auction._id,
+                status: auction.status,
+                start_price: auction.start_price,
+                current_price: auction.current_price,
+                start_time: auction.start_time,
+                end_time: auction.end_time,
+                winnerId: auction.winnerId,
+                totalBids: auction.totalBids,
+              },
+            };
+          }
+        }
+        return productObj;
+      })
+    );
+
     res.status(200).json({
       message: "Products fetched successfully",
-      products,
+      products: productsWithAuctions,
     });
   } catch (error) {
     console.error("Error fetching products:", error as Error);

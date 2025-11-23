@@ -258,6 +258,8 @@ export const api = {
 
     getByUser: (userId: string) => request(`/review/user/${userId}`),
 
+    getSellerRating: (sellerId: string) => request(`/review/seller/${sellerId}/rating`),
+
     create: (data: {
       userId: string;
       partId: string;
@@ -273,12 +275,6 @@ export const api = {
       request(`/review/${reviewId}`, {
         method: "DELETE",
       }),
-  },
-
-  // Bids
-  bids: {
-    getByAuction: (auctionId: string) =>
-      request<{ bids: any[] }>(`/bids/auction/${auctionId}`),
   },
 
   // Payments

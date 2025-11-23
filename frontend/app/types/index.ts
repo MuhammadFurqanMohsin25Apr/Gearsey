@@ -40,6 +40,16 @@ export interface Listing {
   status: "Active" | "Sold" | "Removed";
   createdAt: string;
   updatedAt: string;
+  auction?: {
+    _id: string;
+    status: "Active" | "Closed" | "Cancelled";
+    start_price: number;
+    current_price: number;
+    start_time: string;
+    end_time: string;
+    winnerId?: string;
+    totalBids: number;
+  };
 }
 
 export interface Auction {

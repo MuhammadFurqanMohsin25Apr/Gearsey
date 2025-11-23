@@ -47,12 +47,15 @@ export function getStatusBadgeColor(status: string): string {
       return "bg-green-600 text-white";
     case "sold":
     case "completed":
+    case "closed":
       return "bg-gray-600 text-white";
     case "pending":
     case "processing":
       return "bg-yellow-600 text-white";
     case "out of stock":
     case "unavailable":
+    case "cancelled":
+    case "removed":
       return "bg-red-600 text-white";
     case "reserved":
       return "bg-blue-600 text-white";

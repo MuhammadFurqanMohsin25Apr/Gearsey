@@ -29,12 +29,14 @@ export class AuctionService {
       throw new Error("Auction is not active");
     }
 
-    // Update auction status
+    // Update auction status and end time to current time
+    const closedTime = new Date();
     const updatedAuction = await Auction.findByIdAndUpdate(
       auctionId,
       {
         status: "Closed",
-        closedAt: new Date(),
+        closedAt: closedTime,
+        end_time: closedTime,
         closedBy: isAdmin ? "admin_closed" : "seller_closed",
       },
       { new: true }

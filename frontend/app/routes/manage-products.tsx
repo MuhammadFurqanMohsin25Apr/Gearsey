@@ -148,9 +148,14 @@ export default function ManageProducts() {
   );
 
   if (filterStatus !== "all") {
-    filteredProducts = filteredProducts.filter(
-      (product) => product.status === filterStatus
-    );
+    filteredProducts = filteredProducts.filter((product) => {
+      // For auction items, check auction status
+      if (product.is_auction && product.auction) {
+        return product.auction.status === filterStatus;
+      }
+      // For regular items, check listing status
+      return product.status === filterStatus;
+    });
   }
 
   if (filterCondition !== "all") {
@@ -195,10 +200,18 @@ export default function ManageProducts() {
     }
   });
 
-  const activeListings = myListings.filter(
-    (l: Listing) => l.status === "Active"
-  );
-  const soldListings = myListings.filter((l: Listing) => l.status === "Sold");
+  const activeListings = myListings.filter((l: Listing) => {
+    if (l.is_auction && l.auction) {
+      return l.auction.status === "Active";
+    }
+    return l.status === "Active";
+  });
+  const soldListings = myListings.filter((l: Listing) => {
+    if (l.is_auction && l.auction) {
+      return l.auction.status === "Closed";
+    }
+    return l.status === "Sold";
+  });
 
   return (
     <div className="bg-gradient-to-br from-gray-50 via-white to-gray-100 min-h-screen">
@@ -554,10 +567,14 @@ export default function ManageProducts() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
                           className={`px-3 py-1.5 inline-flex text-xs leading-5 font-bold rounded-full ${getStatusBadgeColor(
-                            product.status
+                            product.is_auction && product.auction
+                              ? product.auction.status
+                              : product.status
                           )}`}
                         >
-                          {product.status}
+                          {product.is_auction && product.auction
+                            ? product.auction.status
+                            : product.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-semibold">
@@ -566,7 +583,11 @@ export default function ManageProducts() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex gap-2 flex-wrap">
                           <Link
-                            to={`/products/${product._id}`}
+                            to={
+                              product.is_auction && product.auction
+                                ? `/auctions/${product.auction._id}`
+                                : `/products/${product._id}`
+                            }
                             className="px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold rounded-lg transition-colors flex items-center gap-1.5"
                             title="View Product"
                           >
@@ -585,7 +606,7 @@ export default function ManageProducts() {
                             Edit
                           </button>
                           {product.is_auction &&
-                            product.status === "Active" && (
+                            product.auction?.status === "Active" && (
                               <>
                                 <button
                                   className="px-3 py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 font-bold rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"

@@ -243,7 +243,7 @@ export default function Products() {
                   {["all", "New", "Used", "Refurbished"].map((condition) => (
                     <label
                       key={condition}
-                      className="flex items-center group cursor-pointer rounded-lg hover:bg-gray-50 transition-all"
+                      className="flex p-2 items-center group cursor-pointer rounded-lg hover:bg-gray-50 transition-all"
                     >
                       <input
                         type="radio"
@@ -251,9 +251,9 @@ export default function Products() {
                         value={condition}
                         checked={selectedCondition === condition}
                         onChange={(e) => setSelectedCondition(e.target.value)}
-                        className="scale-50 text-red-600 focus:ring-red-500 cursor-pointer accent-red-600"
+                        className="text-red-600 focus:ring-red-500 cursor-pointer accent-red-600"
                       />
-                      <span className="ml-1 text-base text-gray-700 font-semibold group-hover:text-gray-900">
+                      <span className="ml-2 text-base text-gray-700 font-semibold group-hover:text-gray-900">
                         {condition === "all" ? "All Conditions" : condition}
                       </span>
                     </label>

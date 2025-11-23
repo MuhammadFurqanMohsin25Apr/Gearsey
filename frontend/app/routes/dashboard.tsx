@@ -14,7 +14,7 @@ import {
   Award,
   Truck,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { AddProductDialog } from "~/components/AddProductDialog";
 
 export function meta() {
@@ -36,6 +36,10 @@ export default function Dashboard() {
     totalRevenue: 0,
     totalOrders: 0,
     totalItemsSold: 0,
+  });
+  const [sellerRating, setSellerRating] = useState({
+    averageRating: 0,
+    totalReviews: 0,
   });
   const userRole = user?.role || "buyer";
   const isBuyer = userRole === "buyer" || userRole === "customer";
@@ -93,17 +97,50 @@ export default function Dashboard() {
     fetchSellerStats();
   }, [isSeller, user?.id, revalidator.state]);
 
+  // Fetch seller rating
+  useEffect(() => {
+    async function fetchSellerRating() {
+      if (isSeller && user?.id) {
+        try {
+          const response = await api.reviews.getSellerRating(user.id) as any;
+          setSellerRating({
+            averageRating: response.averageRating || 0,
+            totalReviews: response.totalReviews || 0,
+          });
+        } catch (error) {
+          console.error("Failed to fetch seller rating:", error);
+        }
+      }
+    }
+
+    fetchSellerRating();
+  }, [isSeller, user?.id, revalidator.state]);
+
+  // Calculate active and sold listings (must be before early return to follow React hooks rules)
+  const activeListings = useMemo(() => {
+    if (!isSeller) return [];
+    return myListings.filter((l: Listing) => {
+      if (l.is_auction && l.auction) {
+        return l.auction.status === "Active";
+      }
+      return l.status === "Active";
+    });
+  }, [isSeller, myListings]);
+
+  const soldListings = useMemo(() => {
+    if (!isSeller) return [];
+    return myListings.filter((l: Listing) => {
+      if (l.is_auction && l.auction) {
+        return l.auction.status === "Closed";
+      }
+      return l.status === "Sold";
+    });
+  }, [isSeller, myListings]);
+
   // If not authenticated or still loading, don't render the page
   if (isPending || !session) {
     return null;
   }
-
-  const activeListings = isSeller
-    ? myListings.filter((l: Listing) => l.status === "Active")
-    : [];
-  const soldListings = isSeller
-    ? myListings.filter((l: Listing) => l.status === "Sold")
-    : [];
 
   // Mock buyer data - replace with actual API calls
   const buyerOrders = [
@@ -515,7 +552,16 @@ export default function Dashboard() {
                     <p className="text-xs text-gray-600 font-semibold">
                       Avg. Rating
                     </p>
-                    <p className="text-xl font-black text-gray-900">4.8</p>
+                    <p className="text-xl font-black text-gray-900">
+                      {sellerRating.averageRating > 0 
+                        ? sellerRating.averageRating.toFixed(1)
+                        : "N/A"}
+                    </p>
+                    {sellerRating.totalReviews > 0 && (
+                      <p className="text-xs text-gray-500">
+                        {sellerRating.totalReviews} review{sellerRating.totalReviews !== 1 ? 's' : ''}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -532,34 +578,6 @@ export default function Dashboard() {
                     <p className="text-xl font-black text-gray-900">
                       {soldListings.length}
                     </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
-                    <Heart className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-600 font-semibold">
-                      Favorites
-                    </p>
-                    <p className="text-xl font-black text-gray-900">156</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-orange-50 to-orange-100 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center">
-                    <TrendingUp className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-600 font-semibold">
-                      Success Rate
-                    </p>
-                    <p className="text-xl font-black text-gray-900">94%</p>
                   </div>
                 </div>
               </div>
@@ -652,10 +670,14 @@ export default function Dashboard() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
                           className={`px-3 py-1.5 inline-flex text-xs leading-5 font-bold rounded-full ${getStatusBadgeColor(
-                            listing.status
+                            listing.is_auction && listing.auction
+                              ? listing.auction.status
+                              : listing.status
                           )}`}
                         >
-                          {listing.status}
+                          {listing.is_auction && listing.auction
+                            ? listing.auction.status
+                            : listing.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-semibold">
