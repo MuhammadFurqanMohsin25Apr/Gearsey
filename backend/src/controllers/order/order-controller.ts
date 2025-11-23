@@ -13,7 +13,9 @@ type OrderBody = {
 export async function getAllOrders(req: Request, res: Response) {
   try {
     const { limit } = req.query;
-    const orders = await Order.find().limit(Number(limit) || 10);
+    const orders = await Order.find()
+      .limit(Number(limit) || 0)
+      .sort({ createdAt: -1 });
 
     // Fetch payment info and product name for each order
     const ordersWithPayments = await Promise.all(
