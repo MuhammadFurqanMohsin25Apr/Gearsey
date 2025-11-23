@@ -849,20 +849,13 @@ export default function AuctionDetail() {
               {/* Not Active Message */}
               {!isActive && !isUserWinner && (
                 <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm text-yellow-800 font-medium mb-3">
+                  <p className="text-sm text-yellow-800 font-medium">
                     {currentAuction.status === "Closed"
                       ? "This auction has ended"
                       : new Date() < new Date(currentAuction.start_time)
                         ? `Auction starts at ${formatDateTime(currentAuction.start_time)}`
                         : "This auction is no longer active"}
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => setForceShowForm(!forceShowForm)}
-                    className="text-xs bg-yellow-200 hover:bg-yellow-300 px-2 py-1 rounded font-medium text-yellow-900"
-                  >
-                    {forceShowForm ? "Hide" : "Show"} Bid Form (Debug)
-                  </button>
                 </div>
               )}
             </div>
