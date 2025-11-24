@@ -45,7 +45,6 @@ A modern vehicle marketplace platform for vehicle dealers, customers, and automo
 - **Order Administration** - Oversee all orders and delivery statuses
 - **Auction Oversight** - Monitor and manage active auctions
 - **Revenue Tracking** - View gross revenue and sales by category
-- **Penalty System** - Manage violations and enforce platform rules
 
 ---
 
@@ -70,11 +69,6 @@ A modern vehicle marketplace platform for vehicle dealers, customers, and automo
 - **Rate Limiting**: express-rate-limit & express-slow-down
 - **Type Safety**: TypeScript 5.9
 
-### DevOps
-- **Containerization**: Docker
-- **Process Management**: tsx for development
-- **Testing**: Custom backend test suite
-
 ---
 
 ## Project Structure
@@ -88,10 +82,8 @@ Gearsey/
 │   │   │   ├── bids/          # Bidding system
 │   │   │   ├── category/      # Product categories
 │   │   │   ├── listing/       # Product listings
-│   │   │   ├── notification/  # User notifications
 │   │   │   ├── orders/        # Order management
 │   │   │   ├── payment/       # Payment processing
-│   │   │   ├── penalty/       # Penalty system
 │   │   │   ├── review/        # Product reviews
 │   │   │   └── users/         # User management
 │   │   ├── controllers/       # Business logic handlers
@@ -193,7 +185,7 @@ Frontend configuration is managed through `vite.config.ts` and connects to the b
 
 ---
 
-## 💻 Development
+## Development
 
 ### Running the Development Servers
 
@@ -234,34 +226,7 @@ npm test
 ```
 
 
-1. **Set up MongoDB**
-   ```bash
-   docker run -d \
-     --name mongodb \
-     -p 27017:27017 \
-     -v mongodb_data:/data/db \
-     mongo:latest
-   ```
 
-2. **Run backend**
-   ```bash
-   cd backend
-   docker run -d \
-     --name gearsey-backend \
-     -p 3000:3000 \
-     --env-file .env \
-     --link mongodb:mongodb \
-     gearsey-backend
-   ```
-
-3. **Run frontend**
-   ```bash
-   docker run -d \
-     --name gearsey-frontend \
-     -p 80:3000 \
-     --link gearsey-backend:api \
-     gearsey-frontend
-   ```
 
 ### Production Considerations
 

@@ -1,5 +1,4 @@
 import { Auction, type IAuction } from "@/models/auction.js";
-import { Notification } from "@/models/notification.js";
 import { Bid } from "@/models/bid.js";
 import { Listing } from "@/models/listing.js";
 import { Order } from "@/models/order.js";
@@ -42,7 +41,7 @@ export class AuctionService {
       { new: true }
     );
 
-    // If there's a winner, notify them and set payment deadline
+    // If there's a winner, set payment deadline
     if (updatedAuction?.winnerId) {
       const paymentDeadline = new Date();
       paymentDeadline.setDate(paymentDeadline.getDate() + 3);
@@ -59,7 +58,6 @@ export class AuctionService {
 
       if (existingOrder) {
         console.log(`Order already exists for auction ${auctionId}`);
-        // Skip order creation but continue with notifications
       } else {
         // Create order for winner
         const order = await Order.create({
@@ -77,35 +75,6 @@ export class AuctionService {
           partId: auction.partId,
           quantity: 1,
           price: updatedAuction.current_price,
-        });
-      }
-
-      // Create notification for winner
-      await Notification.create({
-        userId: updatedAuction.winnerId,
-        type: "auction_won",
-        title: "You Won the Auction!",
-        message: `You have won the auction! The product has been added to your orders. You must pay within 3 days.`,
-        auctionId: auctionId.toString(),
-        productId: auction.partId,
-        isRead: false,
-      });
-
-      // Notify other bidders
-      const allBids = await Bid.find({
-        auctionId,
-        userId: { $ne: updatedAuction.winnerId },
-      }).distinct("userId");
-
-      for (const userId of allBids) {
-        await Notification.create({
-          userId: userId.toString(),
-          type: "auction_ended",
-          title: "Auction Ended",
-          message: `The auction has ended. You did not win this auction.`,
-          auctionId: auctionId.toString(),
-          productId: auction.partId,
-          isRead: false,
         });
       }
     }
@@ -144,7 +113,7 @@ export class AuctionService {
       { new: true }
     );
 
-    // If there's a winner, notify them and set payment deadline
+    // If there's a winner, set payment deadline
     if (updatedAuction?.winnerId) {
       const paymentDeadline = new Date();
       paymentDeadline.setDate(paymentDeadline.getDate() + 3);
@@ -161,7 +130,6 @@ export class AuctionService {
 
       if (existingOrder) {
         console.log(`Order already exists for auction ${auctionId}`);
-        // Skip order creation but continue with notifications
       } else {
         // Create order for winner
         const order = await Order.create({
@@ -179,35 +147,6 @@ export class AuctionService {
           partId: auction.partId,
           quantity: 1,
           price: updatedAuction.current_price,
-        });
-      }
-
-      // Create notification for winner
-      await Notification.create({
-        userId: updatedAuction.winnerId,
-        type: "auction_won",
-        title: "You Won the Auction!",
-        message: `Congratulations! You have won the auction! The product has been added to your orders. You must pay within 3 days.`,
-        auctionId: auctionId.toString(),
-        productId: auction.partId,
-        isRead: false,
-      });
-
-      // Notify other bidders
-      const allBids = await Bid.find({
-        auctionId,
-        userId: { $ne: updatedAuction.winnerId },
-      }).distinct("userId");
-
-      for (const userId of allBids) {
-        await Notification.create({
-          userId: userId.toString(),
-          type: "auction_ended",
-          title: "Auction Ended",
-          message: `The auction has ended. You did not win this auction.`,
-          auctionId: auctionId.toString(),
-          productId: auction.partId,
-          isRead: false,
         });
       }
     }
